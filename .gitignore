@@ -36,5 +36,10 @@ out/
 ### VS Code ###
 .vscode/
 
+<<<<<<< Updated upstream
 ### env ###
 .env
+=======
+### ENV ###
+*.env
+>>>>>>> Stashed changes
