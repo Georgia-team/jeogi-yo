@@ -1,13 +1,25 @@
 spring:
+  config:
+    import: "optional:file:.env[.properties]"
   datasource:
     url: jdbc:postgresql://localhost:5432/delivery_db
-    # username: ${DB_USERNAME}
-    # password: ${DB_PASSWORD}
-    username: postgres
-    password: 123456
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
-
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
+
+jwt:
+  secret:
+    key: ${SECURITY_JWT_SECRET}
+
+logging:
+  pattern:
+    console: '%clr(%-5level){green} %clr(%logger{36}.%M\(\)){cyan}: %msg%n'
