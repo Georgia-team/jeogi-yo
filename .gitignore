@@ -35,6 +35,7 @@ out/
 
 ### VS Code ###
 .vscode/
+<<<<<<< HEAD
 
 <<<<<<< Updated upstream
 ### env ###
@@ -43,3 +44,5 @@ out/
 ### ENV ###
 *.env
 >>>>>>> Stashed changes
+=======
+>>>>>>> origin/feature/category-review
