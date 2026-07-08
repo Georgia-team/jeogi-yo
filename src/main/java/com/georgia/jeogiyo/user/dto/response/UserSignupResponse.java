@@ -15,6 +15,8 @@ public class UserSignupResponse {
 
 	private String userId;
 	
+	private String email;
+	
 	private String loginId;
 	
 	private String nickname;
@@ -28,6 +30,7 @@ public class UserSignupResponse {
 	public static UserSignupResponse of(User user) {
 		return new UserSignupResponse(
 				user.getUserId(),
+				user.getEmail(),
 				user.getLoginId(),
 				user.getNickname(),
 				user.getRole(),

@@ -16,7 +16,7 @@ public class UserFix {
 	
 	public static UserUpdateRequest getUserUpdateRequest() {
 		return new UserUpdateRequest(
-				"test0123",
+				null,
 				"02-111-1234",
 				"test1234@email.com",
 				"password123A@"

@@ -9,42 +9,36 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
+import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 
+import jakarta.persistence.EntityManager;
+
 @SpringBootTest
-@Import(UserCommandTest.TestConfig.class)
+@Transactional
 public class UserCommandTest {
 
 	@Autowired
 	private UserService userCommandService;
 	
 	@Autowired
+	private PasswordEncoder passwordEncoder;
+	
+	@Autowired
 	private UserFinder userFinder;
 	
+	@Autowired
+	private EntityManager em;
+	
 	private UserSignupRequest userSignup = UserFix.getUserCreateRequest();
-	
-	private UserUpdateRequest userUpdate = UserFix.getUserUpdateRequest();
-	
-	@TestConfiguration
-	static class TestConfig {
-		// 임시 PasswordEncoder Bean
-		// TODO: PasswordEncoder Bean 추가 시 삭제
-		@Bean
-		PasswordEncoder passwordEncoder() {
-			return new BCryptPasswordEncoder();
-		}
-	}
 	
 	@Test
 	@DisplayName("service: 유저 생성 테스트")
@@ -66,11 +60,45 @@ public class UserCommandTest {
 		
 		assertThat(user).isNotNull();
 		assertThat(user.getCreatedAt()).isNotNull();
-		assertThat(user.getCreatedBy()).isEqualTo(userSignup.getLoginId());
+		
+		// TODO: BaseEntity CreatedBy, UpdatedBy 완성 시 수정
+		assertThat(user.getCreatedBy()).isEqualTo("user");
+		
 		assertThat(user.getUpdatedAt()).isNotNull();
-		assertThat(user.getUpdatedBy()).isEqualTo(userSignup.getLoginId());
+		
+		// TODO: BaseEntity CreatedBy, UpdatedBy 완성 시 수정
+		assertThat(user.getUpdatedBy()).isEqualTo("user");
 		assertThat(user.getDeletedAt()).isNull();
 		assertThat(user.getDeletedBy()).isNull();
+	}
+	
+	@Test
+	@DisplayName("service: 유저 수정 테스트")
+	void userUpdateTest() {
+		UserSignupResponse given = userCommandService.signup(userSignup);
+		
+		em.flush();
+		em.clear();
+		
+		UserUpdateRequest userUpdateRequest = new UserUpdateRequest(
+				"nana",
+				"02-123-1234",
+				null,
+				"Test123456789@"
+		);
+		
+		UserInfoResponse response = userCommandService.update(given.getUserId(), userUpdateRequest);
+		
+		assertThat(response.getNickname()).isEqualTo(userUpdateRequest.getNickname());
+		assertThat(response.getPhone()).isEqualTo(userUpdateRequest.getPhone());
+		
+		em.flush();
+		em.clear();
+		
+		User updated = userFinder.getUserById(given.getUserId());
+		
+		assertThat(updated.getEmail()).isEqualTo(given.getEmail());
+		assertThat(passwordEncoder.matches(userUpdateRequest.getPassword(), updated.getPassword()));
 	}
 	
 }
