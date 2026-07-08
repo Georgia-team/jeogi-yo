@@ -1,4 +1,8 @@
 package com.georgia.jeogiyo.ai.entity;
 
-public class AiStatus {
+public enum AiStatus {
+
+    SUCCESS,
+    FAIL
+
 }
