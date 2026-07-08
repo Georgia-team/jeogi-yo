@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
@@ -14,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class UserCommandService {
+public class UserService {
 
 	private final UserRepository userRepository;
 	
@@ -42,6 +43,11 @@ public class UserCommandService {
 		User saved = userRepository.save(User.create(signupUser, passwordEncoder));
 		
 		return UserSignupResponse.of(saved);
+	}
+	
+	@Transactional(rollbackFor = Exception.class)
+	public void update(UserUpdateRequest updateUser) {
+		
 	}
 	
 }

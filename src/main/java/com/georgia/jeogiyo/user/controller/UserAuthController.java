@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
-import com.georgia.jeogiyo.user.service.UserCommandService;
+import com.georgia.jeogiyo.user.service.UserService;
 import com.georgia.jeogiyo.user.service.UserFinder;
 
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/auth")
 public class UserAuthController {
 	
-	private final UserCommandService userCommandService;
+	private final UserService userCommandService;
 	
 	private final UserFinder userFinder;
 	

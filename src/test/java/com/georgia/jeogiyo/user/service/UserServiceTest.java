@@ -26,7 +26,7 @@ import com.georgia.jeogiyo.user.fixture.UserFix;
 public class UserServiceTest {
 
 	@Autowired
-	private UserCommandService userCommandService;
+	private UserService userCommandService;
 	
 	@Autowired
 	private UserFinder userFinder;
