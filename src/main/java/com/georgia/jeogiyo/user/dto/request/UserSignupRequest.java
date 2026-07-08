@@ -1,4 +1,4 @@
-package com.georgia.jeogiyo.user.dto;
+package com.georgia.jeogiyo.user.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

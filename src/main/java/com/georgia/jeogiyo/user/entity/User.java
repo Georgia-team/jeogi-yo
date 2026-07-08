@@ -1,12 +1,11 @@
 package com.georgia.jeogiyo.user.entity;
 
 import java.util.Objects;
-import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.georgia.jeogiyo.global.entity.BaseEntity;
-import com.georgia.jeogiyo.user.dto.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
@@ -58,7 +57,6 @@ public class User extends BaseEntity {
 	public static User create(UserSignupRequest userCreate, PasswordEncoder passwordEncoder) {
 		User user = new User();
 		
-		user.userId = UUID.randomUUID().toString();
 		user.loginId = userCreate.getLoginId();
 		user.nickname = userCreate.getNickname();
 		user.phone = userCreate.getPhone();

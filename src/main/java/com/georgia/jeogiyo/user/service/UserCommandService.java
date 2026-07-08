@@ -12,5 +12,5 @@ public class UserCommandService {
 
 	private final UserRepository userRepository;
 	
-	
+	private final UserFinder userFinder;
 }
