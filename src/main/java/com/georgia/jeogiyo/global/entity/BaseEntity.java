@@ -1,4 +1,4 @@
-package com.georgia.jeogiyo.auth.entity;
+package com.georgia.jeogiyo.global.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
