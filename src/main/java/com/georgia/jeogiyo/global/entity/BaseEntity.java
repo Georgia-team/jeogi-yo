@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.global.entity;
 
+import com.georgia.jeogiyo.user.entity.Role;
 import jakarta.persistence.*;
 import lombok.Getter;
 import org.springframework.data.annotation.CreatedDate;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-public abstract class BaseEntity {
+public abstract class BaseEntity { // todo JWT 구현 createdBy, updatedBy 임시값 삭제!!!
 
     @CreatedDate
     @Column(updatable = false, nullable = false)
@@ -19,7 +20,7 @@ public abstract class BaseEntity {
     private LocalDateTime createdAt;
 
     @Column(name = "created_by", updatable = false, nullable = false)
-    private String createdBy;
+    private String createdBy = "user";
 
     @LastModifiedDate
     @Column
@@ -27,7 +28,7 @@ public abstract class BaseEntity {
     private LocalDateTime updatedAt;
 
     @Column(name = "updated_by")
-    private String updatedBy;
+    private String updatedBy = "user";
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
