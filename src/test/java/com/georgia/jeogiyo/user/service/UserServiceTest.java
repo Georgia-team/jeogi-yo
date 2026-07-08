@@ -12,7 +12,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -35,7 +34,6 @@ public class UserServiceTest {
 	private UserSignupRequest userSignup = UserFix.getUserCreateRequest();
 	
 	@TestConfiguration
-	@EnableJpaAuditing
 	static class TestConfig {
 		// 임시 PasswordEncoder Bean
 		// TODO: PasswordEncoder Bean 추가 시 삭제
