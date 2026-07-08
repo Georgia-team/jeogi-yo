@@ -1,10 +1,7 @@
 package com.georgia.jeogiyo.category.entity;
 
 import com.georgia.jeogiyo.global.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
