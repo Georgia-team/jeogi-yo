@@ -3,10 +3,14 @@ package com.georgia.jeogiyo.user.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-public class UserCreateRequest {
+@AllArgsConstructor
+@NoArgsConstructor
+public class UserSignupRequest {
 	
 	@NotBlank(message = "로그인 아이디는 필수 항목입니다.")
 	@Size(min = 4, max = 10, message = "로그인 ID는 4자 이상, 10자 이하이어야 합니다.")
