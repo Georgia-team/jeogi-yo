@@ -62,12 +62,12 @@ public class UserCommandTest {
 		assertThat(user.getCreatedAt()).isNotNull();
 		
 		// TODO: BaseEntity CreatedBy, UpdatedBy 완성 시 수정
-		assertThat(user.getCreatedBy()).isEqualTo("SYSTEM");
+		assertThat(user.getCreatedBy()).isEqualTo("user");
 		
 		assertThat(user.getUpdatedAt()).isNotNull();
 		
 		// TODO: BaseEntity CreatedBy, UpdatedBy 완성 시 수정
-		assertThat(user.getUpdatedBy()).isEqualTo("SYSTEM");
+		assertThat(user.getUpdatedBy()).isEqualTo("user");
 		assertThat(user.getDeletedAt()).isNull();
 		assertThat(user.getDeletedBy()).isNull();
 	}
