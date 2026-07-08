@@ -1,4 +1,4 @@
-package com.georgia.jeogiyo.user.dto;
+package com.georgia.jeogiyo.user.dto.response;
 
 import java.time.LocalDateTime;
 

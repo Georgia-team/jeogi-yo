@@ -1,6 +1,6 @@
-package com.georgia.jeogiyo.user;
+package com.georgia.jeogiyo.user.fixture;
 
-import com.georgia.jeogiyo.user.dto.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 
 public class UserFix {
 	public static UserSignupRequest getUserCreateRequest() {

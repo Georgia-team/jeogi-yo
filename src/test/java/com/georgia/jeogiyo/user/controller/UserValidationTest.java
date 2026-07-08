@@ -1,4 +1,4 @@
-package com.georgia.jeogiyo.user;
+package com.georgia.jeogiyo.user.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.georgia.jeogiyo.user.dto.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
