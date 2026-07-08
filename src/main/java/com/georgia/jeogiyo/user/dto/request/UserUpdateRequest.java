@@ -1,5 +1,9 @@
 package com.georgia.jeogiyo.user.dto.request;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
+
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,4 +30,16 @@ public class UserUpdateRequest {
 			message = "비밀번호는 영문 대/소문자, 숫자, 특수문자를 모두 포함해야 합니다."
 	)
 	private String password;
+	
+	public List<String> getUpdateFields() {
+		return Stream.of(
+						this.nickname != null ? "nickname" : null,
+						this.phone != null ? "phone" : null,
+						this.email != null ? "email" : null,
+						this.password != null ? "password" : null
+				)
+				.filter(Objects::nonNull)
+				.toList();
+	}
+	
 }

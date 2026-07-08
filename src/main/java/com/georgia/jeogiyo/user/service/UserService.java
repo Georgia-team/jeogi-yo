@@ -1,11 +1,14 @@
 package com.georgia.jeogiyo.user.service;
 
+import java.util.List;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
+import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
@@ -22,6 +25,8 @@ public class UserService {
 	private final UserFinder userFinder;
 	
 	private final PasswordEncoder passwordEncoder;
+	
+	private final UserInfoUpdateService userInfoUpdateService;
 	
 	@Transactional(rollbackFor = Exception.class)
 	public UserSignupResponse signup(UserSignupRequest signupUser) {
@@ -46,8 +51,24 @@ public class UserService {
 	}
 	
 	@Transactional(rollbackFor = Exception.class)
-	public void update(UserUpdateRequest updateUser) {
+	public UserInfoResponse update(String userId, UserUpdateRequest updateUser) {
+		User user = userFinder.getUserById(userId);
 		
+		List<String> updateFields = updateUser.getUpdateFields();
+		
+		updateFields.stream().forEach(field -> {
+			switch (field) {
+				case "nickname" -> userInfoUpdateService.changeNickname(user, updateUser.getNickname());
+				case "phone" -> userInfoUpdateService.changePhone(user, updateUser.getPhone());
+				case "email" -> userInfoUpdateService.changeEmail(user, updateUser.getEmail());
+				case "password" -> userInfoUpdateService.changePassword(user, updateUser.getPassword(), passwordEncoder);
+				
+				// TODO: 업데이트를 진행할 수 없는 정보입니다.
+				default -> throw new UserDomainException();
+			}
+		});
+		
+		return UserInfoResponse.of(user);
 	}
 	
 }
