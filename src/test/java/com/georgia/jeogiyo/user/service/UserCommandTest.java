@@ -16,14 +16,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 
 @SpringBootTest
-@Import(UserServiceTest.TestConfig.class)
-public class UserServiceTest {
+@Import(UserCommandTest.TestConfig.class)
+public class UserCommandTest {
 
 	@Autowired
 	private UserService userCommandService;
@@ -32,6 +33,8 @@ public class UserServiceTest {
 	private UserFinder userFinder;
 	
 	private UserSignupRequest userSignup = UserFix.getUserCreateRequest();
+	
+	private UserUpdateRequest userUpdate = UserFix.getUserUpdateRequest();
 	
 	@TestConfiguration
 	static class TestConfig {
