@@ -37,7 +37,7 @@ public class UserCommandTest {
 	@Autowired
 	private EntityManager em;
 	
-	private UserSignupRequest userSignupRequest = UserFix.getUserCreateRequest();
+	private UserSignupRequest userSignupRequest = UserFix.getUserSignupRequest();
 	
 	@Test
 	@DisplayName("service: 유저 생성 테스트")

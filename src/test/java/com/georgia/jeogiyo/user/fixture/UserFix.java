@@ -4,7 +4,7 @@ import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 
 public class UserFix {
-	public static UserSignupRequest getUserCreateRequest() {
+	public static UserSignupRequest getUserSignupRequest() {
 		return new UserSignupRequest(
 				"test1234",
 				"password1234A@",

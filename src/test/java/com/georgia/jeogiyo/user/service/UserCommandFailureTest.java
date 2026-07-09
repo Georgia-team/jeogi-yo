@@ -41,7 +41,7 @@ public class UserCommandFailureTest {
 	@Autowired
 	private EntityManager em;
 	
-	private UserSignupRequest userSignupRequest = UserFix.getUserCreateRequest();
+	private UserSignupRequest userSignupRequest = UserFix.getUserSignupRequest();
 	
 	private User user;
 	
