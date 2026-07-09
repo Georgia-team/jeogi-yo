@@ -5,23 +5,21 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
-
 /**
- * I 응답 이력 상세 조회 응답
+ * AI 상품 설명 생성 응답
  * */
 @Getter
 @Builder
 @AllArgsConstructor
-public class AiHistoryResponse {
+public class AiDescriptionResponse {
 
     private UUID aiHistoryId;
 
-    private UUID productId;
-
     private UUID userId;
+
+    private UUID productId;
 
     private String requestText;
 
@@ -32,6 +30,4 @@ public class AiHistoryResponse {
     private AiStatus aiStatus;
 
     private String errorMessage;
-
-    private LocalDateTime createdAt;
 }

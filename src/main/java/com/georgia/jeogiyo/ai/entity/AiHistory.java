@@ -26,11 +26,11 @@ public class AiHistory extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // (현재 적용)상품 설명 생성 요청인 경우 연결(nullable = false)
+    // 상품 등록 중 AI가 실패하면 아직 Product가 저장되기 전일 수 있으니 product가 null일 수 있어야 합니다.
     // (확장 적용)일반 AI 질의는 product_id 없이도 저장가능하도록 설계(nullable = true)
     // N(AiHistory) : 1(Product)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id")
     private Product product;
 
     @Column(name = "request_text", nullable = false, columnDefinition = "TEXT")

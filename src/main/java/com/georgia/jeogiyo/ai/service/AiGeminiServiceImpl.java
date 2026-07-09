@@ -1,0 +1,86 @@
+package com.georgia.jeogiyo.ai.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class AiGeminiServiceImpl implements AiGeminiService {
+
+    private static final String MODEL_NAME = "gemini-2.5-flash-lite";
+
+    private static final String GEMINI_API_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL_NAME + ":generateContent";
+
+    private final RestClient.Builder restClientBuilder;
+
+    @Value("${gemini.api.key}")
+    private String apiKey;
+
+    @Override
+    public String generateDescription(String requestText) {
+        RestClient restClient = restClientBuilder.build();
+
+        GeminiRequest request = new GeminiRequest(
+                List.of(new Content(
+                        List.of(new Part(requestText))
+                ))
+        );
+
+        GeminiResponse response = restClient.post()
+                .uri(GEMINI_API_URL + "?key={key}", apiKey)
+                .body(request)
+                .retrieve()
+                .body(GeminiResponse.class);
+
+        String text = extractText(response);
+
+        if (text == null || text.isBlank()) {
+            throw new IllegalStateException("Gemini 응답이 비어 있습니다.");
+        }
+
+        return text;
+    }
+
+    private String extractText(GeminiResponse response) {
+        if (response == null
+                || response.candidates() == null
+                || response.candidates().isEmpty()
+                || response.candidates().get(0).content() == null
+                || response.candidates().get(0).content().parts() == null
+                || response.candidates().get(0).content().parts().isEmpty()) {
+            return null;
+        }
+
+        return response.candidates().get(0).content().parts().get(0).text();
+    }
+
+    private record GeminiRequest(
+            List<Content> contents
+    ) {
+    }
+
+    private record Content(
+            List<Part> parts
+    ) {
+    }
+
+    private record Part(
+            String text
+    ) {
+    }
+
+    private record GeminiResponse(
+            List<Candidate> candidates
+    ) {
+    }
+
+    private record Candidate(
+            Content content
+    ) {
+    }
+}
