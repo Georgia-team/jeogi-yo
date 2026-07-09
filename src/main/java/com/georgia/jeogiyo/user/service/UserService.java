@@ -52,8 +52,8 @@ public class UserService {
 	}
 	
 	@Transactional(rollbackFor = Exception.class)
-	public UserInfoResponse update(UUID userId, UserUpdateRequest updateUser) {
-		User user = userFinder.getUserById(userId);
+	public UserInfoResponse update(String loginId, UserUpdateRequest updateUser) {
+		User user = userFinder.getUserByLoginId(loginId);
 		
 		List<String> updateFields = updateUser.getUpdateFields();
 		

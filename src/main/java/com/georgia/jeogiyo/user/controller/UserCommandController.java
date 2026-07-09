@@ -1,7 +1,5 @@
 package com.georgia.jeogiyo.user.controller;
 
-import java.util.UUID;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,9 +26,9 @@ public class UserCommandController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
-		UUID userId = UUID.fromString(userDetails.getUsername());
+		String loginId = userDetails.getUsername();
 		
-		UserInfoResponse response = userCommandService.update(userId, userUpdateRequest);
+		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
 		// TODO: 공통 응답 객체 추가시 수정
 		return ResponseEntity.ok(response);

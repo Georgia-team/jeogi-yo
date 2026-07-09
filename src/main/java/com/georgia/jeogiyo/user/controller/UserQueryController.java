@@ -28,7 +28,7 @@ public class UserQueryController {
 	public ResponseEntity<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		
-		User user = userFinderService.getUserById(UUID.fromString(userDetails.getUsername()));
+		User user = userFinderService.getUserByLoginId(userDetails.getUsername());
 		
 		UserInfoResponse response = UserInfoResponse.of(user);
 		

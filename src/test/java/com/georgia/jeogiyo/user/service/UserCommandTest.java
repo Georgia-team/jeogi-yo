@@ -88,7 +88,7 @@ public class UserCommandTest {
 				"Test123456789@"
 		);
 		
-		UserInfoResponse response = userCommandService.update(given.getUserId(), userUpdateRequest);
+		UserInfoResponse response = userCommandService.update(given.getLoginId(), userUpdateRequest);
 		
 		assertThat(response.getNickname()).isEqualTo(userUpdateRequest.getNickname());
 		assertThat(response.getPhone()).isEqualTo(userUpdateRequest.getPhone());
