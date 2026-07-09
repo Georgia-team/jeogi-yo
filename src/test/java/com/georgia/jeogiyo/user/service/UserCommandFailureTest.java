@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
 import com.georgia.jeogiyo.user.exception.UserErrorCode;
@@ -99,6 +100,43 @@ public class UserCommandFailureTest {
 		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname))
 		.isInstanceOf(UserDomainException.class)
 		.hasMessage(UserErrorCode.DUPLICATION_LOGIN_ID.getMessage());
+	}
+	
+	@Test
+	@DisplayName("service-fail: 회원 수정 테스트 실패 케이스: 중복 닉네임")
+	void failUpdateTest_Nickname() {
+		UserUpdateRequest failUpdateRequestNickname = new UserUpdateRequest(
+				userSignupRequest.getNickname(),
+				null, null, null
+		);
+		
+		assertThatThrownBy(() -> userCommandService.update(user.getLoginId(), failUpdateRequestNickname))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DUPLICATE_NICKNAME.getMessage());
+	}
+	
+	@Test
+	@DisplayName("service-fail: 회원 수정 테스트 실패 케이스: 중복 이메일")
+	void failUpdateTest_Email() {
+		UserSignupRequest userSignupRequestGiven = new UserSignupRequest(
+				"test0000",
+				"password1234A@",
+				"springboot",
+				"02-000-0000",
+				"failtest@email.com"
+		);
+		
+		userCommandService.signup(userSignupRequestGiven);
+		
+		User given = userFinder.getUserByLoginId(userSignupRequestGiven.getLoginId());
+		
+		UserUpdateRequest failUpdateRequestEmail = new UserUpdateRequest(
+				null, null, userSignupRequest.getEmail(), null
+		);
+		
+		assertThatThrownBy(() -> userCommandService.update(given.getLoginId(), failUpdateRequestEmail))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DUPLICATE_EMAIL.getMessage());
 	}
 	
 }
