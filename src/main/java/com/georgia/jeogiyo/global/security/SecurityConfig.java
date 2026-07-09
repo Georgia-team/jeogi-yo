@@ -1,4 +1,4 @@
-package com.georgia.jeogiyo.global.secutity;
+package com.georgia.jeogiyo.global.security;
 
 import com.georgia.jeogiyo.global.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;

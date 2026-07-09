@@ -1,4 +1,4 @@
-package com.georgia.jeogiyo.global.secutity;
+package com.georgia.jeogiyo.global.security;
 
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
