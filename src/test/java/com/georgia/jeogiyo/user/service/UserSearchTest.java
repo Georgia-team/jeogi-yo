@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.user.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -10,7 +12,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
@@ -33,6 +37,9 @@ public class UserSearchTest {
 	
 	@Autowired
 	private EntityManager em;
+	
+	@Autowired
+	private UserFinderService userFinderService;
 	
 	private List<UserSignupRequest> testUserListNameTest = List.of(
 			new UserSignupRequest("test01", "Password01@", "nickname01", "02-000-0000", "test01@email.com"),
@@ -84,12 +91,51 @@ public class UserSearchTest {
 		User saved = userRepository.save(user);
 		
 		masterLoginId = saved.getLoginId();
+		
+		testUserListNameTest.stream()
+		.forEach(u -> {
+			userCommandService.signup(u);
+		});
+		
+		testUserListNameMath.stream()
+		.forEach(u -> {
+			userCommandService.signup(u);
+		});
 	}
 	
 	@Test
 	@DisplayName("")
 	void nameTestSearchTest() {
+		UserSearchRequest searchRequest = new UserSearchRequest();
 		
+		searchRequest.setRole(Role.CUSTOMER);
+		searchRequest.setKeyword("test");
+		searchRequest.setPage(0);
+		searchRequest.setSize(10);
+		searchRequest.setSort("desc");
+		
+		List<UserInfoResponse> userListNameTest10 = userFinderService.getUserList(masterLoginId, searchRequest);
+		
+		assertThat(userListNameTest10).hasSize(10);
+		
+		searchRequest.setPage(1);
+		
+		List<UserInfoResponse> userListNameTest2 = userFinderService.getUserList(masterLoginId, searchRequest);
+		
+		assertThat(userListNameTest2).hasSize(2);
+		
+		searchRequest.setKeyword("math");
+		searchRequest.setPage(0);
+		
+		List<UserInfoResponse> userListNameMath10 = userFinderService.getUserList(masterLoginId, searchRequest);
+		
+		assertThat(userListNameMath10).hasSize(10);
+		
+		searchRequest.setPage(1);
+		
+		List<UserInfoResponse> userListNameMath2 = userFinderService.getUserList(masterLoginId, searchRequest);
+		
+		assertThat(userListNameMath2).hasSize(2);
 	}
 	
 }

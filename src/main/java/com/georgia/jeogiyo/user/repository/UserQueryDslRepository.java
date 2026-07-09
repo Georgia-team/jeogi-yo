@@ -24,14 +24,14 @@ public class UserQueryDslRepository {
 		QUser user = QUser.user;
 		
 		List<UserInfoResponse> search = queryFactory
-				.select(Projections.fields(UserInfoResponse.class,
-						user.userId.as("userId"),
-						user.loginId.as("loginId"),
-						user.nickname.as("nickname"),
-						user.phone.as("phone"),
-						user.email.as("email"),
-						user.role.as("role"),
-						user.createdAt.as("createdAt")
+				.select(Projections.constructor(UserInfoResponse.class,
+						user.userId,
+						user.loginId,
+						user.nickname,
+						user.phone,
+						user.email,
+						user.role,
+						user.createdAt
 				))
 				.from(user)
 				.where(
