@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
@@ -13,7 +14,7 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserInfoResponse {
 
-	private final String userId;
+	private final UUID userId;
 	
 	private final String loginId;
 	

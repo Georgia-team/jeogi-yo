@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
@@ -13,19 +14,19 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserSignupResponse {
 
-	private String userId;
+	private final UUID userId;
 	
-	private String email;
+	private final String email;
 	
-	private String loginId;
+	private final String loginId;
 	
-	private String nickname;
+	private final String nickname;
 	
-	private Role role;
+	private final Role role;
 	
-	private LocalDateTime createdAt;
+	private final LocalDateTime createdAt;
 	
-	private boolean isDeleted;
+	private final boolean isDeleted;
 	
 	public static UserSignupResponse of(User user) {
 		return new UserSignupResponse(

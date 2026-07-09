@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.user.dto.response;
 
+import java.util.UUID;
+
 import com.georgia.jeogiyo.user.entity.Role;
 
 import lombok.AccessLevel;
@@ -12,7 +14,7 @@ public class UserLoginResponse {
 
 	private final String accessToken;
 	
-	private final String userId;
+	private final UUID userId;
 	
 	private final String loginId;
 	

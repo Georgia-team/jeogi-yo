@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.entity;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -31,9 +32,9 @@ import lombok.NoArgsConstructor;
 public class User extends BaseEntity {
 
 	@Id
-	@Column(name = "user_id")
+	@Column(name = "user_id", nullable = false, updatable = false)
 	@GeneratedValue(strategy = GenerationType.UUID)
-	private String userId;
+	private UUID userId;
 	
 	@Column(name = "login_id", nullable = false, unique = true, length = 10, updatable = false)
 	private String loginId;
@@ -86,6 +87,18 @@ public class User extends BaseEntity {
 	
 	public void changeRole(Role role) {
 		this.role = Objects.requireNonNull(role);
+	}
+	
+	public boolean isMaster() {
+		if(this.role == Role.MASTER) return true;
+		
+		return false;
+	}
+	
+	public boolean isOwner() {
+		if(this.role == Role.OWNER) return true;
+		
+		return false;
 	}
 	
 }

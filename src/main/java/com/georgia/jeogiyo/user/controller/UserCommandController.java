@@ -26,9 +26,9 @@ public class UserCommandController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
-		String userId = userDetails.getUsername();
+		String loginId = userDetails.getUsername();
 		
-		UserInfoResponse response = userCommandService.update(userId, userUpdateRequest);
+		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
 		// TODO: 공통 응답 객체 추가시 수정
 		return ResponseEntity.ok(response);
