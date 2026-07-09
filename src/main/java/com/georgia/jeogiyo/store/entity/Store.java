@@ -39,7 +39,7 @@ public class Store extends BaseEntity {
     /*
        TODO 주소 체계 - 현재 적용 :
         - p_store.address 유지
-        - 가게 등록/수정 시 address가 광화문 근처인지 Service에서 검증
+        - 가게 등록/수정 + 주문시 address가 광화문 근처인지 Service에서 검증예상
 
        주소 체계 - 추후 확장(IDEA):
         - p_region 테이블 추가, region_id FK 연결
@@ -55,16 +55,40 @@ public class Store extends BaseEntity {
     @Column(name = "store_status", nullable = false)
     private StoreStatus storeStatus  = StoreStatus.CLOSED;
 
-    // 가게 정보 수정
-    public void update(Category category, String storeName, String address, String phone) {
+    public Store(User owner, Category category, String storeName, String address, String phone) {
+        this.owner = owner;
         this.category = category;
         this.storeName = storeName;
         this.address = address;
         this.phone = phone;
+        this.storeStatus = StoreStatus.CLOSED;
+    }
+
+    // 가게 정보 수정
+    public void update(Category category, String storeName, String address, String phone) {
+        if (category != null) {
+            this.category = category;
+        }
+
+        if (storeName != null) {
+            this.storeName = storeName;
+        }
+
+        if (address != null) {
+            this.address = address;
+        }
+
+        if (phone != null) {
+            this.phone = phone;
+        }
     }
 
     // 가게 상태 변경
     public void changeStatus(StoreStatus storeStatus) {
+        if (this.storeStatus == StoreStatus.OUT_OF_BUSINESS) {
+            throw new IllegalArgumentException("폐업 상태의 가게는 상태를 변경할 수 없습니다.");
+        }
+
         this.storeStatus = storeStatus;
     }
 }
