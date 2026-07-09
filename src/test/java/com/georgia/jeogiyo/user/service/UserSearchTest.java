@@ -56,8 +56,6 @@ public class UserSearchTest {
 			new UserSignupRequest("test12", "Password01@", "nickname12", "02-000-0000", "test12@email.com")
 	);
 	
-	private int testUserListSizeNameTest = testUserListNameTest.size();
-	
 	private List<UserSignupRequest> testUserListNameMath = List.of(
 			new UserSignupRequest("math01", "Password01@", "math0001", "02-000-0000", "math01@email.com"),
 			new UserSignupRequest("math02", "Password01@", "math0002", "02-000-0000", "math02@email.com"),
@@ -70,10 +68,9 @@ public class UserSearchTest {
 			new UserSignupRequest("math09", "Password01@", "math0009", "02-000-0000", "math09@email.com"),
 			new UserSignupRequest("math10", "Password01@", "math0010", "02-000-0000", "math10@email.com"),
 			new UserSignupRequest("math11", "Password01@", "math0011", "02-000-0000", "math11@email.com"),
-			new UserSignupRequest("math12", "Password01@", "math0012", "02-000-0000", "math12@email.com")
+			new UserSignupRequest("math12", "Password01@", "math0012", "02-000-0000", "math12@email.com"),
+			new UserSignupRequest("math13", "Password01@", "math0013", "02-000-0000", "math13@email.com")
 	);
-	
-	private int testUserListSizeNameMath = testUserListNameMath.size();
 	
 	private String masterLoginId;
 	
@@ -101,12 +98,22 @@ public class UserSearchTest {
 		.forEach(u -> {
 			userCommandService.signup(u);
 		});
+		
+		em.flush();
+		em.clear();
 	}
 	
 	@Test
-	@DisplayName("")
+	@DisplayName("service-search: 회원 목록 검색 테스트")
 	void nameTestSearchTest() {
 		UserSearchRequest searchRequest = new UserSearchRequest();
+		
+		int page0NameTestUserCount = 10;
+		int page1NameTestUserCount = 2;
+		int page0NameMathUserCount = 10;
+		int page1NameMathUserCount = 3;
+		int ownerUserCount = 0;
+		int masterUserCount = 1;
 		
 		searchRequest.setRole(Role.CUSTOMER);
 		searchRequest.setKeyword("test");
@@ -116,26 +123,40 @@ public class UserSearchTest {
 		
 		List<UserInfoResponse> userListNameTest10 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
-		assertThat(userListNameTest10).hasSize(10);
+		assertThat(userListNameTest10).hasSize(page0NameTestUserCount);
 		
 		searchRequest.setPage(1);
 		
 		List<UserInfoResponse> userListNameTest2 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
-		assertThat(userListNameTest2).hasSize(2);
+		assertThat(userListNameTest2).hasSize(page1NameTestUserCount);
 		
 		searchRequest.setKeyword("math");
 		searchRequest.setPage(0);
 		
 		List<UserInfoResponse> userListNameMath10 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
-		assertThat(userListNameMath10).hasSize(10);
+		assertThat(userListNameMath10).hasSize(page0NameMathUserCount);
 		
 		searchRequest.setPage(1);
 		
 		List<UserInfoResponse> userListNameMath2 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
-		assertThat(userListNameMath2).hasSize(2);
+		assertThat(userListNameMath2).hasSize(page1NameMathUserCount);
+		
+		searchRequest.setRole(Role.OWNER);
+		
+		List<UserInfoResponse> ownerUserList0 = userFinderService.getUserList(masterLoginId, searchRequest);
+		
+		assertThat(ownerUserList0).hasSize(ownerUserCount);
+		
+		searchRequest.setRole(Role.MASTER);
+		searchRequest.setKeyword(masterLoginId);
+		searchRequest.setPage(0);
+		
+		List<UserInfoResponse> masterUserList1 = userFinderService.getUserList(masterLoginId, searchRequest);
+		
+		assertThat(masterUserList1).hasSize(masterUserCount);
 	}
 	
 }
