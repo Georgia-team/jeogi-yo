@@ -8,7 +8,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.georgia.jeogiyo.global.entity.BaseEntity;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 
-import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -25,10 +24,6 @@ import lombok.NoArgsConstructor;
 @Table(name = "p_user")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AttributeOverride(
-		name = "id",
-		column = @Column(name = "user_id")
-)
 public class User extends BaseEntity {
 
 	@Id

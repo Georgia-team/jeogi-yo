@@ -7,8 +7,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
+import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.repository.UserQueryDslRepository;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 public class UserFinderService implements UserFinder {
 	
 	private final UserRepository userRepository;
+	
+	private final UserQueryDslRepository userDsl;
 	
 	@Override
 	public User getUserById(UUID userId) {
@@ -66,13 +70,12 @@ public class UserFinderService implements UserFinder {
 		return ownerUser;
 	}
 	
-	public List<User> getUserList(String loginId, UserSearchRequest userSearch) {
+	public List<UserInfoResponse> getUserList(String masterLoginId, UserSearchRequest userSearch) {
 		// 1. DB에서 마스터 권한 검증
-		User user = getMasterUserByLoginId(loginId);
+		getMasterUserByLoginId(masterLoginId);
 		
-		// 2. 페이지네이션
-		
-		return null;
+		// 2. QueryDSL
+		return userDsl.findByRoleAndKeyword(userSearch);
 	}
 	
 }
