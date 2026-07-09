@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
@@ -65,13 +66,39 @@ public class UserCommandFailureTest {
 		
 		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestEmail))
 		.isInstanceOf(UserDomainException.class)
-		.hasMessage("이미 사용중인 이메일입니다.");
+		.hasMessage(UserErrorCode.DUPLICATE_EMAIL.getMessage());
 	}
 	
 	@Test
 	@DisplayName("service-fail: 회원가입 테스트 실패 케이스: 중복 닉네임")
 	void failSignupTest_Nickname() {
+		UserSignupRequest failSignupRequestNickname = new UserSignupRequest(
+				"failtest01",
+				"Password01@",
+				userSignupRequest.getNickname(),
+				userSignupRequest.getPhone(),
+				"failtest@email.com"
+		);
 		
+		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DUPLICATE_NICKNAME.getMessage());
+	}
+	
+	@Test
+	@DisplayName("service-fail: 회원가입 테스트 실패 케이스: 중복 아이디")
+	void failSignupTest_LoginId() {
+		UserSignupRequest failSignupRequestNickname = new UserSignupRequest(
+				userSignupRequest.getLoginId(),
+				"Password01@",
+				"failnickname",
+				userSignupRequest.getPhone(),
+				"failtest@email.com"
+		);
+		
+		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DUPLICATION_LOGIN_ID.getMessage());
 	}
 	
 }
