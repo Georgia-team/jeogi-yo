@@ -14,6 +14,7 @@ import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -34,17 +35,17 @@ public class UserService {
 	public UserSignupResponse signup(UserSignupRequest signupUser) {
 		if(userRepository.existsByEmail(signupUser.getEmail())) {
 			// TODO: 이미 사용중인 이메일입니다. 409
-			throw new UserDomainException();
+			throw new UserDomainException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 		
 		if(userRepository.existsByNickname(signupUser.getNickname())) {
 			// TODO: 이미 사용중인 닉네임입니다. 409
-			throw new UserDomainException();
+			throw new UserDomainException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		
 		if(userRepository.existsByLoginId(signupUser.getLoginId())) {
 			// TODO: 이미 사용중인 아이디입니다. 409
-			throw new UserDomainException();			
+			throw new UserDomainException(UserErrorCode.DUPLICATION_LOGIN_ID);
 		}
 		
 		User saved = userRepository.save(User.create(signupUser, passwordEncoder));
@@ -66,7 +67,7 @@ public class UserService {
 				case "password" -> userInfoUpdateService.changePassword(user, updateUser.getPassword(), passwordEncoder);
 				
 				// TODO: 업데이트를 진행할 수 없는 정보입니다.
-				default -> throw new UserDomainException();
+				default -> throw new UserDomainException(UserErrorCode.UPDATE_FAILURE);
 			}
 		});
 		
@@ -84,7 +85,7 @@ public class UserService {
 		} else {
 			// 3. 실패 시
 			// TODO: 회원탈퇴를 진행할 수 없습니다.
-			throw new UserDomainException();
+			throw new UserDomainException(UserErrorCode.DELETE_FAILURE);
 		}
 		
 		User deleted = userRepository.save(user);

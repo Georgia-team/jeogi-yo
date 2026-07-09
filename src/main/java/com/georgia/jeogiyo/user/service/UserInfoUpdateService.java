@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class UserInfoUpdateService {
 	void changeNickname(User user, String newNickname) {
 		if(userRepository.existsByNickname(newNickname)) {
 			// TODO: 이미 사용중인 닉네임입니다.
-			throw new UserDomainException();
+			throw new UserDomainException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		
 		user.changeNickname(newNickname);
@@ -33,7 +34,7 @@ public class UserInfoUpdateService {
 	void changeEmail(User user, String newEmail) {
 		if(userRepository.existsByEmail(newEmail)) {
 			// TODO: 이미 사용중인 이메일입니다.
-			throw new UserDomainException();
+			throw new UserDomainException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 		
 		user.changeEmail(newEmail);

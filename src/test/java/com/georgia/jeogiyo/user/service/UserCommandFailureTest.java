@@ -1,0 +1,77 @@
+package com.georgia.jeogiyo.user.service;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.entity.User;
+import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.fixture.UserFix;
+import com.georgia.jeogiyo.user.repository.UserRepository;
+
+import jakarta.persistence.EntityManager;
+
+@SpringBootTest
+@Transactional
+public class UserCommandFailureTest {
+
+	@Autowired
+	private UserRepository userRepository;
+	
+	@Autowired
+	private UserService userCommandService;
+	
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+	
+	@Autowired
+	private UserFinder userFinder;
+	
+	@Autowired
+	private EntityManager em;
+	
+	private UserSignupRequest userSignupRequest = UserFix.getUserCreateRequest();
+	
+	private User user;
+	
+	private UUID userId;
+	
+	@BeforeEach
+	void setUp() {
+		user = userRepository.save(User.create(userSignupRequest, passwordEncoder));
+		
+		userId = user.getUserId();
+	}
+	
+	@Test
+	@DisplayName("service-fail: 회원가입 테스트 실패 케이스: 중복 이메일")
+	void failSignupTest_Email() {
+		UserSignupRequest failSignupRequestEmail = new UserSignupRequest(
+				"failtest01",
+				"Password01@",
+				"failnickname",
+				userSignupRequest.getPhone(),
+				userSignupRequest.getEmail()
+		);
+		
+		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestEmail))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage("이미 사용중인 이메일입니다.");
+	}
+	
+	@Test
+	@DisplayName("service-fail: 회원가입 테스트 실패 케이스: 중복 닉네임")
+	void failSignupTest_Nickname() {
+		
+	}
+	
+}
