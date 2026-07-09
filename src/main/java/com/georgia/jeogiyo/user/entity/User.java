@@ -8,7 +8,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.georgia.jeogiyo.global.entity.BaseEntity;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

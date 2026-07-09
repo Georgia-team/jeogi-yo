@@ -80,11 +80,16 @@ public class UserService {
 		// 1. 요청에 담긴 email, password 일치 검증
 		if(user.verifyCredentialsForDelete(deleteUser, passwordEncoder)) {
 			// 2. 성공 시 Delete
+			user.softDelete(user.getLoginId());
 		} else {
 			// 3. 실패 시
+			// TODO: 회원탈퇴를 진행할 수 없습니다.
+			throw new UserDomainException();
 		}
 		
-		return UserDeleteResponse.of(user);
+		User deleted = userRepository.save(user);
+		
+		return UserDeleteResponse.of(deleted);
 	}
 	
 }
