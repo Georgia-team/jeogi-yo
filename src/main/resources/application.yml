@@ -29,3 +29,7 @@ server:
 logging:
   pattern:
     console: '%clr(%-5level){green} %clr(%logger{36}.%M\(\)){cyan}: %msg%n'
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
