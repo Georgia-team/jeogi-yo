@@ -95,4 +95,10 @@ public class User extends BaseEntity {
 		return false;
 	}
 	
+	public boolean isOwner() {
+		if(this.role == Role.OWNER) return true;
+		
+		return false;
+	}
+	
 }

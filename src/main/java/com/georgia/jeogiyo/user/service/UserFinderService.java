@@ -48,7 +48,22 @@ public class UserFinderService implements UserFinder {
 			throw new UserDomainException();
 		}
 		
-		return null;
+		return masterUser;
+	}
+	
+	@Override
+	public User getOwnerUserByLoginId(String loginId) {
+		// TODO: 공통 예외 클래스 완료 시 수정
+		User ownerUser = userRepository.findByLoginId(loginId)
+				// TODO: 존재하지 않는 사용자입니다.
+				.orElseThrow();
+		
+		if(!ownerUser.isOwner()) {
+			// TODO: 해당 요청에 대한 권한이 없습니다.
+			throw new UserDomainException();			
+		}
+		
+		return ownerUser;
 	}
 	
 	public List<User> getUserList(String loginId, UserSearchRequest userSearch) {
