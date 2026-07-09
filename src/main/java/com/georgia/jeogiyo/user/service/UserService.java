@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ public class UserService {
 	}
 	
 	@Transactional(rollbackFor = Exception.class)
-	public UserInfoResponse update(String userId, UserUpdateRequest updateUser) {
+	public UserInfoResponse update(UUID userId, UserUpdateRequest updateUser) {
 		User user = userFinder.getUserById(userId);
 		
 		List<String> updateFields = updateUser.getUpdateFields();

@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.user.controller;
 
+import java.util.UUID;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,7 +28,7 @@ public class UserCommandController {
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
-		String userId = userDetails.getUsername();
+		UUID userId = UUID.fromString(userDetails.getUsername());
 		
 		UserInfoResponse response = userCommandService.update(userId, userUpdateRequest);
 		

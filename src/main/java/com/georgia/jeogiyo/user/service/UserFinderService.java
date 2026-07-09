@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +19,7 @@ public class UserFinderService implements UserFinder {
 	private final UserRepository userRepository;
 	
 	@Override
-	public User getUserById(String userId) {
+	public User getUserById(UUID userId) {
 		// TODO: 공통 예외 클래스 완료 시 수정
 		return userRepository.findById(userId)
 				.orElseThrow();

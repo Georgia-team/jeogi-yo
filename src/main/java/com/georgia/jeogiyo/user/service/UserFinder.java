@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.user.service;
 
+import java.util.UUID;
+
 import com.georgia.jeogiyo.user.entity.User;
 
 /**
@@ -14,7 +16,7 @@ public interface UserFinder {
 	 * @param userId
 	 * @return User Entity
 	 */
-	User getUserById(String userId);
+	User getUserById(UUID userId);
 	
 	/**
 	 * 구현체에서 존재하지 않는 loginId 일 시 런타임 예외 발생
