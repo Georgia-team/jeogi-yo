@@ -46,7 +46,9 @@ public class UserQueryController {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		String masterLoginId = userDetails.getUsername();
 		
-		return null;
+		List<UserInfoResponse> response = userFinderService.getUserList(masterLoginId, userSearchRequest);
+		
+		return ResponseEntity.ok(response);
 	}
 	
 }
