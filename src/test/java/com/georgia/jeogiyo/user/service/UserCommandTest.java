@@ -38,12 +38,12 @@ public class UserCommandTest {
 	@Autowired
 	private EntityManager em;
 	
-	private UserSignupRequest userSignup = UserFix.getUserCreateRequest();
+	private UserSignupRequest userSignupRequest = UserFix.getUserCreateRequest();
 	
 	@Test
 	@DisplayName("service: 유저 생성 테스트")
 	void userSignupTest() {
-		UserSignupResponse response = userCommandService.signup(userSignup);
+		UserSignupResponse response = userCommandService.signup(userSignupRequest);
 		
 		assertThat(response.getUserId()).isNotNull();
 //		assertThatNoException().isThrownBy(() -> {
@@ -52,8 +52,8 @@ public class UserCommandTest {
 		
 		
 		assertThat(response.getCreatedAt()).isNotNull();
-		assertThat(response.getLoginId()).isEqualTo(userSignup.getLoginId());
-		assertThat(response.getNickname()).isEqualTo(userSignup.getNickname());
+		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
+		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
 		assertThat(response.getRole()).isEqualTo(Role.CUSTOMER);
 		assertThat(response.isDeleted()).isFalse();
 		
@@ -74,23 +74,96 @@ public class UserCommandTest {
 	}
 	
 	@Test
-	@DisplayName("service: 유저 수정 테스트")
-	void userUpdateTest() {
-		UserSignupResponse given = userCommandService.signup(userSignup);
+	@DisplayName("service: 유저 이메일 수정 테스트")
+	void userEmailUpdateTest() {
+		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		
+		User before = userFinder.getUserById(given.getUserId());
 		
 		em.flush();
 		em.clear();
 		
 		UserUpdateRequest userUpdateRequest = new UserUpdateRequest(
-				"nana",
-				"02-123-1234",
 				null,
-				"Test123456789@"
+				null,
+				"test1234@email.com",
+				null
 		);
 		
 		UserInfoResponse response = userCommandService.update(given.getLoginId(), userUpdateRequest);
 		
+		// 응답에 포함된 Email과 요청시 보낸 Email과 똑같은지 확인
+		assertThat(response.getEmail()).isEqualTo(userUpdateRequest.getEmail());
+		
+		em.flush();
+		em.clear();
+		
+		User updated = userFinder.getUserById(given.getUserId());
+		
+		// 요청에 null 처리 된 부분이 변경되지 않았는지 확인
+		assertThat(before.getNickname()).isEqualTo(updated.getNickname());
+		assertThat(before.getPhone()).isEqualTo(updated.getPhone());
+		assertThat(before.getPassword()).isEqualTo(updated.getPassword());
+		
+		// 요청에 포함된 Email이 변경 이전 Email과 다른지 확인
+		assertThat(before.getEmail()).isNotEqualTo(updated.getEmail());
+	}
+	
+	@Test
+	@DisplayName("service: 유저 닉네임 수정 테스트")
+	void userNicknameUpdateTest() {
+		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		
+		User before = userFinder.getUserById(given.getUserId());
+		
+		em.flush();
+		em.clear();
+		
+		UserUpdateRequest userUpdateRequest = new UserUpdateRequest(
+				"testnickname",
+				null,
+				null,
+				null
+		);
+		
+		UserInfoResponse response = userCommandService.update(given.getLoginId(), userUpdateRequest);
+		
+		// 응답에 포함된 Nickname과 요청시 보낸 Nickname과 똑같은지 확인
 		assertThat(response.getNickname()).isEqualTo(userUpdateRequest.getNickname());
+		
+		em.flush();
+		em.clear();
+		
+		User updated = userFinder.getUserById(given.getUserId());
+		
+		// 요청에 null 처리 된 부분이 변경되지 않았는지 확인
+		assertThat(before.getEmail()).isEqualTo(updated.getEmail());
+		assertThat(before.getPhone()).isEqualTo(updated.getPhone());
+		assertThat(before.getPassword()).isEqualTo(updated.getPassword());
+		
+		// 요청에 포함된 Nickname이 변경 이전 Nickname과 다른지 확인
+		assertThat(before.getNickname()).isNotEqualTo(updated.getNickname());
+	}
+	
+	@Test
+	@DisplayName("service: 유저 전화번호 수정 테스트")
+	void userPhoneUpdateTest() {
+		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		
+		User before = userFinder.getUserById(given.getUserId());
+		
+		em.flush();
+		em.clear();
+		
+		UserUpdateRequest userUpdateRequest = new UserUpdateRequest(
+				null,
+				"02-123-1234",
+				null,
+				null
+		);
+		
+		UserInfoResponse response = userCommandService.update(given.getLoginId(), userUpdateRequest);
+		
 		assertThat(response.getPhone()).isEqualTo(userUpdateRequest.getPhone());
 		
 		em.flush();
@@ -98,8 +171,45 @@ public class UserCommandTest {
 		
 		User updated = userFinder.getUserById(given.getUserId());
 		
-		assertThat(updated.getEmail()).isEqualTo(given.getEmail());
-		assertThat(passwordEncoder.matches(userUpdateRequest.getPassword(), updated.getPassword()));
+		// 요청에 null 처리 된 부분이 변경되지 않았는지 확인
+		assertThat(before.getEmail()).isEqualTo(updated.getEmail());
+		assertThat(before.getPassword()).isEqualTo(updated.getPassword());
+		assertThat(before.getNickname()).isEqualTo(updated.getNickname());
+		
+		// 요청에 포함된 Phone이 변경 이전 Phone과 다른지 확인
+		assertThat(before.getPhone()).isNotEqualTo(updated.getPhone());
+	}
+	
+	@Test
+	@DisplayName("service: 유저 패스워드 수정 테스트")
+	void userPasswordUpdateTest() {
+		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		
+		User before = userFinder.getUserById(given.getUserId());
+		
+		em.flush();
+		em.clear();
+		
+		UserUpdateRequest userUpdateRequest = new UserUpdateRequest(
+				null,
+				null,
+				null,
+				"Test123456789@"
+		);
+		
+		userCommandService.update(given.getLoginId(), userUpdateRequest);
+		
+		em.flush();
+		em.clear();
+		
+		User updated = userFinder.getUserById(given.getUserId());
+		
+		assertThat(before.getEmail()).isEqualTo(updated.getEmail());
+		assertThat(before.getNickname()).isEqualTo(updated.getNickname());
+		assertThat(before.getPhone()).isEqualTo(updated.getPhone());
+		
+		assertThat(before.getPassword()).isNotEqualTo(updated.getPassword());
+		assertThat(passwordEncoder.matches(userUpdateRequest.getPassword(), updated.getPassword())).isTrue();
 	}
 	
 }
