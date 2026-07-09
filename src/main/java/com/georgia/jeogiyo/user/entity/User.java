@@ -89,4 +89,10 @@ public class User extends BaseEntity {
 		this.role = Objects.requireNonNull(role);
 	}
 	
+	public boolean isMaster() {
+		if(this.role == Role.MASTER) return true;
+		
+		return false;
+	}
+	
 }
