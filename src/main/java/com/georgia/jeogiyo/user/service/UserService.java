@@ -1,14 +1,15 @@
 package com.georgia.jeogiyo.user.service;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
+import com.georgia.jeogiyo.user.dto.response.UserDeleteResponse;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.User;
@@ -70,6 +71,20 @@ public class UserService {
 		});
 		
 		return UserInfoResponse.of(user);
+	}
+	
+	@Transactional(rollbackFor = Exception.class)
+	public UserDeleteResponse delete(String loginId, UserDeleteRequest deleteUser) {
+		User user = userFinder.getUserByLoginId(loginId);
+		
+		// 1. 요청에 담긴 email, password 일치 검증
+		if(user.verifyCredentialsForDelete(deleteUser, passwordEncoder)) {
+			// 2. 성공 시 Delete
+		} else {
+			// 3. 실패 시
+		}
+		
+		return UserDeleteResponse.of(user);
 	}
 	
 }

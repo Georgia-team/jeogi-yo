@@ -6,7 +6,9 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.georgia.jeogiyo.global.entity.BaseEntity;
+import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.exception.UserDomainException;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -94,6 +96,18 @@ public class User extends BaseEntity {
 		if(this.role == Role.OWNER) return true;
 		
 		return false;
+	}
+	
+	public boolean verifyCredentialsForDelete(UserDeleteRequest deleteUser, PasswordEncoder passwordEncoder) {
+		if(!this.email.equals(deleteUser.getEmail())) {
+			return false;
+		}
+		
+		if(!passwordEncoder.matches(deleteUser.getPassword(), this.password)) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 }
