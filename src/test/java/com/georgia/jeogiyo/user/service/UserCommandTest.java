@@ -1,9 +1,6 @@
 package com.georgia.jeogiyo.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
-
-import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,8 +9,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
+import com.georgia.jeogiyo.user.dto.response.UserDeleteResponse;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
@@ -210,6 +209,34 @@ public class UserCommandTest {
 		
 		assertThat(before.getPassword()).isNotEqualTo(updated.getPassword());
 		assertThat(passwordEncoder.matches(userUpdateRequest.getPassword(), updated.getPassword())).isTrue();
+	}
+	
+	@Test
+	@DisplayName("service: 유저 탈퇴 테스트")
+	void userDeleteTest() {
+		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		
+		String email = given.getEmail();
+		String password = userSignupRequest.getPassword();
+		
+		em.flush();
+		em.clear();
+		
+		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(email, password);
+		
+		UserDeleteResponse userDeleteResponse = userCommandService.delete(given.getLoginId(), userDeleteRequest);
+		
+		assertThat(userDeleteResponse.getUserId()).isEqualTo(given.getUserId());
+		assertThat(userDeleteResponse.getDeletedAt()).isNotNull();
+		
+		em.flush();
+		em.clear();
+		
+		User updated = userFinder.getUserById(userDeleteResponse.getUserId());
+		
+		assertThat(updated.getDeletedAt()).isNotNull();
+		assertThat(updated.getDeletedBy()).isEqualTo(given.getLoginId());
+		assertThat(updated.isDeleted()).isTrue();
 	}
 	
 }
