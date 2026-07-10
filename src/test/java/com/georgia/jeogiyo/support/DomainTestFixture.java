@@ -98,7 +98,7 @@ public final class DomainTestFixture {
     }
 
     public static Category category() {
-        Category category = new Category("한식");
+        Category category = new Category(CATEGORY_ID, OWNER_LOGIN_ID);
         ReflectionTestUtils.setField(category, "categoryId", CATEGORY_ID);
         markAudited(category);
         return category;
