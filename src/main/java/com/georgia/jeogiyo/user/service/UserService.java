@@ -21,8 +21,10 @@ import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserService {
 
@@ -53,16 +55,19 @@ public class UserService {
 	public UserSignupResponse signup(UserSignupRequest signupUser) {
 		if(userRepository.existsByEmail(signupUser.getEmail())) {
 			// TODO: 이미 사용중인 이메일입니다. 409
+			log.warn("SIGNUP_FAILED: Duplicate email = {}", signupUser.getEmail());
 			throw new UserDomainException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 		
 		if(userRepository.existsByNickname(signupUser.getNickname())) {
 			// TODO: 이미 사용중인 닉네임입니다. 409
+			log.warn("SIGNUP_FAILED: Duplicate nickname = {}", signupUser.getNickname());
 			throw new UserDomainException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		
 		if(userRepository.existsByLoginId(signupUser.getLoginId())) {
 			// TODO: 이미 사용중인 아이디입니다. 409
+			log.warn("SIGNUP_FAILED: Duplicate loginId = {}", signupUser.getLoginId());
 			throw new UserDomainException(UserErrorCode.DUPLICATION_LOGIN_ID);
 		}
 		
@@ -89,6 +94,10 @@ public class UserService {
 			}
 		});
 		
+		log.info("USER_UPDATE_SUCCESS: loginId = {}, updatedFields = {}",
+				user.getLoginId(),
+				updateFields);
+		
 		return UserInfoResponse.of(user);
 	}
 	
@@ -100,9 +109,12 @@ public class UserService {
 		if(user.verifyCredentialsForDelete(deleteUser, passwordEncoder)) {
 			// 2. 성공 시 Delete
 			user.softDelete(user.getLoginId());
+			
+			log.info("USER_DELETE_SUCCESS: loginId = {}", user.getLoginId());
 		} else {
 			// 3. 실패 시
 			// TODO: 회원탈퇴를 진행할 수 없습니다.
+			log.warn("USER_DELETE_FAILED: Password mismatch loginId = {}", user.getLoginId());
 			throw new UserDomainException(UserErrorCode.DELETE_FAILURE);
 		}
 		
