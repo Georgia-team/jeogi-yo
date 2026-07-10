@@ -31,6 +31,8 @@ public class UserCommandController {
 	) {
 		String loginId = userDetails.getUsername();
 		
+		System.out.println("UPDATE_ME_LOGIN_ID: " + loginId);
+		
 		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
 		// TODO: 공통 응답 객체 추가시 수정

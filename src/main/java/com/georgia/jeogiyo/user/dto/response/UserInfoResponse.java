@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.user.dto.response;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.georgia.jeogiyo.user.entity.Role;
@@ -26,8 +25,6 @@ public class UserInfoResponse {
 	
 	private final Role role;
 	
-	private final LocalDateTime createdAt;
-	
 	public static UserInfoResponse of(User user) {
 		return new UserInfoResponse(
 				user.getUserId(),
@@ -35,8 +32,7 @@ public class UserInfoResponse {
 				user.getNickname(),
 				user.getPhone(),
 				user.getEmail(),
-				user.getRole(),
-				user.getCreatedAt()
+				user.getRole()
 		);
 	}
 }

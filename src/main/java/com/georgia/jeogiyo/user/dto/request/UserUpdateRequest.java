@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -31,6 +33,7 @@ public class UserUpdateRequest {
 	)
 	private String password;
 	
+	@JsonIgnore
 	public List<String> getUpdateFields() {
 		return Stream.of(
 						this.nickname != null ? "nickname" : null,

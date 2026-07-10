@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.user.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,12 +22,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
+import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import com.georgia.jeogiyo.user.service.UserService;
 
 import jakarta.persistence.EntityManager;
+import jakarta.servlet.http.Cookie;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -96,7 +101,6 @@ public class UserApiTest {
 		.andExpect(jsonPath("$.loginId").value(userSignupRequest.getLoginId()))
 		.andExpect(jsonPath("$.nickname").value(userSignupRequest.getNickname()))
 		.andExpect(jsonPath("$.role").value(user.getRole().name()))
-		.andExpect(jsonPath("$.createdAt").isNotEmpty())
 		.andExpect(jsonPath("$.deleted").value(false))
 		;
 	}
@@ -127,6 +131,49 @@ public class UserApiTest {
 		;
 	}
 	
+	@Test
+	@DisplayName("API: 내 정보 수정 테스트")
+	void userUpdateApiTest() throws Exception {
+		String url = "/api/v1/users/me";
+		
+		UserUpdateRequest userUpdateRequest = UserFix.getUserUpdateRequest();
+		
+		// 403 : JWT AccessToken 쿠키 없음
+		mockMvc
+		.perform(patch(url)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(userUpdateRequest))
+		)
+		.andExpect(status().isForbidden())
+		;
+		
+		UserLoginRequest userLoginRequest = new UserLoginRequest(
+				userSignupRequest.getLoginId(),
+				userSignupRequest.getPassword()
+		);
+		
+		UserLoginResponse loginResponse = userService.login(userLoginRequest);
+		
+		mockMvc
+		.perform(patch(url)
+				.contentType(MediaType.APPLICATION_JSON)
+				.cookie(new Cookie("Authorization", loginResponse.getAccessToken()))
+				.content(objectMapper.writeValueAsString(userUpdateRequest))
+		)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$.userId").value(user.getUserId().toString()))
+		.andExpect(jsonPath("$.loginId").value(user.getLoginId()))
+		.andExpect(jsonPath("$.nickname").value(user.getNickname()))
+		.andExpect(jsonPath("$.phone").value(userUpdateRequest.getPhone()))
+		.andExpect(jsonPath("$.email").value(userUpdateRequest.getEmail()))
+		.andExpect(jsonPath("$.role").value(user.getRole().toString()))
+		;
+		
+		User updatedUser = userFinder.getUserById(user.getUserId());
+		
+		assertThat(updatedUser.getUpdatedAt()).isNotNull();
+		assertThat(updatedUser.getUpdatedBy()).isEqualTo(user.getLoginId());
+	}
 	
 	
 }
