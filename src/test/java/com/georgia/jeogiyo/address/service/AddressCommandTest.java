@@ -107,7 +107,7 @@ public class AddressCommandTest {
 				true
 		);
 		
-		AddressUpdateResponse updateResponse = addressService.addressUpdate(loginId, beforeAddress.getAddressId(), updateRequest);
+		AddressUpdateResponse updateResponse = addressService.addressUpdate(loginId, beforeAddress.getAddressId().toString(), updateRequest);
 		
 		em.flush();
 		em.clear();
@@ -215,7 +215,7 @@ public class AddressCommandTest {
 		
 		AddressUpdateRequest addressUpdateReq = new AddressUpdateRequest(null, null, null, true);
 		
-		addressService.addressUpdate(loginId, address1ID, addressUpdateReq);
+		addressService.addressUpdate(loginId, address1ID.toString(), addressUpdateReq);
 		
 		em.flush();
 		em.clear();
@@ -267,7 +267,7 @@ public class AddressCommandTest {
 		em.flush();
 		em.clear();
 		
-		addressService.addressDelete(loginId, address3ID);
+		addressService.addressDelete(loginId, address3ID.toString());
 		
 		em.flush();
 		em.clear();

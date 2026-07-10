@@ -50,10 +50,10 @@ public class AddressServiceImpl implements AddressService {
 	
 	// 배송지 수정
 	@Override
-	public AddressUpdateResponse addressUpdate(String loginId, UUID addressId, AddressUpdateRequest addressUpdate) {
+	public AddressUpdateResponse addressUpdate(String loginId, String addressId, AddressUpdateRequest addressUpdate) {
 		User user = userFinder.getUserByLoginId(loginId);
 		
-		Address address = addressFinder.findByUserAndAddressId(user, addressId);
+		Address address = addressFinder.findByUserAndAddressId(user, UUID.fromString(addressId));
 		
 		if(!address.isDefault() && addressUpdate.getIsDefault()) {
 			Address defaultAddress = addressFinder.findByUserAndDefault(user)
@@ -71,10 +71,10 @@ public class AddressServiceImpl implements AddressService {
 	
 	// 배송지 삭제
 	@Override
-	public AddressDeleteResponse addressDelete(String loginId, UUID addressId) {
+	public AddressDeleteResponse addressDelete(String loginId, String addressId) {
 		User user = userFinder.getUserByLoginId(loginId);
 		
-		Address address = addressFinder.findByUserAndAddressId(user, addressId);
+		Address address = addressFinder.findByUserAndAddressId(user, UUID.fromString(addressId));
 		
 		if(address.isDefault()) {
 			Address latestAddress = addressFinder.findFirstByUserOrderByCreatedAtDesc(user)

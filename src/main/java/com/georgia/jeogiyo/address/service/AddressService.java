@@ -1,7 +1,5 @@
 package com.georgia.jeogiyo.address.service;
 
-import java.util.UUID;
-
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.dto.request.AddressUpdateRequest;
 import com.georgia.jeogiyo.address.dto.response.AddressCreateResponse;
@@ -29,7 +27,7 @@ public interface AddressService {
 	 * @param addressUpdate
 	 * @return AddressUpdateResponse DTO
 	 */
-	AddressUpdateResponse addressUpdate(String loginId, UUID addressId, AddressUpdateRequest addressUpdate);
+	AddressUpdateResponse addressUpdate(String loginId, String addressId, AddressUpdateRequest addressUpdate);
 
 	/**
 	 * 회원의 배송지를 삭제합니다.
@@ -40,6 +38,6 @@ public interface AddressService {
 	 * @param addressId
 	 * @return AddressDeleteResponse DTO
 	 */
-	AddressDeleteResponse addressDelete(String loginId, UUID addressId);
+	AddressDeleteResponse addressDelete(String loginId, String addressId);
 
 }
