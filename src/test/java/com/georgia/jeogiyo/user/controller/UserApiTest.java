@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 import com.georgia.jeogiyo.user.service.UserFinder;
@@ -90,6 +91,10 @@ public class UserApiTest {
 		.andExpect(status().isOk())
 		.andExpect(jsonPath("$.email").value(userSignupRequest.getEmail()))
 		.andExpect(jsonPath("$.loginId").value(userSignupRequest.getLoginId()))
+		.andExpect(jsonPath("$.nickname").value(userSignupRequest.getNickname()))
+		.andExpect(jsonPath("$.role").value("CUSTOMER"))
+		.andExpect(jsonPath("$.createdAt").isNotEmpty())
+		.andExpect(jsonPath("$.deleted").value(false))
 		;
 	}
 	
