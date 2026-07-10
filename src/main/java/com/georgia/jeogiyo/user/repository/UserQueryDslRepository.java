@@ -30,8 +30,7 @@ public class UserQueryDslRepository {
 						user.nickname,
 						user.phone,
 						user.email,
-						user.role,
-						user.createdAt
+						user.role
 				))
 				.from(user)
 				.where(
