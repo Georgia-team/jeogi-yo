@@ -6,12 +6,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.georgia.jeogiyo.global.jwt.JwtUtil;
 import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.service.UserService;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -20,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 public class UserAuthController {
 	
 	private final UserService userCommandService;
+	
+	private final JwtUtil jwtUtil;
 	
 	@PostMapping("/signup")
 	public ResponseEntity<UserSignupResponse> signup(@RequestBody UserSignupRequest userSignup) {
@@ -30,8 +34,13 @@ public class UserAuthController {
 	}
 	
 	@PostMapping("/login")
-	public ResponseEntity<UserLoginResponse> login(@RequestBody UserLoginRequest userLogin) {
+	public ResponseEntity<UserLoginResponse> login(
+			@RequestBody UserLoginRequest userLogin,
+			HttpServletResponse response
+	) {
 		UserLoginResponse loginResponse = userCommandService.login(userLogin);
+		
+		jwtUtil.addJwtToCookie(loginResponse.getAccessToken(), response);
 		
 		return ResponseEntity.ok(loginResponse);
 	}

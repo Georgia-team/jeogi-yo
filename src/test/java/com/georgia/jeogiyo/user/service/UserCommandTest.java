@@ -40,6 +40,12 @@ public class UserCommandTest {
 	private UserSignupRequest userSignupRequest = UserFix.getUserSignupRequest();
 	
 	@Test
+	@DisplayName("service: 유저 로그인 테스트")
+	void userLoginTest() {
+		
+	}
+	
+	@Test
 	@DisplayName("service: 유저 생성 테스트")
 	void userSignupTest() {
 		UserSignupResponse response = userCommandService.signup(userSignupRequest);
