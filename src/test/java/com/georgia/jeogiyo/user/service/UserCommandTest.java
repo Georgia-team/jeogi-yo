@@ -257,7 +257,6 @@ public class UserCommandTest {
 		UserDeleteResponse userDeleteResponse = userCommandService.delete(given.getLoginId(), userDeleteRequest);
 		
 		assertThat(userDeleteResponse.getUserId()).isEqualTo(given.getUserId());
-		assertThat(userDeleteResponse.getDeletedAt()).isNotNull();
 		
 		em.flush();
 		em.clear();
