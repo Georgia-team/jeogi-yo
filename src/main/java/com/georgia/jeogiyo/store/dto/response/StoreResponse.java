@@ -38,5 +38,9 @@ public class StoreResponse {
 
     private LocalDateTime createdAt;
 
+    private LocalDateTime updatedAt;
+
+    private String updatedBy;
+
     private Boolean isDeleted;
 }

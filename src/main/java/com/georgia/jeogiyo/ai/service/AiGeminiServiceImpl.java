@@ -1,12 +1,14 @@
 package com.georgia.jeogiyo.ai.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiGeminiServiceImpl implements AiGeminiService {
@@ -23,6 +25,9 @@ public class AiGeminiServiceImpl implements AiGeminiService {
 
     @Override
     public String generateDescription(String requestText) {
+        log.info("Gemini request started. model={}, requestLength={}",
+                MODEL_NAME, requestText == null ? 0 : requestText.length());
+
         RestClient restClient = restClientBuilder.build();
 
         GeminiRequest request = new GeminiRequest(
@@ -42,6 +47,8 @@ public class AiGeminiServiceImpl implements AiGeminiService {
         if (text == null || text.isBlank()) {
             throw new IllegalStateException("Gemini 응답이 비어 있습니다.");
         }
+
+        log.info("Gemini request succeeded. model={}, responseLength={}", MODEL_NAME, text.length());
 
         return text;
     }

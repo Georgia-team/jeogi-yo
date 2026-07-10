@@ -9,16 +9,20 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.global.jwt.JwtUtil;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
+import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.dto.response.UserDeleteResponse;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
+import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 
+import io.jsonwebtoken.Claims;
 import jakarta.persistence.EntityManager;
 
 @SpringBootTest
@@ -37,7 +41,34 @@ public class UserCommandTest {
 	@Autowired
 	private EntityManager em;
 	
+	@Autowired
+	private JwtUtil jwtUtil;
+	
 	private UserSignupRequest userSignupRequest = UserFix.getUserSignupRequest();
+	
+	@Test
+	@DisplayName("service: 유저 로그인 테스트")
+	void userLoginTest() {
+		userCommandService.signup(userSignupRequest);
+		
+		UserLoginRequest loginRequest = new UserLoginRequest(userSignupRequest.getLoginId(), userSignupRequest.getPassword());
+		
+		UserLoginResponse loginResponse = userCommandService.login(loginRequest);
+		
+		String accessToken = jwtUtil.subStringToken(loginResponse.getAccessToken());
+		
+		Claims claims = jwtUtil.getUserInfoFromToken(accessToken);
+		
+		String loginId = claims.getSubject();
+		String claimsRole = claims.get(JwtUtil.AUTHORIZATION_KEY, String.class);
+		Role role = Role.valueOf(claimsRole);
+		
+		User user = userFinder.getUserByLoginId(userSignupRequest.getLoginId());
+		
+		assertThat(loginId).isEqualTo(user.getLoginId());
+		assertThat(role).isEqualTo(user.getRole());
+		assertThat(jwtUtil.validateToken(accessToken)).isTrue();
+	}
 	
 	@Test
 	@DisplayName("service: 유저 생성 테스트")
@@ -62,12 +93,12 @@ public class UserCommandTest {
 		assertThat(user.getCreatedAt()).isNotNull();
 		
 		// TODO: BaseEntity CreatedBy, UpdatedBy 완성 시 수정
-		assertThat(user.getCreatedBy()).isEqualTo("user");
+		assertThat(user.getCreatedBy()).isEqualTo("GUEST");
 		
 		assertThat(user.getUpdatedAt()).isNotNull();
 		
 		// TODO: BaseEntity CreatedBy, UpdatedBy 완성 시 수정
-		assertThat(user.getUpdatedBy()).isEqualTo("user");
+		assertThat(user.getUpdatedBy()).isEqualTo("GUEST");
 		assertThat(user.getDeletedAt()).isNull();
 		assertThat(user.getDeletedBy()).isNull();
 	}

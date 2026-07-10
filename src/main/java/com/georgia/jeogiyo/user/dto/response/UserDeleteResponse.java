@@ -13,9 +13,9 @@ import lombok.Getter;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserDeleteResponse {
 
-	private UUID userId;
+	private final UUID userId;
 	
-	private LocalDateTime deletedAt;
+	private final LocalDateTime deletedAt;
 	
 	public static UserDeleteResponse of(User user) {
 		return new UserDeleteResponse(

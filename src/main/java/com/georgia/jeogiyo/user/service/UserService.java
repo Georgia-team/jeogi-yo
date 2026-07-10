@@ -6,11 +6,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.global.jwt.JwtUtil;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
+import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.dto.response.UserDeleteResponse;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
+import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
@@ -27,9 +30,24 @@ public class UserService {
 	
 	private final UserFinder userFinder;
 	
+	private final JwtUtil jwtUtil;
+	
 	private final PasswordEncoder passwordEncoder;
 	
 	private final UserInfoUpdateService userInfoUpdateService;
+	
+	@Transactional(rollbackFor = Exception.class)
+	public UserLoginResponse login(UserLoginRequest userLogin) {
+		User user = userFinder.getUserByLoginId(userLogin.getLoginId());
+		
+		if(!passwordEncoder.matches(userLogin.getPassword(), user.getPassword())) {
+			throw new UserDomainException(UserErrorCode.NOT_FOUND_USER);
+		}
+		
+		String accessToken = jwtUtil.createToken(user.getLoginId(), user.getRole());
+		
+		return UserLoginResponse.of(user, accessToken);
+	}
 	
 	@Transactional(rollbackFor = Exception.class)
 	public UserSignupResponse signup(UserSignupRequest signupUser) {

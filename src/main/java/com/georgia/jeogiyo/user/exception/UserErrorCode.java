@@ -17,7 +17,6 @@ public enum UserErrorCode {
 	NOT_FOUND_USER("존재하지 않는 사용자입니다."),
 	NOT_AUTHORIZATION("해당 요청에 대한 권한이 없습니다."),
 	
-	
 	;
 	private final String message;
 }

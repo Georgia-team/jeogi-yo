@@ -1,0 +1,280 @@
+package com.georgia.jeogiyo.store.service;
+
+import com.georgia.jeogiyo.category.entity.Category;
+import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
+import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
+import com.georgia.jeogiyo.store.dto.request.StoreUpdateRequest;
+import com.georgia.jeogiyo.store.dto.response.StoreResponse;
+import com.georgia.jeogiyo.store.dto.response.StoreSearchPageResponse;
+import com.georgia.jeogiyo.store.entity.Store;
+import com.georgia.jeogiyo.store.entity.StoreStatus;
+import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.support.DomainTestFixture;
+import com.georgia.jeogiyo.user.entity.User;
+import com.georgia.jeogiyo.user.service.UserFinder;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.georgia.jeogiyo.support.DomainTestFixture.CATEGORY_ID;
+import static com.georgia.jeogiyo.support.DomainTestFixture.CUSTOMER_LOGIN_ID;
+import static com.georgia.jeogiyo.support.DomainTestFixture.MASTER_LOGIN_ID;
+import static com.georgia.jeogiyo.support.DomainTestFixture.OWNER_LOGIN_ID;
+import static com.georgia.jeogiyo.support.DomainTestFixture.STORE_ID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+/**
+ * StoreServiceImpl 단위 테스트입니다.
+ *
+ * Postman으로 전체 API 흐름을 확인하기 전에, 서비스의 핵심 비즈니스 규칙
+ * - OWNER만 등록 가능
+ * - OWNER 본인 가게 또는 MASTER만 수정/상태변경/삭제 가능
+ * - soft delete된 가게는 조회/수정 대상에서 제외
+ * 를 검증합니다.
+ *
+ * TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 기준으로 테스트를 변경해야 합니다.
+ * TODO 공통 예외 처리 적용 후 IllegalArgumentException 검증은 CustomException 검증으로 변경할 수 있습니다.
+ */
+@ExtendWith(MockitoExtension.class)
+class StoreServiceTest {
+
+    @Mock
+    private StoreRepository storeRepository;
+
+    @Mock
+    private UserFinder userFinder;
+
+    @Mock
+    private CategoryRepository categoryRepository;
+
+    @Mock
+    private EntityManager entityManager;
+
+    private StoreServiceImpl storeService;
+
+    @BeforeEach
+    void setUp() {
+        storeService = new StoreServiceImpl(
+                storeRepository,
+                userFinder,
+                categoryRepository,
+                entityManager
+        );
+    }
+
+    @Test
+    @DisplayName("OWNER는 가게를 등록할 수 있다")
+    void createStore_owner_success() {
+        // given: OWNER 사용자와 존재하는 카테고리가 준비되어 있다.
+        User owner = DomainTestFixture.owner();
+        Category category = DomainTestFixture.category();
+        StoreCreateRequest request = DomainTestFixture.storeCreateRequest(CATEGORY_ID);
+
+        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(storeRepository.save(any(Store.class))).willAnswer(invocation -> {
+            Store store = invocation.getArgument(0);
+            DomainTestFixture.markPersisted(store, STORE_ID);
+            return store;
+        });
+
+        // when: OWNER가 가게 등록을 요청한다.
+        StoreResponse response = storeService.createStore(OWNER_LOGIN_ID, request);
+
+        // then: 가게가 저장되고 기본 CLOSED 상태로 응답된다.
+        assertThat(response.getStoreId()).isEqualTo(STORE_ID);
+        assertThat(response.getOwnerId()).isEqualTo(owner.getUserId());
+        assertThat(response.getCategoryId()).isEqualTo(CATEGORY_ID);
+        assertThat(response.getStoreName()).isEqualTo("테스트 신규 가게");
+        assertThat(response.getStoreStatus()).isEqualTo(StoreStatus.CLOSED);
+        assertThat(response.getIsDeleted()).isFalse();
+    }
+
+    @Test
+    @DisplayName("CUSTOMER는 가게를 등록할 수 없다")
+    void createStore_customer_fail() {
+        // given: CUSTOMER 사용자가 가게 등록을 시도한다.
+        User customer = DomainTestFixture.customer();
+        StoreCreateRequest request = DomainTestFixture.storeCreateRequest(CATEGORY_ID);
+
+        given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
+
+        // when & then: OWNER 권한이 아니므로 카테고리 조회나 저장까지 가지 않고 실패한다.
+        assertThatThrownBy(() -> storeService.createStore(CUSTOMER_LOGIN_ID, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("OWNER만 가게를 등록할 수 있습니다.");
+
+        verifyNoInteractions(categoryRepository, storeRepository);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 categoryId로 가게를 등록할 수 없다")
+    void createStore_missingCategory_fail() {
+        // given: OWNER는 맞지만 요청 categoryId가 존재하지 않는다.
+        User owner = DomainTestFixture.owner();
+        StoreCreateRequest request = DomainTestFixture.storeCreateRequest(CATEGORY_ID);
+
+        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.empty());
+
+        // when & then: 잘못된 카테고리로는 가게를 저장하지 않는다.
+        assertThatThrownBy(() -> storeService.createStore(OWNER_LOGIN_ID, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("카테고리를 찾을 수 없습니다.");
+
+        then(storeRepository).should(never()).save(any(Store.class));
+    }
+
+    @Test
+    @DisplayName("OWNER는 본인 가게를 수정할 수 있다")
+    void updateStore_owner_success() {
+        // given: OWNER 본인 소유의 가게와 수정 요청이 있다.
+        User owner = DomainTestFixture.owner();
+        Category category = DomainTestFixture.category();
+        Store store = DomainTestFixture.store(owner, category);
+        StoreUpdateRequest request = DomainTestFixture.storeUpdateRequest(CATEGORY_ID);
+
+        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
+        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+
+        // when: OWNER가 본인 가게를 수정한다.
+        StoreResponse response = storeService.updateStore(STORE_ID, OWNER_LOGIN_ID, request);
+
+        // then: 수정값이 응답에 반영되고 updatedAt 반영을 위해 flush가 호출된다.
+        assertThat(response.getStoreName()).isEqualTo("테스트 가게 수정");
+        assertThat(response.getAddress()).isEqualTo("서울시 테스트구 수정로 20");
+        assertThat(response.getPhone()).isEqualTo("02-2222-2222");
+        then(entityManager).should().flush();
+    }
+
+    @Test
+    @DisplayName("OWNER는 타인 가게를 수정할 수 없다")
+    void updateStore_otherOwner_fail() {
+        // given: owner01이 owner02 소유 가게를 수정하려고 한다.
+        User owner = DomainTestFixture.owner();
+        User otherOwner = DomainTestFixture.otherOwner();
+        Category category = DomainTestFixture.category();
+        Store otherOwnerStore = DomainTestFixture.otherOwnerStore(otherOwner, category);
+        StoreUpdateRequest request = DomainTestFixture.storeUpdateRequest(null);
+
+        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(storeRepository.findByStoreIdAndIsDeletedFalse(DomainTestFixture.OTHER_OWNER_STORE_ID))
+                .willReturn(Optional.of(otherOwnerStore));
+
+        // when & then: OWNER는 본인 가게가 아니면 수정할 수 없다.
+        assertThatThrownBy(() -> storeService.updateStore(
+                DomainTestFixture.OTHER_OWNER_STORE_ID,
+                OWNER_LOGIN_ID,
+                request
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("본인 가게만 처리할 수 있습니다.");
+
+        verify(entityManager, never()).flush();
+    }
+
+    @Test
+    @DisplayName("MASTER는 다른 OWNER의 가게도 수정할 수 있다")
+    void updateStore_master_success() {
+        // given: MASTER와 다른 OWNER의 가게가 있다.
+        User master = DomainTestFixture.master();
+        User otherOwner = DomainTestFixture.otherOwner();
+        Category category = DomainTestFixture.category();
+        Store otherOwnerStore = DomainTestFixture.otherOwnerStore(otherOwner, category);
+        StoreUpdateRequest request = DomainTestFixture.storeUpdateRequest(null);
+
+        given(userFinder.getUserByLoginId(MASTER_LOGIN_ID)).willReturn(master);
+        given(storeRepository.findByStoreIdAndIsDeletedFalse(DomainTestFixture.OTHER_OWNER_STORE_ID))
+                .willReturn(Optional.of(otherOwnerStore));
+
+        // when: MASTER가 가게를 수정한다.
+        StoreResponse response = storeService.updateStore(
+                DomainTestFixture.OTHER_OWNER_STORE_ID,
+                MASTER_LOGIN_ID,
+                request
+        );
+
+        // then: 소유자와 무관하게 수정 가능하다.
+        assertThat(response.getStoreName()).isEqualTo("테스트 가게 수정");
+        then(entityManager).should().flush();
+    }
+
+    @Test
+    @DisplayName("OUT_OF_BUSINESS 상태의 가게는 다시 OPEN으로 바꿀 수 없다")
+    void updateStoreStatus_outOfBusinessToOpen_fail() {
+        // given: 이미 폐업 처리된 가게가 있다.
+        User owner = DomainTestFixture.owner();
+        Category category = DomainTestFixture.category();
+        Store store = DomainTestFixture.store(owner, category);
+        store.changeStatus(StoreStatus.OUT_OF_BUSINESS);
+        StoreStatusUpdateRequest request = DomainTestFixture.storeStatusRequest(StoreStatus.OPEN);
+
+        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
+
+        // when & then: 폐업 가게는 상태 변경을 다시 허용하지 않는다.
+        assertThatThrownBy(() -> storeService.updateStoreStatus(STORE_ID, OWNER_LOGIN_ID, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("폐업 상태의 가게는 상태를 변경할 수 없습니다.");
+
+        verify(entityManager, never()).flush();
+    }
+
+    @Test
+    @DisplayName("삭제된 가게는 수정 대상에서 제외된다")
+    void updateStore_deletedStore_fail() {
+        // given: repository 메서드가 isDeleted=false 조건으로 조회하므로 삭제된 가게는 Optional.empty로 표현한다.
+        User owner = DomainTestFixture.owner();
+        StoreUpdateRequest request = DomainTestFixture.storeUpdateRequest(null);
+
+        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.empty());
+
+        // when & then: 삭제된 가게는 없는 가게처럼 처리한다.
+        assertThatThrownBy(() -> storeService.updateStore(STORE_ID, OWNER_LOGIN_ID, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("가게를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("가게 검색은 page 음수와 허용되지 않는 size를 보정한다")
+    void searchStores_pageAndSize_normalized() {
+        // given: 카테고리 조건이 존재하고, 검색 repository가 빈 페이지를 반환한다.
+        Category category = DomainTestFixture.category();
+        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(storeRepository.searchStores(eq(CATEGORY_ID), eq("테스트"), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of()));
+
+        // when: page=-1, size=20처럼 정책 밖의 요청이 들어온다.
+        StoreSearchPageResponse response = storeService.searchStores(CATEGORY_ID, "테스트", -1, 20, "desc");
+
+        // then: page는 0, size는 10으로 보정되어 repository에 전달된다.
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        then(storeRepository).should().searchStores(eq(CATEGORY_ID), eq("테스트"), pageableCaptor.capture());
+
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+        assertThat(response.getPage()).isZero();
+    }
+}
