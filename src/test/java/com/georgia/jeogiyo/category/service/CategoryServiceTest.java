@@ -33,7 +33,7 @@ class CategoryServiceTest {
     void createCategoryTest() {
         // given
         CategoryCreateRequest request = new CategoryCreateRequest("한식");
-        String loginId = "user";
+        String loginId = "GUEST";
 
         // when
         CategoryCreateResponse response =
