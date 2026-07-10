@@ -41,20 +41,18 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             // JWT 토큰 substring
             tokenValue = jwtUtil.subStringToken(tokenValue);
 
-            // JWT 토큰 검증 (위변조 & 만료 검증) 실패시 에러
-            if (!jwtUtil.validateToken(tokenValue)) {
+            // JWT 토큰 검증 (위변조 & 만료 검증)
+            if (jwtUtil.validateToken(tokenValue)) {
+                // 토큰에서 사용자 정보 가져오기
+                Claims info = jwtUtil.getUserInfoFromToken(tokenValue);
+
+                try {
+                    setAuthentication(info.getSubject());
+                } catch (Exception e) {
+                    log.error("Authentication Error: {}", e.getMessage());
+                }
+            } else {
                 log.error("Token Error");
-                return;
-            }
-
-            // 토큰에서 사용자 정보 가져오기
-            Claims info = jwtUtil.getUserInfoFromToken(tokenValue);
-
-            try {
-                setAuthentication(info.getSubject());
-            } catch (Exception e) {
-                log.error("Authentication Error");
-                return;
             }
         }
 
