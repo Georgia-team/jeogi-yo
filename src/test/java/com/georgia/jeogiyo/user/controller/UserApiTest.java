@@ -47,15 +47,6 @@ public class UserApiTest {
 			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 	
 	@Autowired
-	private UserAuthController userAuthController;
-	
-	@Autowired
-	private UserCommandController userCommandController;
-	
-	@Autowired
-	private UserQueryController userQueryController;
-	
-	@Autowired
 	private EntityManager em;
 	
 	@Autowired
