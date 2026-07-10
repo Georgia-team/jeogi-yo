@@ -9,13 +9,14 @@ import java.util.UUID;
 
 @Getter
 @AllArgsConstructor
-public class CategoryCreateResponse {
+public class CategoryUpdateResponse {
+
     private final UUID categoryId;
 
     private final String categoryName;
 
-    public static CategoryCreateResponse of(Category category) {
-        return new CategoryCreateResponse(
+    public static CategoryUpdateResponse of(Category category) {
+        return new CategoryUpdateResponse(
                 category.getCategoryId(),
                 category.getCategoryName()
         );
