@@ -180,9 +180,6 @@ public class AddressCommandTest {
 		
 		UUID address1ID = addressService.addressCreate(loginId, addressCreateReq1).getAddressId();
 		
-		em.flush();
-		em.clear();
-		
 		AddressCreateRequest addressCreateReq2 = new AddressCreateRequest(
 				"서울특별시 강남구 테헤란로 234",
 				"102동 1002호",
@@ -192,12 +189,29 @@ public class AddressCommandTest {
 		
 		UUID address2ID = addressService.addressCreate(loginId, addressCreateReq2).getAddressId();
 		
+		AddressCreateRequest addressCreateReq3 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 234",
+				"102동 1002호",
+				"06234",
+				true
+		);
+		
+		UUID address3ID = addressService.addressCreate(loginId, addressCreateReq3).getAddressId();
+		
 		em.flush();
 		em.clear();
 		
 		// address1 isDefault false
 		// address2 isDefault true
 		// address1 을 다시 isDefault true 요청
+		
+		Address beforeAddress1 = addressFinder.findByUserAndAddressId(user, address1ID);
+		Address beforeAddress2 = addressFinder.findByUserAndAddressId(user, address2ID);
+		Address beforeAddress3 = addressFinder.findByUserAndAddressId(user, address3ID);
+		
+		assertThat(beforeAddress1.isDefault()).isFalse();
+		assertThat(beforeAddress2.isDefault()).isFalse();
+		assertThat(beforeAddress3.isDefault()).isTrue();
 		
 		AddressUpdateRequest addressUpdateReq = new AddressUpdateRequest(null, null, null, true);
 		
@@ -208,12 +222,61 @@ public class AddressCommandTest {
 		
 		Address address1 = addressFinder.findByUserAndAddressId(user, address1ID);
 		Address address2 = addressFinder.findByUserAndAddressId(user, address2ID);
+		Address address3 = addressFinder.findByUserAndAddressId(user, address3ID);
 		
 		assertThat(address1.isDefault()).isTrue();
 		assertThat(address1.getRoadAddress()).isEqualTo(addressCreateReq1.getRoadAddress());
 		assertThat(address1.getDetailAddress()).isEqualTo(addressCreateReq1.getDetailAddress());
 		assertThat(address1.getZipcode()).isEqualTo(addressCreateReq1.getZipcode());
 		assertThat(address2.isDefault()).isFalse();
+		assertThat(address3.isDefault()).isFalse();
+	}
+	
+	@Test
+	@DisplayName("service: 배송지 삭제 테스트")
+	void deleteAddressTest() {
+		String loginId = user.getLoginId();
+		
+		AddressCreateRequest addressCreateReq1 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 123",
+				"101동 1001호",
+				"06234",
+				true
+		);
+		
+		UUID address1ID = addressService.addressCreate(loginId, addressCreateReq1).getAddressId();
+		
+		AddressCreateRequest addressCreateReq2 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 234",
+				"102동 1002호",
+				"06234",
+				true
+		);
+		
+		UUID address2ID = addressService.addressCreate(loginId, addressCreateReq2).getAddressId();
+		
+		AddressCreateRequest addressCreateReq3 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 234",
+				"102동 1002호",
+				"06234",
+				true
+		);
+		
+		UUID address3ID = addressService.addressCreate(loginId, addressCreateReq3).getAddressId();
+		
+		em.flush();
+		em.clear();
+		
+		addressService.addressDelete(loginId, address3ID);
+		
+		em.flush();
+		em.clear();
+		
+		// address3 이후 최신에 등록된 address2 가 isDefault True 로 변경될 것.
+		Address address1 = addressFinder.findByUserAndAddressId(user, address1ID);
+		Address address2 = addressFinder.findByUserAndAddressId(user, address2ID);
+		assertThat(address1.isDefault()).isFalse();
+		assertThat(address2.isDefault()).isTrue();
 	}
 	
 }
