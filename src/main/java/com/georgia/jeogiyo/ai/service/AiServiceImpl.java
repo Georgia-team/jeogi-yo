@@ -12,6 +12,7 @@ import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,8 +39,13 @@ public class AiServiceImpl implements AiService {
     public AiDescriptionResponse createAiDescription(UUID productId, String loginId, AiDescriptionRequest request) {
         User user = userFinder.getUserByLoginId(loginId);
 
-        Product product = productRepository.findById(productId)
+        //Product product = productRepository.findById(productId)
+        Product product = productRepository.findByProductIdAndIsDeletedFalse(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+        if (product.getStore().isDeleted()) {
+            throw new IllegalArgumentException("삭제된 가게의 상품은 AI 설명을 생성할 수 없습니다.");
+        }
 
         // TODO JWT/User ID 타입 정리 후 OWNER 검증 로직 재확인
         // 현재 loginId로 User를 찾고, 상품의 가게 owner와 비교
@@ -61,6 +68,12 @@ public class AiServiceImpl implements AiService {
 
             AiHistory saved = aiHistoryRepository.save(aiHistory);
 
+            log.info("AI history saved. aiHistoryId={}, productId={}, userId={}, status={}",
+                    saved.getAiHistoryId(),
+                    saved.getProduct().getProductId(),
+                    saved.getUser().getUserId(),
+                    saved.getAiStatus());
+
             return AiDescriptionResponse.builder()
                     .aiHistoryId(saved.getAiHistoryId())
                     .userId(saved.getUser().getUserId())
@@ -70,6 +83,7 @@ public class AiServiceImpl implements AiService {
                     .modelName(saved.getModelName())
                     .aiStatus(saved.getAiStatus())
                     .errorMessage(saved.getErrorMessage()) // 성공하면 null
+                    .createdAt(saved.getCreatedAt())
                     .build();
 
         } catch (Exception e) {
@@ -92,6 +106,7 @@ public class AiServiceImpl implements AiService {
                     .modelName(saved.getModelName())
                     .aiStatus(saved.getAiStatus())
                     .errorMessage(saved.getErrorMessage()) // 실패하면 있음
+                    .createdAt(saved.getCreatedAt())
                     .build();
         }
     }
@@ -109,10 +124,6 @@ public class AiServiceImpl implements AiService {
     @Override
     @Transactional(readOnly = true)
     public AiHistorySearchResponse searchAiHistories(AiStatus aiStatus, UUID productId, int page, int size, String sort) {
-
-        // TODO QueryDSL 적용 시 aiStatus, productId 조건 검색으로 변경
-        // findAll(pageable)만 사용해서 검색 조건이 반영되지 않음.
-        //Page<AiHistory> aiHistoryPage = aiHistoryRepository.findAll(pageable);
 
         int validatedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
         Sort.Direction direction = "asc".equalsIgnoreCase(sort)

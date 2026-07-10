@@ -111,7 +111,7 @@ public class Product extends BaseEntity {
 
     /**
      * 주문 가능 여부 확인
-     * 숨김 상품이 아니고 재고가 1개 이상이어야 주문 가능하다.
+     * 숨김 상품이 아니고 재고가 1개 이상이어야 주문 가능
      */
     public boolean isOrderable() {
         return !isHidden && stock > 0;

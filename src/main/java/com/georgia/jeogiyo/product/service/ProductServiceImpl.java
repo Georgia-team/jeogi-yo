@@ -18,7 +18,9 @@ import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.service.UserFinder;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,13 +29,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ProductServiceImpl implements ProductService {
 
-    // TODO JWT 적용 후 OWNER/MASTER 권한 검증
-    // TODO OWNER는 본인이 소유한 가게의 상품만 등록/수정/삭제 가능하도록 검증
+    // TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 정보로 권한 검증
 
     private final ProductRepository productRepository;
     private final StoreRepository storeRepository;
@@ -42,6 +44,7 @@ public class ProductServiceImpl implements ProductService {
     private final AiGeminiService aiGeminiService;
     private final AiHistoryRepository aiHistoryRepository;
     private final AiHistoryRecorder aiHistoryRecorder;
+    private final EntityManager entityManager;
 
     @Override
     public ProductResponse createProduct(UUID storeId, String loginId, ProductCreateRequest request) { // TODO JWT
@@ -71,8 +74,6 @@ public class ProductServiceImpl implements ProductService {
                 throw new IllegalArgumentException("AI 프롬프트는 필수입니다.");
             }
 
-            // TODO GeminiService 호출
-            // TODO AiHistory 저장
             requestText = request.getAiPrompt() + "\n답변을 최대한 간결하게 50자 이하로";
 
             try {
@@ -101,6 +102,9 @@ public class ProductServiceImpl implements ProductService {
         );
 
         Product savedProduct = productRepository.save(product);
+
+        log.info("Product created. productId={}, storeId={}, useAiDescription={}",
+                savedProduct.getProductId(), storeId, request.getUseAiDescription());
 
         if (Boolean.TRUE.equals(request.getUseAiDescription())) {
             AiHistory aiHistory = AiHistory.success(
@@ -200,6 +204,10 @@ public class ProductServiceImpl implements ProductService {
                 request.getIsHidden()
         );
 
+        entityManager.flush();
+
+        log.info("Product updated. productId={}", product.getProductId());
+
         return toResponse(product);
     }
 
@@ -211,11 +219,21 @@ public class ProductServiceImpl implements ProductService {
         validateOwnerOrMaster(user, product);
 
         product.softDelete(loginId);
+
+        log.info("Product soft deleted. productId={}, deletedBy={}", product.getProductId(), loginId);
     }
 
     private Product findProduct(UUID productId) {
-        return productRepository.findByProductIdAndIsDeletedFalse(productId)
+
+        Product product = productRepository.findByProductIdAndIsDeletedFalse(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+
+        // 상품 자체가 isDeleted=false여도, 부모 가게가 isDeleted=true면 상품 수정/삭제/AI 생성 방지
+        if (product.getStore().isDeleted()) {
+            throw new IllegalArgumentException("삭제된 가게의 상품은 처리할 수 없습니다.");
+        }
+
+        return product;
     }
 
     private void validateReadableProduct(User user, Product product) {
@@ -256,6 +274,8 @@ public class ProductServiceImpl implements ProductService {
                 .stock(product.getStock())
                 .isHidden(product.getIsHidden())
                 .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
+                .updatedBy(product.getUpdatedBy())
                 .isDeleted(product.isDeleted())
                 .build();
     }

@@ -13,7 +13,9 @@ import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinder;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,16 +25,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class StoreServiceImpl implements StoreService {
-    // TODO JWT 적용 후 OWNER/MASTER 권한 검증
-    // TODO OWNER는 본인 가게만 처리 가능하도록 검증
+    // TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 정보로 권한 검증
 
     private final StoreRepository storeRepository;
     private final UserFinder userFinder;
     private final CategoryRepository categoryRepository;
+    private final EntityManager entityManager;
 
     @Override
     public StoreResponse createStore(String loginId, StoreCreateRequest request) {
@@ -54,6 +57,10 @@ public class StoreServiceImpl implements StoreService {
         );
 
         Store savedStore = storeRepository.save(store);
+
+        log.info("Store created. storeId={}, ownerId={}",
+                savedStore.getStoreId(),
+                savedStore.getOwner().getUserId());
 
         return toResponse(savedStore);
     }
@@ -112,6 +119,15 @@ public class StoreServiceImpl implements StoreService {
                 request.getPhone()
         );
 
+        /*
+        * updatedAt은 JPA Auditing의 @LastModifiedDate로 들어가는데, 이 값은 보통 트랜잭션이 flush 될 때 채워집니다.
+        * DTO 필드에만 updatedAt을 추가하면 수정 직후 응답에서 updatedAt이 null이거나 이전 값일 수 있으므로 flush 합니다.
+        * */
+        // 수정 응답 만들기 전에 flush
+        entityManager.flush();
+
+        log.info("Store status changed. storeId={}, status={}", store.getStoreId(), store.getStoreStatus());
+
         return toResponse(store);
     }
 
@@ -123,6 +139,10 @@ public class StoreServiceImpl implements StoreService {
         validateOwnerOrMaster(user, store);
 
         store.changeStatus(request.getStoreStatus());
+
+        // 수정 응답 만들기 전에 flush
+        entityManager.flush();
+
         return toResponse(store);
     }
 
@@ -134,6 +154,8 @@ public class StoreServiceImpl implements StoreService {
         validateOwnerOrMaster(user, store);
 
         store.softDelete(loginId);
+
+        log.info("Store soft deleted. storeId={}, deletedBy={}", store.getStoreId(), loginId);
     }
 
     private Store findStore(UUID storeId) {
@@ -175,6 +197,8 @@ public class StoreServiceImpl implements StoreService {
                 .phone(store.getPhone())
                 .storeStatus(store.getStoreStatus())
                 .createdAt(store.getCreatedAt())
+                .updatedAt(store.getUpdatedAt())
+                .updatedBy(store.getUpdatedBy())
                 .isDeleted(store.isDeleted())
                 .build();
     }
