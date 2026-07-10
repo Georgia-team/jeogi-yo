@@ -132,7 +132,7 @@ public class AddressCommandTest {
 	
 	@Test
 	@DisplayName("service: 배송지 생성 테스트 기본 배송지 전환 케이스")
-	void updateAddressTest_isDefaultCase() {
+	void createAddressTest_isDefaultCase() {
 		String loginId = user.getLoginId();
 		
 		AddressCreateRequest addressRequest1 = new AddressCreateRequest(
@@ -164,6 +164,56 @@ public class AddressCommandTest {
 		
 		assertThat(address1.isDefault()).isFalse();
 		assertThat(address2.isDefault()).isTrue();
+	}
+	
+	@Test
+	@DisplayName("service: 배송지 수정 테스트 기본 배송지 전환 케이스")
+	void updateAddressTest_isDefaultCase() {
+		String loginId = user.getLoginId();
+		
+		AddressCreateRequest addressCreateReq1 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 123",
+				"101동 1001호",
+				"06234",
+				true
+		);
+		
+		UUID address1ID = addressService.addressCreate(loginId, addressCreateReq1).getAddressId();
+		
+		em.flush();
+		em.clear();
+		
+		AddressCreateRequest addressCreateReq2 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 234",
+				"102동 1002호",
+				"06234",
+				true
+		);
+		
+		UUID address2ID = addressService.addressCreate(loginId, addressCreateReq2).getAddressId();
+		
+		em.flush();
+		em.clear();
+		
+		// address1 isDefault false
+		// address2 isDefault true
+		// address1 을 다시 isDefault true 요청
+		
+		AddressUpdateRequest addressUpdateReq = new AddressUpdateRequest(null, null, null, true);
+		
+		addressService.addressUpdate(loginId, address1ID, addressUpdateReq);
+		
+		em.flush();
+		em.clear();
+		
+		Address address1 = addressFinder.findByUserAndAddressId(user, address1ID);
+		Address address2 = addressFinder.findByUserAndAddressId(user, address2ID);
+		
+		assertThat(address1.isDefault()).isTrue();
+		assertThat(address1.getRoadAddress()).isEqualTo(addressCreateReq1.getRoadAddress());
+		assertThat(address1.getDetailAddress()).isEqualTo(addressCreateReq1.getDetailAddress());
+		assertThat(address1.getZipcode()).isEqualTo(addressCreateReq1.getZipcode());
+		assertThat(address2.isDefault()).isFalse();
 	}
 	
 }
