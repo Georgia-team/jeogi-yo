@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.user.dto.response;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.georgia.jeogiyo.user.entity.User;
@@ -15,12 +14,9 @@ public class UserDeleteResponse {
 
 	private final UUID userId;
 	
-	private final LocalDateTime deletedAt;
-	
 	public static UserDeleteResponse of(User user) {
 		return new UserDeleteResponse(
-				user.getUserId(),
-				user.getDeletedAt()
+				user.getUserId()
 		);
 	}
 	

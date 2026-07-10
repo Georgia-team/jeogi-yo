@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
@@ -175,5 +177,40 @@ public class UserApiTest {
 		assertThat(updatedUser.getUpdatedBy()).isEqualTo(user.getLoginId());
 	}
 	
-	
+	@Test
+	@DisplayName("API: 회원 삭제 테스트")
+	void userDeleteApiTest() throws Exception {
+		String url = "/api/v1/users/me";
+		
+		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(
+				userSignupRequest.getEmail(),
+				userSignupRequest.getPassword()
+		);
+		
+		// 403
+		mockMvc
+		.perform(delete(url)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(userDeleteRequest))
+		)
+		.andExpect(status().isForbidden())
+		;
+		
+		UserLoginRequest userLoginRequest = new UserLoginRequest(
+				userSignupRequest.getLoginId(),
+				userSignupRequest.getPassword()
+		);
+		
+		UserLoginResponse loginResponse = userService.login(userLoginRequest);
+		
+		mockMvc
+		.perform(delete(url)
+				.contentType(MediaType.APPLICATION_JSON)
+				.cookie(new Cookie("Authorization", loginResponse.getAccessToken()))
+				.content(objectMapper.writeValueAsString(userDeleteRequest))
+		)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$.userId").value(user.getUserId().toString()))
+		;
+	}
 }
