@@ -63,6 +63,12 @@ public class Address extends BaseEntity {
 		return address;
 	}
 	
+	public void changeNotDefault() {
+		if(this.isDefault == true) {
+			this.isDefault = false;			
+		}
+	}
+	
 	public void changeAddressInfo(AddressUpdateRequest addressUpdate) {
 		if(addressUpdate.getRoadAddress() != null) {
 			this.changeRoadAddress(addressUpdate.getRoadAddress());
