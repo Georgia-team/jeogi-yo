@@ -11,4 +11,6 @@ public interface AddressFinder {
 	Address findByUserAndAddressId(User user, UUID addressId);
 	
 	Optional<Address> findByUserAndDefault(User user);
+	
+	Optional<Address> findFirstByUserOrderByCreatedAtDesc(User user);
 }

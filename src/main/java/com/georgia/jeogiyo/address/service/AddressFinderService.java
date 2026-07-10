@@ -29,6 +29,11 @@ public class AddressFinderService implements AddressFinder {
 	public Optional<Address> findByUserAndDefault(User user) {
 		return addressRepository.findByUserAndIsDefault(user, true);
 	}
+
+	@Override
+	public Optional<Address> findFirstByUserOrderByCreatedAtDesc(User user) {
+		return addressRepository.findFirstByUserOrderByCreatedAtDesc(user);
+	}
 	
 	
 }

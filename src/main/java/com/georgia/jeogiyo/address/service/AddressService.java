@@ -2,81 +2,44 @@ package com.georgia.jeogiyo.address.service;
 
 import java.util.UUID;
 
-import org.springframework.stereotype.Service;
-
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.dto.request.AddressUpdateRequest;
 import com.georgia.jeogiyo.address.dto.response.AddressCreateResponse;
 import com.georgia.jeogiyo.address.dto.response.AddressDeleteResponse;
 import com.georgia.jeogiyo.address.dto.response.AddressUpdateResponse;
-import com.georgia.jeogiyo.address.entity.Address;
-import com.georgia.jeogiyo.address.repository.AddressRepository;
-import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.service.UserFinder;
 
-import lombok.RequiredArgsConstructor;
+public interface AddressService {
 
-@Service
-@RequiredArgsConstructor
-public class AddressService {
+	/**
+	 * 회원의 새로운 배송지를 등록합니다.
+	 * 기본 배송지로 설정하는 경우 이미 기본 배송지로 설정된 배송지는 False 처리됩니다.
+	 * 
+	 * @param loginId
+	 * @param addressCreate
+	 * @return AddressCreateResponse DTO
+	 */
+	AddressCreateResponse addressCreate(String loginId, AddressCreateRequest addressCreate);
 
-	private final AddressRepository addressRepo;
-	
-	private final AddressFinder addressFinder;
-	
-	private final UserFinder userFinder;
-	
-	// 배송지 등록
-	public AddressCreateResponse addressCreate(String loginId, AddressCreateRequest addressCreate) {
-		User user = userFinder.getUserByLoginId(loginId);
-		
-		if(addressCreate.getIsDefault() == true) {
-			Address defaultAddress = addressFinder.findByUserAndDefault(user)
-					.orElse(null);
-			
-			
-			if(defaultAddress != null) {
-				defaultAddress.changeNotDefault();
-			}
-		}
-		
-		Address newAddress = Address.create(user, addressCreate);
-		
-		Address saved = addressRepo.save(newAddress);
-		
-		return AddressCreateResponse.of(saved);
-	}
-	
-	// 배송지 수정
-	public AddressUpdateResponse addressUpdate(String loginId, UUID addressId, AddressUpdateRequest addressUpdate) {
-		User user = userFinder.getUserByLoginId(loginId);
-		
-		Address address = addressFinder.findByUserAndAddressId(user, addressId);
-		
-		if(!address.isDefault() && addressUpdate.getIsDefault()) {
-			Address defaultAddress = addressFinder.findByUserAndDefault(user)
-					.orElse(null);
-			
-			if(defaultAddress != null) {
-				defaultAddress.changeNotDefault();
-			}
-		}
-		
-		address.changeAddressInfo(addressUpdate);
-		
-		return AddressUpdateResponse.of(address);
-	}
-	
-	// 배송지 삭제
-	public AddressDeleteResponse addressDelete(String loginId, UUID addressId) {
-		User user = userFinder.getUserByLoginId(loginId);
-		
-		Address address = addressFinder.findByUserAndAddressId(user, addressId);
-		
-		if(address.isDefault()) {
-			
-		}
-		return null;
-	}
-	
+	/**
+	 * 회원의 배송지를 수정합니다.
+	 * 기본 배송지로 설정하는 경우 이미 기본 배송지로 설정된 배송지는 False 처리됩니다.
+	 * 
+	 * @param loginId
+	 * @param addressId
+	 * @param addressUpdate
+	 * @return AddressUpdateResponse DTO
+	 */
+	AddressUpdateResponse addressUpdate(String loginId, UUID addressId, AddressUpdateRequest addressUpdate);
+
+	/**
+	 * 회원의 배송지를 삭제합니다.
+	 * 기본 배송지를 삭제하는 경우 해당 회원의 배송지 목록에서 최신 등록된 배송지를 기본 배송지로 지정합니다.
+	 * 배송지가 하나만 존재하는 경우 삭제가 불가합니다.
+	 * 
+	 * @param loginId
+	 * @param addressId
+	 * @return AddressDeleteResponse DTO
+	 */
+	AddressDeleteResponse addressDelete(String loginId, UUID addressId);
+
 }
