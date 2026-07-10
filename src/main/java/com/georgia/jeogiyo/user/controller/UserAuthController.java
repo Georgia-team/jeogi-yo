@@ -33,6 +33,8 @@ public class UserAuthController {
 		return ResponseEntity.ok(signupResponse);
 	}
 	
+	/*
+	 * JwtAuthenticationFilter 에 구현되어 있길래 주석처리
 	@PostMapping("/login")
 	public ResponseEntity<UserLoginResponse> login(
 			@RequestBody UserLoginRequest userLogin,
@@ -44,5 +46,6 @@ public class UserAuthController {
 		
 		return ResponseEntity.ok(loginResponse);
 	}
+	*/
 	
 }
