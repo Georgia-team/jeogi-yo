@@ -2,6 +2,8 @@ package com.georgia.jeogiyo.address.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -126,6 +128,42 @@ public class AddressCommandTest {
 		assertThat(updateRequest.getDetailAddress()).isEqualTo(updateResponse.getDetailAddress());
 		assertThat(updateRequest.getZipcode()).isEqualTo(updateResponse.getZipcode());
 		assertThat(updateResponse.getIsDefault()).isTrue();
+	}
+	
+	@Test
+	@DisplayName("service: 배송지 생성 테스트 기본 배송지 전환 케이스")
+	void updateAddressTest_isDefaultCase() {
+		String loginId = user.getLoginId();
+		
+		AddressCreateRequest addressRequest1 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 123",
+				"101동 1001호",
+				"06234",
+				true
+		);
+		
+		UUID address1ID = addressService.addressCreate(loginId, addressRequest1).getAddressId();
+		
+		em.flush();
+		em.clear();
+		
+		AddressCreateRequest addressRequest2 = new AddressCreateRequest(
+				"서울특별시 강남구 테헤란로 234",
+				"102동 1002호",
+				"06234",
+				true
+		);
+		
+		UUID address2ID = addressService.addressCreate(loginId, addressRequest2).getAddressId();
+		
+		em.flush();
+		em.clear();
+		
+		Address address1 = addressFinder.findByUserAndAddressId(user, address1ID);
+		Address address2 = addressFinder.findByUserAndAddressId(user, address2ID);
+		
+		assertThat(address1.isDefault()).isFalse();
+		assertThat(address2.isDefault()).isTrue();
 	}
 	
 }
