@@ -54,11 +54,11 @@ public class User extends BaseEntity {
 	public static User create(UserSignupRequest userCreate, PasswordEncoder passwordEncoder) {
 		User user = new User();
 		
-		user.loginId = userCreate.getLoginId();
-		user.nickname = userCreate.getNickname();
-		user.phone = userCreate.getPhone();
-		user.email = userCreate.getEmail();
-		user.password = passwordEncoder.encode(userCreate.getPassword());
+		user.loginId = Objects.requireNonNull(userCreate.getLoginId());
+		user.nickname = Objects.requireNonNull(userCreate.getNickname());
+		user.phone = Objects.requireNonNull(userCreate.getPhone());
+		user.email = Objects.requireNonNull(userCreate.getEmail());
+		user.password = passwordEncoder.encode(Objects.requireNonNull(userCreate.getPassword()));
 		
 		user.role = Role.CUSTOMER;
 		

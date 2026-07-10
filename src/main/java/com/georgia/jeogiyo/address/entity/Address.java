@@ -1,8 +1,10 @@
 package com.georgia.jeogiyo.address.entity;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
+import com.georgia.jeogiyo.address.dto.request.AddressUpdateRequest;
 import com.georgia.jeogiyo.global.entity.BaseEntity;
 import com.georgia.jeogiyo.user.entity.User;
 
@@ -49,18 +51,62 @@ public class Address extends BaseEntity {
 	public static Address create(User user, AddressCreateRequest addressCreate) {
 		Address address = new Address();
 		
-		address.user = user;
-		address.roadAddress = addressCreate.getRoadAddress();
-		address.detailAddress = addressCreate.getDetailAddress();
-		address.zipcode = addressCreate.getZipcode();
+		address.user = Objects.requireNonNull(user);
+		address.roadAddress = Objects.requireNonNull(addressCreate.getRoadAddress());
+		address.detailAddress = Objects.requireNonNull(addressCreate.getDetailAddress());
+		address.zipcode = Objects.requireNonNull(addressCreate.getZipcode());
 		
 		if(addressCreate.getIsDefault() != null) {
-			address.isDefault = addressCreate.getIsDefault();
+			address.isDefault = Objects.requireNonNull(addressCreate.getIsDefault());
 		}
 		
 		return address;
 	}
 	
+	public void changeNotDefault() {
+		if(this.isDefault == true) {
+			this.isDefault = false;			
+		}
+	}
 	
+	public void changeDefault() {
+		if(this.isDefault == false) {
+			this.isDefault = true;
+		}
+	}
+	
+	public void changeAddressInfo(AddressUpdateRequest addressUpdate) {
+		if(addressUpdate.getRoadAddress() != null) {
+			this.changeRoadAddress(addressUpdate.getRoadAddress());
+		}
+		
+		if(addressUpdate.getDetailAddress() != null) {
+			this.changeDetailAddress(addressUpdate.getDetailAddress());
+		}
+		
+		if(addressUpdate.getZipcode() != null) {
+			this.changeZipcode(addressUpdate.getZipcode());
+		}
+		
+		if(addressUpdate.getIsDefault() != null) {
+			this.changeIsDefault(addressUpdate.getIsDefault());
+		}
+	}
+	
+	private void changeRoadAddress(String roadAddress) {
+		this.roadAddress = Objects.requireNonNull(roadAddress);
+	}
+	
+	private void changeDetailAddress(String detailAddress) {
+		this.detailAddress = Objects.requireNonNull(detailAddress);
+	}
+	
+	private void changeZipcode(String zipcode) {
+		this.zipcode = Objects.requireNonNull(zipcode);
+	}
+	
+	private void changeIsDefault(Boolean isDefault) {
+		this.isDefault = Objects.requireNonNull(isDefault);
+	}
 	
 }
