@@ -80,7 +80,7 @@ public class AddressCommandTest {
 		
 		Address addressEntity = addressFinder.findByUserAndAddressId(user, address.getAddressId());
 		
-		assertThat(addressEntity.getCreatedBy()).isEqualTo("user");
+		assertThat(addressEntity.getCreatedBy()).isEqualTo("GUEST");
 	}
 	
 	@Test

@@ -3,6 +3,7 @@ package com.georgia.jeogiyo.user.dto.response;
 import java.util.UUID;
 
 import com.georgia.jeogiyo.user.entity.Role;
+import com.georgia.jeogiyo.user.entity.User;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -21,4 +22,14 @@ public class UserLoginResponse {
 	private final String nickname;
 	
 	private final Role role;
+	
+	public static UserLoginResponse of(User user, String accessToken) {
+		return new UserLoginResponse(
+				accessToken,
+				user.getUserId(),
+				user.getLoginId(),
+				user.getNickname(),
+				user.getRole()
+		);
+	}
 }

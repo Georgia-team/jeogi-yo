@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
@@ -23,17 +24,16 @@ public class UserAuthController {
 	@PostMapping("/signup")
 	public ResponseEntity<UserSignupResponse> signup(@RequestBody UserSignupRequest userSignup) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
-		UserSignupResponse signupUser = userCommandService.signup(userSignup);
+		UserSignupResponse signupResponse = userCommandService.signup(userSignup);
 		
-		return ResponseEntity.ok(signupUser);
+		return ResponseEntity.ok(signupResponse);
 	}
 	
 	@PostMapping("/login")
-	public ResponseEntity<UserLoginResponse> login() {
-		// TODO: 인증 엔티티 완료시 개발 시작
-		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
+	public ResponseEntity<UserLoginResponse> login(@RequestBody UserLoginRequest userLogin) {
+		UserLoginResponse loginResponse = userCommandService.login(userLogin);
 		
-		return null;
+		return ResponseEntity.ok(loginResponse);
 	}
 	
 }
