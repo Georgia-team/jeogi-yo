@@ -43,6 +43,7 @@ public class AiHistoryRepositoryImpl implements AiHistoryRepositoryCustom {
     public Page<AiHistory> searchAiHistories(
             AiStatus aiStatus,
             UUID productId,
+            UUID userId,
             Pageable pageable
     ) {
         QAiHistory aiHistory = QAiHistory.aiHistory;
@@ -56,6 +57,10 @@ public class AiHistoryRepositoryImpl implements AiHistoryRepositoryCustom {
 
         if (productId != null) {
             condition.and(aiHistory.product.productId.eq(productId));
+        }
+
+        if (userId != null) {
+            condition.and(aiHistory.user.userId.eq(userId));
         }
 
         List<AiHistory> content = queryFactory
