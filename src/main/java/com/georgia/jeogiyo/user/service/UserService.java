@@ -125,6 +125,11 @@ public class UserService {
 				if(masterUserCount <= 1) {
 					throw new UserDomainException(UserErrorCode.DELETE_FAILURE_LAST_MASTER);
 				}
+			} else if(user.isOwner()) {
+				// TODO: storeService 에서 해당 회원의 활성 가게 존재 여부 확인
+				
+				// TODO: 활성화된 가게 존재시 예외 발생
+				//throw new UserDomainException(UserErrorCode.DELETE_FAILURE_OPEN_STORES);
 			}
 			
 			user.softDelete(user.getLoginId());
