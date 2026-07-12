@@ -47,12 +47,4 @@ public interface UserFinder {
 	 * @return User Entity
 	 */
 	User getOwnerUserByLoginId(String loginId);
-	
-	/**
-	 * loginId로 isDeleted가 false 인 삭제되지 않은 회원을 한 건 검색
-	 * 
-	 * @param loginId
-	 * @return User Entity
-	 */
-	User getUserByLoginIdNotDelete(String loginId);
 }

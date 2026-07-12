@@ -36,9 +36,9 @@ public class UserFinderService implements UserFinder {
 	@Override
 	public User getUserByLoginId(String loginId) {
 		// TODO: 공통 예외 클래스 완료 시 수정
-		return userRepository.findByLoginId(loginId)
+		return userRepository.findByLoginIdAndIsDeleted(loginId, false)
 				// TODO: 존재하지 않는 사용자입니다.
-				.orElseThrow();
+				.orElseThrow(() -> new UserDomainException(UserErrorCode.NOT_FOUND_USER));
 	}
 
 	@Override
@@ -77,12 +77,6 @@ public class UserFinderService implements UserFinder {
 		
 		// 2. QueryDSL
 		return userDsl.findByRoleAndKeyword(userSearch);
-	}
-
-	@Override
-	public User getUserByLoginIdNotDelete(String loginId) {
-		return userRepository.findByLoginIdAndIsDeleted(loginId, false)
-				.orElseThrow(() -> new UserDomainException(UserErrorCode.NOT_FOUND_USER));
 	}
 	
 }

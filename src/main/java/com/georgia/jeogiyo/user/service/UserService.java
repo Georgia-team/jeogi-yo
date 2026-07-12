@@ -41,7 +41,7 @@ public class UserService {
 	
 	@Transactional(rollbackFor = Exception.class)
 	public UserLoginResponse login(UserLoginRequest userLogin) {
-		User user = userFinder.getUserByLoginIdNotDelete(userLogin.getLoginId());
+		User user = userFinder.getUserByLoginId(userLogin.getLoginId());
 		
 		if(!passwordEncoder.matches(userLogin.getPassword(), user.getPassword())) {
 			throw new UserDomainException(UserErrorCode.NOT_FOUND_USER);
@@ -89,7 +89,7 @@ public class UserService {
 	
 	@Transactional(rollbackFor = Exception.class)
 	public UserInfoResponse update(String loginId, UserUpdateRequest updateUser) {
-		User user = userFinder.getUserByLoginIdNotDelete(loginId);
+		User user = userFinder.getUserByLoginId(loginId);
 		
 		List<String> updateFields = updateUser.getUpdateFields();
 		
@@ -114,7 +114,7 @@ public class UserService {
 	
 	@Transactional(rollbackFor = Exception.class)
 	public UserDeleteResponse delete(String loginId, UserDeleteRequest deleteUser) {
-		User user = userFinder.getUserByLoginIdNotDelete(loginId);
+		User user = userFinder.getUserByLoginId(loginId);
 		
 		if(user.verifyCredentialsForDelete(deleteUser, passwordEncoder)) {
 			
