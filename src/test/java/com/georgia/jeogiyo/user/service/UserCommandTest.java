@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,8 @@ import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
+import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 
 import io.jsonwebtoken.Claims;
@@ -292,6 +295,30 @@ public class UserCommandTest {
 		assertThat(updated.getDeletedAt()).isNotNull();
 		assertThat(updated.getDeletedBy()).isEqualTo(given.getLoginId());
 		assertThat(updated.isDeleted()).isTrue();
+	}
+	
+	@Test
+	@DisplayName("service: 마지막 남은 마스터 유저 탈퇴 테스트")
+	void lastMastuerUserDelete() {
+		UserSignupResponse given = userCommandService.signup(userSignupRequest, Role.CUSTOMER);
+		
+		String email = given.getEmail();
+		String password = userSignupRequest.getPassword();
+		
+		userFinder.getUserByLoginId(given.getLoginId()).changeRole(Role.MASTER);
+		
+		em.flush();
+		em.clear();
+		
+		User master = userFinder.getUserByLoginId(given.getLoginId());
+		
+		assertThat(master.getRole()).isEqualTo(Role.MASTER);
+		
+		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(email, password);
+		
+		assertThatThrownBy(() -> userCommandService.delete(given.getLoginId(), userDeleteRequest))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DELETE_FAILURE_LAST_MASTER.getMessage());
 	}
 	
 }

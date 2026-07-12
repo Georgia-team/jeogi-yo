@@ -76,8 +76,10 @@ public class UserService {
 		
 		if(role == Role.CUSTOMER) {
 			user = User.customerCreate(signupUser, passwordEncoder);
-		} else {
+		} else if(role == Role.OWNER) {
 			user = User.ownerCreate(signupUser, passwordEncoder);
+		} else {
+			throw new UserDomainException(UserErrorCode.NOT_AUTHORIZATION);
 		}
 		
 		User saved = userRepository.save(user);
@@ -114,9 +116,17 @@ public class UserService {
 	public UserDeleteResponse delete(String loginId, UserDeleteRequest deleteUser) {
 		User user = userFinder.getUserByLoginId(loginId);
 		
-		// 1. 요청에 담긴 email, password 일치 검증
 		if(user.verifyCredentialsForDelete(deleteUser, passwordEncoder)) {
-			// 2. 성공 시 Delete
+			
+			if(user.isMaster()) {
+				long masterUserCount = userRepository.countByRole(Role.MASTER);
+				log.info("MASTER 권한 탈퇴 요청 검증 시작: masterUserCount={}", masterUserCount);
+				
+				if(masterUserCount <= 1) {
+					throw new UserDomainException(UserErrorCode.DELETE_FAILURE_LAST_MASTER);
+				}
+			}
+			
 			user.softDelete(user.getLoginId());
 			
 			log.info("USER_DELETE_SUCCESS: loginId = {}", user.getLoginId());

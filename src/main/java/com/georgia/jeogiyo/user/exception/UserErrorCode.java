@@ -17,6 +17,8 @@ public enum UserErrorCode {
 	NOT_FOUND_USER("존재하지 않는 사용자입니다."),
 	NOT_AUTHORIZATION("해당 요청에 대한 권한이 없습니다."),
 	
+	DELETE_FAILURE_LAST_MASTER("현재 마지막 관리자이므로 회원탈퇴가 불가능합니다. 다른 관리자를 지정한 후 다시 시도해주세요."),
+	
 	;
 	private final String message;
 }
