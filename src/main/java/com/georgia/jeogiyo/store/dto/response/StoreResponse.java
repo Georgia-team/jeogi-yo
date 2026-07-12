@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -36,11 +35,4 @@ public class StoreResponse {
 
     private Double averageRating;
 
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
-    private String updatedBy;
-
-    private Boolean isDeleted;
 }

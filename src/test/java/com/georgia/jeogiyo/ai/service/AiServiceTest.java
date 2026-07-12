@@ -2,6 +2,7 @@ package com.georgia.jeogiyo.ai.service;
 
 import com.georgia.jeogiyo.ai.dto.request.AiDescriptionRequest;
 import com.georgia.jeogiyo.ai.dto.response.AiDescriptionResponse;
+import com.georgia.jeogiyo.ai.dto.response.AiHistoryResponse;
 import com.georgia.jeogiyo.ai.dto.response.AiHistorySearchResponse;
 import com.georgia.jeogiyo.ai.entity.AiHistory;
 import com.georgia.jeogiyo.ai.entity.AiStatus;
@@ -12,6 +13,8 @@ import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.georgia.jeogiyo.user.entity.User;
+import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,14 +29,13 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Optional;
 
-import static com.georgia.jeogiyo.support.DomainTestFixture.CUSTOMER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.OWNER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.PRODUCT_ID;
+import static com.georgia.jeogiyo.support.DomainTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -46,7 +48,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
  * AI 성공/실패 이력 저장, 상품 description 반영, 권한/soft delete 차단만 검증합니다.
  *
  * TODO Gemini 모델명 변경 시 MODEL_NAME 기대값 또는 응답 검증을 함께 수정해야 합니다.
- * TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 기준으로 테스트를 변경해야 합니다.
  */
 @ExtendWith(MockitoExtension.class)
 class AiServiceTest {
@@ -86,7 +87,7 @@ class AiServiceTest {
         AiDescriptionRequest request = DomainTestFixture.aiDescriptionRequest("김치찌개 설명을 작성해줘");
         String responseText = "AI가 생성한 김치찌개 설명입니다.";
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
         given(aiGeminiService.generateDescription(anyString())).willReturn(responseText);
         given(aiHistoryRepository.save(any(AiHistory.class))).willAnswer(invocation -> {
@@ -117,7 +118,7 @@ class AiServiceTest {
         Product product = DomainTestFixture.product(store, category);
         AiDescriptionRequest request = DomainTestFixture.aiDescriptionRequest("상품 설명을 작성해줘");
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
         given(aiGeminiService.generateDescription(anyString())).willThrow(new RuntimeException("Gemini API 오류"));
         given(aiHistoryRepository.save(any(AiHistory.class))).willAnswer(invocation -> {
@@ -136,25 +137,21 @@ class AiServiceTest {
     }
 
     @Test
-    @DisplayName("상품의 가게 OWNER가 아니면 AI 설명을 생성할 수 없다")
+    @DisplayName("OWNER가 아니면 AI 상품 설명을 생성할 수 없다")
     void createAiDescription_customer_fail() {
-        // given: CUSTOMER가 OWNER 소유 상품에 AI 생성을 요청한다.
-        User owner = DomainTestFixture.owner();
-        User customer = DomainTestFixture.customer();
-        Category category = DomainTestFixture.category();
-        Store store = DomainTestFixture.store(owner, category);
-        Product product = DomainTestFixture.product(store, category);
-        AiDescriptionRequest request = DomainTestFixture.aiDescriptionRequest("상품 설명을 작성해줘");
+        // given: CUSTOMER loginId로 OWNER 권한 조회를 시도하면 권한 예외가 발생한다.
+        AiDescriptionRequest request =
+                DomainTestFixture.aiDescriptionRequest("상품 설명을 작성해줘");
 
-        given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
-        given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
+        given(userFinder.getOwnerUserByLoginId(CUSTOMER_LOGIN_ID))
+                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
 
-        // when & then: 가게 OWNER가 아니므로 Gemini 호출 전 실패한다.
+        // when & then: OWNER 권한 검증에서 실패하므로 상품 조회, Gemini 호출, AI 이력 저장까지 진행되지 않는다.
         assertThatThrownBy(() -> aiService.createAiDescription(PRODUCT_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("해당 상품의 가게 OWNER만 AI 설명을 생성할 수 있습니다.");
+                .isInstanceOf(UserDomainException.class)
+                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
 
-        verifyNoInteractions(aiGeminiService, aiHistoryRepository);
+        verifyNoInteractions(productRepository, aiGeminiService, aiHistoryRepository);
     }
 
     @Test
@@ -164,7 +161,8 @@ class AiServiceTest {
         User owner = DomainTestFixture.owner();
         AiDescriptionRequest request = DomainTestFixture.aiDescriptionRequest("상품 설명을 작성해줘");
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        //given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.empty());
 
         // when & then: 삭제된 상품은 없는 상품처럼 처리한다.
@@ -186,7 +184,8 @@ class AiServiceTest {
         Product product = DomainTestFixture.product(store, category);
         AiDescriptionRequest request = DomainTestFixture.aiDescriptionRequest("상품 설명을 작성해줘");
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        //given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
 
         // when & then: 부모 가게가 삭제되었으면 AI 설명 생성도 막는다.
@@ -200,26 +199,79 @@ class AiServiceTest {
     @Test
     @DisplayName("AI 이력 검색은 page 음수와 허용되지 않는 size를 보정한다")
     void searchAiHistories_pageAndSize_normalized() {
+
+        User master = DomainTestFixture.master();
+
+        given(userFinder.getMasterUserByLoginId(MASTER_LOGIN_ID))
+                .willReturn(master);
+
         // given: AI 이력 검색 repository가 빈 페이지를 반환한다.
-        given(aiHistoryRepository.searchAiHistories(eq(AiStatus.SUCCESS), eq(PRODUCT_ID), any(Pageable.class)))
+        given(aiHistoryRepository.searchAiHistories(eq(AiStatus.SUCCESS), eq(PRODUCT_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of()));
 
         // when: page=-1, size=20처럼 정책 밖의 요청이 들어온다.
         AiHistorySearchResponse response = aiService.searchAiHistories(
                 AiStatus.SUCCESS,
                 PRODUCT_ID,
+                null,
                 -1,
                 20,
-                "desc"
+                "desc",
+                MASTER_LOGIN_ID
         );
 
         // then: page는 0, size는 10으로 보정되어 repository에 전달된다.
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         then(aiHistoryRepository).should()
-                .searchAiHistories(eq(AiStatus.SUCCESS), eq(PRODUCT_ID), pageableCaptor.capture());
+                .searchAiHistories(eq(AiStatus.SUCCESS), eq(PRODUCT_ID), isNull(), pageableCaptor.capture());
 
         assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
         assertThat(response.getPage()).isZero();
+    }
+
+    @Test
+    @DisplayName("MASTER는 AI 이력을 상세 조회할 수 있다")
+    void getAiHistory_master_success() {
+        User master = DomainTestFixture.master();
+        User owner = DomainTestFixture.owner();
+        Category category = DomainTestFixture.category();
+        Store store = DomainTestFixture.store(owner, category);
+        Product product = DomainTestFixture.product(store, category);
+        AiHistory aiHistory = DomainTestFixture.aiHistory(owner, product);
+
+        given(userFinder.getMasterUserByLoginId(MASTER_LOGIN_ID)).willReturn(master);
+        given(aiHistoryRepository.findActiveById(AI_HISTORY_ID)).willReturn(Optional.of(aiHistory));
+
+        AiHistoryResponse response = aiService.getAiHistory(AI_HISTORY_ID, MASTER_LOGIN_ID);
+
+        assertThat(response.getAiHistoryId()).isEqualTo(AI_HISTORY_ID);
+        assertThat(response.getProductId()).isEqualTo(PRODUCT_ID);
+    }
+
+    @Test
+    @DisplayName("MASTER가 아니면 AI 이력을 상세 조회할 수 없다")
+    void getAiHistory_nonMaster_fail() {
+        given(userFinder.getMasterUserByLoginId(OWNER_LOGIN_ID))
+                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
+
+        assertThatThrownBy(() -> aiService.getAiHistory(AI_HISTORY_ID, OWNER_LOGIN_ID))
+                .isInstanceOf(UserDomainException.class)
+                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+
+        verifyNoInteractions(aiHistoryRepository);
+    }
+
+    @Test
+    @DisplayName("MASTER가 아니면 AI 이력을 검색할 수 없다")
+    void searchAiHistories_nonMaster_fail() {
+        given(userFinder.getMasterUserByLoginId(OWNER_LOGIN_ID))
+                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
+
+        assertThatThrownBy(() -> aiService.searchAiHistories(null, null, null, 0, 10, "desc", OWNER_LOGIN_ID))
+                .isInstanceOf(UserDomainException.class)
+                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+
+        verifyNoInteractions(aiHistoryRepository);
     }
 }

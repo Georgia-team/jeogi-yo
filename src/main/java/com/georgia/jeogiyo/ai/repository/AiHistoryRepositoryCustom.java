@@ -15,6 +15,6 @@ public interface AiHistoryRepositoryCustom {
     Page<AiHistory> searchAiHistories(
             AiStatus aiStatus,
             UUID productId,
-            Pageable pageable
+            UUID userId, Pageable pageable
     );
 }

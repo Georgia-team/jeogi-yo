@@ -14,7 +14,7 @@ public interface ProductRepositoryCustom {
             UUID categoryId,
             String keyword,
             Role role,
-            String loginId,
+            UUID  userId,
             Pageable pageable
     );
 }

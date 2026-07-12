@@ -30,7 +30,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class StoreServiceImpl implements StoreService {
-    // TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 정보로 권한 검증
+    // loginId는 Controller에서 JWT 인증 객체(Authentication)로부터 전달받는다.
 
     private final StoreRepository storeRepository;
     private final UserFinder userFinder;
@@ -39,13 +39,9 @@ public class StoreServiceImpl implements StoreService {
 
     @Override
     public StoreResponse createStore(String loginId, StoreCreateRequest request) {
-        User owner = userFinder.getUserByLoginId(loginId);
+        User owner = userFinder.getOwnerUserByLoginId(loginId);
 
-        if (owner.getRole() != Role.OWNER) {
-            throw new IllegalArgumentException("OWNER만 가게를 등록할 수 있습니다.");
-        }
-
-        Category category = categoryRepository.findById(request.getCategoryId())
+        Category category = categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
 
         Store store = new Store(
@@ -82,7 +78,7 @@ public class StoreServiceImpl implements StoreService {
             String sort
     ) {
         if (categoryId != null) {
-            categoryRepository.findById(categoryId)
+            categoryRepository.findByCategoryIdAndIsDeletedFalse(categoryId)
                     .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
         }
 
@@ -108,7 +104,7 @@ public class StoreServiceImpl implements StoreService {
         validateOwnerOrMaster(user, store);
 
         Category category = request.getCategoryId() != null
-                ? categoryRepository.findById(request.getCategoryId())
+                ? categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."))
                 : null;
 
@@ -123,7 +119,7 @@ public class StoreServiceImpl implements StoreService {
         * updatedAt은 JPA Auditing의 @LastModifiedDate로 들어가는데, 이 값은 보통 트랜잭션이 flush 될 때 채워집니다.
         * DTO 필드에만 updatedAt을 추가하면 수정 직후 응답에서 updatedAt이 null이거나 이전 값일 수 있으므로 flush 합니다.
         * */
-        // 수정 응답 만들기 전에 flush
+        // 변경 감지 flush 확인
         entityManager.flush();
 
         log.info("Store status changed. storeId={}, status={}", store.getStoreId(), store.getStoreStatus());
@@ -140,7 +136,7 @@ public class StoreServiceImpl implements StoreService {
 
         store.changeStatus(request.getStoreStatus());
 
-        // 수정 응답 만들기 전에 flush
+        // 변경 감지 flush 확인
         entityManager.flush();
 
         return toResponse(store);
@@ -166,7 +162,7 @@ public class StoreServiceImpl implements StoreService {
     private void validateOwnerOrMaster(User user, Store store) {
         boolean isMaster = user.getRole() == Role.MASTER;
         boolean isOwnerOfStore = user.getRole() == Role.OWNER
-                && store.getOwner().getLoginId().equals(user.getLoginId());
+                && store.getOwner().getUserId().equals(user.getUserId());
 
         if (!isMaster && !isOwnerOfStore) {
             throw new IllegalArgumentException("본인 가게만 처리할 수 있습니다.");
@@ -196,10 +192,6 @@ public class StoreServiceImpl implements StoreService {
                 .address(store.getAddress())
                 .phone(store.getPhone())
                 .storeStatus(store.getStoreStatus())
-                .createdAt(store.getCreatedAt())
-                .updatedAt(store.getUpdatedAt())
-                .updatedBy(store.getUpdatedBy())
-                .isDeleted(store.isDeleted())
                 .build();
     }
 

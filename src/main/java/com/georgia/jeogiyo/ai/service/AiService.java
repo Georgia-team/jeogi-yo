@@ -12,7 +12,7 @@ public interface AiService {
 
     AiDescriptionResponse createAiDescription(UUID productId, String loginId, AiDescriptionRequest request);
 
-    AiHistoryResponse getAiHistory(UUID aiHistoryId);
+    AiHistoryResponse getAiHistory(UUID aiHistoryId, String loginId);
 
-    AiHistorySearchResponse searchAiHistories(AiStatus aiStatus, UUID productId, int page, int size, String sort);
+    AiHistorySearchResponse searchAiHistories(AiStatus aiStatus, UUID productId, UUID userId,  int page, int size, String sort, String loginId);
 }

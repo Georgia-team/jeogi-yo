@@ -241,4 +241,17 @@ public final class DomainTestFixture {
         ReflectionTestUtils.setField(entity, "updatedAt", TEST_NOW);
         ReflectionTestUtils.setField(entity, "updatedBy", "user");
     }
+
+    public static AiHistory aiHistory(User owner, Product product) {
+        AiHistory aiHistory = AiHistory.success(
+                owner,
+                product,
+                "상품 설명을 작성해줘",
+                "AI가 작성한 상품 설명",
+                "gemini-2.5-flash-lite"
+        );
+
+        markPersisted(aiHistory, AI_HISTORY_ID);
+        return aiHistory;
+    }
 }

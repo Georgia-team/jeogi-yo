@@ -37,9 +37,8 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public AiDescriptionResponse createAiDescription(UUID productId, String loginId, AiDescriptionRequest request) {
-        User user = userFinder.getUserByLoginId(loginId);
+        User user = userFinder.getOwnerUserByLoginId(loginId);
 
-        //Product product = productRepository.findById(productId)
         Product product = productRepository.findByProductIdAndIsDeletedFalse(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
 
@@ -47,7 +46,6 @@ public class AiServiceImpl implements AiService {
             throw new IllegalArgumentException("삭제된 가게의 상품은 AI 설명을 생성할 수 없습니다.");
         }
 
-        // TODO JWT/User ID 타입 정리 후 OWNER 검증 로직 재확인
         // 현재 loginId로 User를 찾고, 상품의 가게 owner와 비교
         validateOwner(user, product);
 
@@ -83,7 +81,6 @@ public class AiServiceImpl implements AiService {
                     .modelName(saved.getModelName())
                     .aiStatus(saved.getAiStatus())
                     .errorMessage(saved.getErrorMessage()) // 성공하면 null
-                    .createdAt(saved.getCreatedAt())
                     .build();
 
         } catch (Exception e) {
@@ -106,15 +103,15 @@ public class AiServiceImpl implements AiService {
                     .modelName(saved.getModelName())
                     .aiStatus(saved.getAiStatus())
                     .errorMessage(saved.getErrorMessage()) // 실패하면 있음
-                    .createdAt(saved.getCreatedAt())
                     .build();
         }
     }
 
     @Override
     @Transactional(readOnly = true)
-    public AiHistoryResponse getAiHistory(UUID aiHistoryId) {
-        //AiHistory aiHistory = aiHistoryRepository.findById(aiHistoryId)
+    public AiHistoryResponse getAiHistory(UUID aiHistoryId, String loginId) {
+
+        userFinder.getMasterUserByLoginId(loginId); // MASTER 검증
         AiHistory aiHistory = aiHistoryRepository.findActiveById(aiHistoryId)
                 .orElseThrow(() -> new IllegalArgumentException("AI 이력을 찾을 수 없습니다."));
 
@@ -123,7 +120,9 @@ public class AiServiceImpl implements AiService {
 
     @Override
     @Transactional(readOnly = true)
-    public AiHistorySearchResponse searchAiHistories(AiStatus aiStatus, UUID productId, int page, int size, String sort) {
+    public AiHistorySearchResponse searchAiHistories(AiStatus aiStatus, UUID productId, UUID userId, int page, int size, String sort, String loginId) {
+
+        userFinder.getMasterUserByLoginId(loginId); // MASTER 검증
 
         int validatedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
         Sort.Direction direction = "asc".equalsIgnoreCase(sort)
@@ -137,7 +136,7 @@ public class AiServiceImpl implements AiService {
         );
 
         Page<AiHistory> aiHistoryPage =
-                aiHistoryRepository.searchAiHistories(aiStatus, productId, pageable);
+                aiHistoryRepository.searchAiHistories(aiStatus, productId, userId, pageable);
 
         List<AiHistoryResponse> content = aiHistoryPage.getContent().stream()
                 .map(this::toHistoryResponse)
@@ -168,7 +167,6 @@ public class AiServiceImpl implements AiService {
                 .modelName(aiHistory.getModelName())
                 .aiStatus(aiHistory.getAiStatus())
                 .errorMessage(aiHistory.getErrorMessage())
-                .createdAt(aiHistory.getCreatedAt())
                 .build();
     }
 }
