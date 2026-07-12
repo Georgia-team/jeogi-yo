@@ -43,4 +43,16 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false)
     private OrderStatus orderStatus;
+
+    public Order(UUID userId, UUID storeId, UUID addressId, String roadAddress,
+                 String detailAddress, String zipcode, Integer totalPrice, OrderStatus orderStatus) {
+        this.userId = userId;
+        this.storeId = storeId;
+        this.addressId = addressId;
+        this.roadAddress = roadAddress;
+        this.detailAddress = detailAddress;
+        this.zipcode = zipcode;
+        this.totalPrice = totalPrice;
+        this.orderStatus = orderStatus;
+}
 }
