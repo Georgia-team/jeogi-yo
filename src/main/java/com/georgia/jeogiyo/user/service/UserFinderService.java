@@ -78,5 +78,11 @@ public class UserFinderService implements UserFinder {
 		// 2. QueryDSL
 		return userDsl.findByRoleAndKeyword(userSearch);
 	}
+
+	@Override
+	public User getUserByLoginIdNotDelete(String loginId) {
+		return userRepository.findByLoginIdAndIsDeleted(loginId, false)
+				.orElseThrow(() -> new UserDomainException(UserErrorCode.NOT_FOUND_USER));
+	}
 	
 }

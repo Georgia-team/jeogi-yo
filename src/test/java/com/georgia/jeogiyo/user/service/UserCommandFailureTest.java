@@ -140,4 +140,7 @@ public class UserCommandFailureTest {
 		.hasMessage(UserErrorCode.DUPLICATE_EMAIL.getMessage());
 	}
 	
+	
+	// TODO: 회원가입 실패 테스트 케이스
+	
 }

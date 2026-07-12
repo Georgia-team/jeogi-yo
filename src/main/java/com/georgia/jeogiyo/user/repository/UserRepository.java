@@ -19,5 +19,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 	boolean existsByLoginId(String loginId);
 	
 	long countByRole(Role role);
+
+	Optional<User> findByLoginIdAndIsDeleted(String loginId, boolean isDeleted);
 	
 }
