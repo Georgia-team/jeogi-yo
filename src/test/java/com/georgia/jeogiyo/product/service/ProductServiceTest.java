@@ -17,6 +17,8 @@ import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
+import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -113,9 +115,9 @@ class ProductServiceTest {
         Store store = DomainTestFixture.store(owner, category);
         ProductCreateRequest request = DomainTestFixture.productCreateRequest(CATEGORY_ID, false);
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
-        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID)).willReturn(Optional.of(category));
         given(productRepository.save(any(Product.class))).willAnswer(invocation -> {
             Product product = invocation.getArgument(0);
             DomainTestFixture.markPersisted(product, PRODUCT_ID);
@@ -143,9 +145,9 @@ class ProductServiceTest {
         ProductCreateRequest request = DomainTestFixture.productCreateRequest(CATEGORY_ID, true);
         String aiDescription = "AI가 생성한 테스트 상품 설명입니다.";
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
-        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID)).willReturn(Optional.of(category));
         given(aiGeminiService.generateDescription(anyString())).willReturn(aiDescription);
         given(productRepository.save(any(Product.class))).willAnswer(invocation -> {
             Product product = invocation.getArgument(0);
@@ -170,22 +172,19 @@ class ProductServiceTest {
     @Test
     @DisplayName("CUSTOMER는 상품을 등록할 수 없다")
     void createProduct_customer_fail() {
-        // given: CUSTOMER가 OWNER 가게에 상품 등록을 시도한다.
-        User customer = DomainTestFixture.customer();
-        User owner = DomainTestFixture.owner();
-        Category category = DomainTestFixture.category();
-        Store store = DomainTestFixture.store(owner, category);
+        // given: CUSTOMER loginId로 OWNER 권한 조회를 시도하면 권한 예외가 발생한다.
         ProductCreateRequest request = DomainTestFixture.productCreateRequest(CATEGORY_ID, false);
 
-        given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
-        given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
+        given(userFinder.getOwnerUserByLoginId(CUSTOMER_LOGIN_ID))
+                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
 
-        // when & then: 본인 가게의 OWNER가 아니므로 실패한다.
+        // when & then: OWNER 권한 검증에서 실패하므로 가게/카테고리/상품 저장 로직까지 가지 않는다.
         assertThatThrownBy(() -> productService.createProduct(STORE_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("본인 가게의 상품만 등록할 수 있습니다.");
+                .isInstanceOf(UserDomainException.class)
+                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
 
-        verifyNoInteractions(categoryRepository, productRepository, aiGeminiService);
+        verifyNoInteractions(storeRepository, categoryRepository, productRepository,
+                aiGeminiService, aiHistoryRepository, aiHistoryRecorder);
     }
 
     @Test
@@ -198,9 +197,9 @@ class ProductServiceTest {
         ProductCreateRequest request = DomainTestFixture.productCreateRequest(CATEGORY_ID, false);
         ReflectionTestUtils.setField(request, "description", "");
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
-        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID)).willReturn(Optional.of(category));
 
         // when & then: 직접 설명이 없으면 상품 등록을 막는다.
         assertThatThrownBy(() -> productService.createProduct(STORE_ID, OWNER_LOGIN_ID, request))
@@ -220,9 +219,9 @@ class ProductServiceTest {
         ProductCreateRequest request = DomainTestFixture.productCreateRequest(CATEGORY_ID, true);
         ReflectionTestUtils.setField(request, "aiPrompt", "");
 
-        given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
+        given(userFinder.getOwnerUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
-        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID)).willReturn(Optional.of(category));
 
         // when & then: AI 프롬프트가 없으면 Gemini 호출 전에 실패한다.
         assertThatThrownBy(() -> productService.createProduct(STORE_ID, OWNER_LOGIN_ID, request))
@@ -284,7 +283,7 @@ class ProductServiceTest {
 
         given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
-        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID)).willReturn(Optional.of(category));
 
         // when: OWNER가 상품 정보를 수정한다.
         ProductResponse response = productService.updateProduct(PRODUCT_ID, OWNER_LOGIN_ID, request);
@@ -372,13 +371,13 @@ class ProductServiceTest {
 
         given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
         given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
-        given(categoryRepository.findById(CATEGORY_ID)).willReturn(Optional.of(category));
+        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID)).willReturn(Optional.of(category));
         given(productRepository.searchProducts(
                 eq(STORE_ID),
                 eq(CATEGORY_ID),
                 eq("테스트"),
                 eq(Role.OWNER),
-                eq(OWNER_LOGIN_ID),
+                eq(owner.getUserId()),
                 any(Pageable.class)
         )).willReturn(new PageImpl<>(List.of()));
 
@@ -400,7 +399,7 @@ class ProductServiceTest {
                 eq(CATEGORY_ID),
                 eq("테스트"),
                 eq(Role.OWNER),
-                eq(OWNER_LOGIN_ID),
+                eq(owner.getUserId()),
                 pageableCaptor.capture()
         );
 
