@@ -28,7 +28,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             UUID categoryId,
             String keyword,
             Role role,
-            String loginId,
+            UUID userId,
             Pageable pageable
     ) {
         QProduct product = QProduct.product;
@@ -45,7 +45,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             condition.and(product.productName.containsIgnoreCase(keyword.trim()));
         }
 
-        applyVisibilityCondition(condition, product, role, loginId);
+        applyVisibilityCondition(condition, product, role, userId);
 
         List<Product> content = queryFactory
                 .selectFrom(product)
@@ -70,7 +70,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
             BooleanBuilder condition,
             QProduct product,
             Role role,
-            String loginId
+            UUID userId
     ) {
         if (role == Role.MASTER) {
             return;
@@ -79,7 +79,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         if (role == Role.OWNER) {
             condition.and(
                     product.isHidden.isFalse()
-                            .or(product.store.owner.loginId.eq(loginId))
+                            .or(product.store.owner.userId.eq(userId))
             );
             return;
         }

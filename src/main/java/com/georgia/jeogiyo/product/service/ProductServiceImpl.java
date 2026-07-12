@@ -35,7 +35,7 @@ import java.util.UUID;
 @Transactional
 public class ProductServiceImpl implements ProductService {
 
-    // TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 정보로 권한 검증
+    // loginId는 Controller에서 JWT 인증 객체(Authentication)로부터 전달받는다.
 
     private final ProductRepository productRepository;
     private final StoreRepository storeRepository;
@@ -47,18 +47,18 @@ public class ProductServiceImpl implements ProductService {
     private final EntityManager entityManager;
 
     @Override
-    public ProductResponse createProduct(UUID storeId, String loginId, ProductCreateRequest request) { // TODO JWT
+    public ProductResponse createProduct(UUID storeId, String loginId, ProductCreateRequest request) {
 
-        User user = userFinder.getUserByLoginId(loginId);
+        User user = userFinder.getOwnerUserByLoginId(loginId);
 
         Store store = storeRepository.findByStoreIdAndIsDeletedFalse(storeId)
                 .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
 
-        if (user.getRole() != Role.OWNER || !store.getOwner().getLoginId().equals(loginId)) {
+        if (!store.getOwner().getUserId().equals(user.getUserId())) {
             throw new IllegalArgumentException("본인 가게의 상품만 등록할 수 있습니다.");
         }
 
-        Category category = categoryRepository.findById(request.getCategoryId())
+        Category category = categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
 
         if (!Boolean.TRUE.equals(request.getUseAiDescription())
@@ -123,7 +123,7 @@ public class ProductServiceImpl implements ProductService {
     private void validateOwnerOrMaster(User user, Product product) {
         boolean isMaster = user.getRole() == Role.MASTER;
         boolean isOwnerOfStore = user.getRole() == Role.OWNER
-                && product.getStore().getOwner().getLoginId().equals(user.getLoginId());
+                && product.getStore().getOwner().getUserId().equals(user.getUserId());
 
         if (!isMaster && !isOwnerOfStore) {
             throw new IllegalArgumentException("본인 가게의 상품만 처리할 수 있습니다.");
@@ -158,7 +158,7 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
 
         if (categoryId != null) {
-            categoryRepository.findById(categoryId)
+            categoryRepository.findByCategoryIdAndIsDeletedFalse(categoryId)
                     .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
         }
 
@@ -169,7 +169,7 @@ public class ProductServiceImpl implements ProductService {
                 categoryId,
                 keyword,
                 user.getRole(),
-                user.getLoginId(),
+                user.getUserId(),
                 pageable
         );
 
@@ -191,7 +191,7 @@ public class ProductServiceImpl implements ProductService {
         validateOwnerOrMaster(user, product);
 
         Category category = request.getCategoryId() != null
-                ? categoryRepository.findById(request.getCategoryId())
+                ? categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."))
                 : null;
 
@@ -203,7 +203,7 @@ public class ProductServiceImpl implements ProductService {
                 request.getStock(),
                 request.getIsHidden()
         );
-
+        // 변경 감지 flush 확인
         entityManager.flush();
 
         log.info("Product updated. productId={}", product.getProductId());
@@ -243,7 +243,7 @@ public class ProductServiceImpl implements ProductService {
 
         boolean isMaster = user.getRole() == Role.MASTER;
         boolean isOwnerOfStore = user.getRole() == Role.OWNER
-                && product.getStore().getOwner().getLoginId().equals(user.getLoginId());
+                && product.getStore().getOwner().getUserId().equals(user.getUserId());
 
         if (!isMaster && !isOwnerOfStore) {
             throw new IllegalArgumentException("숨김 처리된 상품은 조회할 수 없습니다.");
@@ -273,10 +273,6 @@ public class ProductServiceImpl implements ProductService {
                 .price(product.getPrice())
                 .stock(product.getStock())
                 .isHidden(product.getIsHidden())
-                .createdAt(product.getCreatedAt())
-                .updatedAt(product.getUpdatedAt())
-                .updatedBy(product.getUpdatedBy())
-                .isDeleted(product.isDeleted())
                 .build();
     }
 
@@ -289,7 +285,6 @@ public class ProductServiceImpl implements ProductService {
                 .price(product.getPrice())
                 .stock(product.getStock())
                 .isHidden(product.getIsHidden())
-                .createdAt(product.getCreatedAt())
                 .build();
     }
 
