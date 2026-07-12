@@ -17,6 +17,7 @@ import com.georgia.jeogiyo.address.dto.response.AddressCreateResponse;
 import com.georgia.jeogiyo.address.dto.response.AddressUpdateResponse;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 import com.georgia.jeogiyo.user.service.UserFinder;
@@ -51,7 +52,7 @@ public class AddressCommandTest {
 	void setUp() {
 		userSignupRequest = UserFix.getUserSignupRequest();
 		
-		user = userFinder.getUserById(userCommandService.signup(userSignupRequest).getUserId());
+		user = userFinder.getUserById(userCommandService.signup(userSignupRequest, Role.CUSTOMER).getUserId());
 	}
 	
 	@Test

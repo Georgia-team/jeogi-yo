@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
 import com.georgia.jeogiyo.user.entity.User;
@@ -46,5 +47,12 @@ public class AddressFinderService implements AddressFinder {
 				.orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
 	}
 	
+	public AddressInfoResponse getAddressInfoOne(String loginId, String addressId) {
+		User user = userFinder.getUserByLoginId(loginId);
+		
+		Address address = findByUserAndAddressId(user, UUID.fromString(addressId));
+		
+		return AddressInfoResponse.of(address);
+	}
 	
 }

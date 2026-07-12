@@ -51,7 +51,7 @@ public class User extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private Role role;
 	
-	public static User create(UserSignupRequest userCreate, PasswordEncoder passwordEncoder) {
+	public static User customerCreate(UserSignupRequest userCreate, PasswordEncoder passwordEncoder) {
 		User user = new User();
 		
 		user.loginId = Objects.requireNonNull(userCreate.getLoginId());
@@ -61,6 +61,20 @@ public class User extends BaseEntity {
 		user.password = passwordEncoder.encode(Objects.requireNonNull(userCreate.getPassword()));
 		
 		user.role = Role.CUSTOMER;
+		
+		return user;
+	}
+	
+	public static User ownerCreate(UserSignupRequest userCreate, PasswordEncoder passwordEncoder) {
+		User user = new User();
+		
+		user.loginId = Objects.requireNonNull(userCreate.getLoginId());
+		user.nickname = Objects.requireNonNull(userCreate.getNickname());
+		user.phone = Objects.requireNonNull(userCreate.getPhone());
+		user.email = Objects.requireNonNull(userCreate.getEmail());
+		user.password = passwordEncoder.encode(Objects.requireNonNull(userCreate.getPassword()));
+		
+		user.role = Role.OWNER;
 		
 		return user;
 	}

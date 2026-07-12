@@ -81,7 +81,7 @@ public class UserSearchTest {
 	void setUp() {
 		UserSignupRequest signupRequest = UserFix.getUserSignupRequest();
 		
-		User user = User.create(signupRequest, passwordEncoder);
+		User user = User.customerCreate(signupRequest, passwordEncoder);
 		
 		user.changeRole(Role.MASTER);
 		
@@ -91,12 +91,12 @@ public class UserSearchTest {
 		
 		testUserListNameTest.stream()
 		.forEach(u -> {
-			userCommandService.signup(u);
+			userCommandService.signup(u, Role.CUSTOMER);
 		});
 		
 		testUserListNameMath.stream()
 		.forEach(u -> {
-			userCommandService.signup(u);
+			userCommandService.signup(u, Role.CUSTOMER);
 		});
 		
 		em.flush();

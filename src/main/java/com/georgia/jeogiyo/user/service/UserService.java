@@ -15,6 +15,7 @@ import com.georgia.jeogiyo.user.dto.response.UserDeleteResponse;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
 import com.georgia.jeogiyo.user.exception.UserErrorCode;
@@ -52,7 +53,7 @@ public class UserService {
 	}
 	
 	@Transactional(rollbackFor = Exception.class)
-	public UserSignupResponse signup(UserSignupRequest signupUser) {
+	public UserSignupResponse signup(UserSignupRequest signupUser, Role role) {
 		if(userRepository.existsByEmail(signupUser.getEmail())) {
 			// TODO: 이미 사용중인 이메일입니다. 409
 			log.warn("SIGNUP_FAILED: Duplicate email = {}", signupUser.getEmail());
@@ -71,7 +72,15 @@ public class UserService {
 			throw new UserDomainException(UserErrorCode.DUPLICATION_LOGIN_ID);
 		}
 		
-		User saved = userRepository.save(User.create(signupUser, passwordEncoder));
+		User user;
+		
+		if(role == Role.CUSTOMER) {
+			user = User.customerCreate(signupUser, passwordEncoder);
+		} else {
+			user = User.ownerCreate(signupUser, passwordEncoder);
+		}
+		
+		User saved = userRepository.save(user);
 		
 		return UserSignupResponse.of(saved);
 	}

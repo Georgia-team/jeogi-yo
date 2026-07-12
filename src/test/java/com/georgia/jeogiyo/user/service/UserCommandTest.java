@@ -49,7 +49,7 @@ public class UserCommandTest {
 	@Test
 	@DisplayName("service: 유저 로그인 테스트")
 	void userLoginTest() {
-		userCommandService.signup(userSignupRequest);
+		userCommandService.signup(userSignupRequest, Role.CUSTOMER);
 		
 		UserLoginRequest loginRequest = new UserLoginRequest(userSignupRequest.getLoginId(), userSignupRequest.getPassword());
 		
@@ -71,9 +71,35 @@ public class UserCommandTest {
 	}
 	
 	@Test
-	@DisplayName("service: 유저 생성 테스트")
-	void userSignupTest() {
-		UserSignupResponse response = userCommandService.signup(userSignupRequest);
+	@DisplayName("service: owner 유저 생성 테스트")
+	void userSignupTest_Owner() {
+		UserSignupResponse response = userCommandService.signup(userSignupRequest, Role.OWNER);
+		
+		assertThat(response.getUserId()).isNotNull();
+		
+		assertThat(response.getCreatedAt()).isNotNull();
+		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
+		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
+		assertThat(response.getRole()).isEqualTo(Role.OWNER);
+		assertThat(response.isDeleted()).isFalse();
+		
+		User user = userFinder.getUserById(response.getUserId());
+		
+		assertThat(user).isNotNull();
+		assertThat(user.getCreatedAt()).isNotNull();
+		
+		assertThat(user.getCreatedBy()).isEqualTo("GUEST");
+		
+		assertThat(user.getUpdatedAt()).isNull();
+		
+		assertThat(user.getDeletedAt()).isNull();
+		assertThat(user.getDeletedBy()).isNull();
+	}
+	
+	@Test
+	@DisplayName("service: customer 유저 생성 테스트")
+	void userSignupTest_Customer() {
+		UserSignupResponse response = userCommandService.signup(userSignupRequest, Role.CUSTOMER);
 		
 		assertThat(response.getUserId()).isNotNull();
 //		assertThatNoException().isThrownBy(() -> {
@@ -105,7 +131,7 @@ public class UserCommandTest {
 	@Test
 	@DisplayName("service: 유저 이메일 수정 테스트")
 	void userEmailUpdateTest() {
-		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		UserSignupResponse given = userCommandService.signup(userSignupRequest, Role.CUSTOMER);
 		
 		User before = userFinder.getUserById(given.getUserId());
 		
@@ -141,7 +167,7 @@ public class UserCommandTest {
 	@Test
 	@DisplayName("service: 유저 닉네임 수정 테스트")
 	void userNicknameUpdateTest() {
-		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		UserSignupResponse given = userCommandService.signup(userSignupRequest, Role.CUSTOMER);
 		
 		User before = userFinder.getUserById(given.getUserId());
 		
@@ -177,7 +203,7 @@ public class UserCommandTest {
 	@Test
 	@DisplayName("service: 유저 전화번호 수정 테스트")
 	void userPhoneUpdateTest() {
-		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		UserSignupResponse given = userCommandService.signup(userSignupRequest, Role.CUSTOMER);
 		
 		User before = userFinder.getUserById(given.getUserId());
 		
@@ -212,7 +238,7 @@ public class UserCommandTest {
 	@Test
 	@DisplayName("service: 유저 패스워드 수정 테스트")
 	void userPasswordUpdateTest() {
-		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		UserSignupResponse given = userCommandService.signup(userSignupRequest, Role.CUSTOMER);
 		
 		User before = userFinder.getUserById(given.getUserId());
 		
@@ -244,7 +270,7 @@ public class UserCommandTest {
 	@Test
 	@DisplayName("service: 유저 탈퇴 테스트")
 	void userDeleteTest() {
-		UserSignupResponse given = userCommandService.signup(userSignupRequest);
+		UserSignupResponse given = userCommandService.signup(userSignupRequest, Role.CUSTOMER);
 		
 		String email = given.getEmail();
 		String password = userSignupRequest.getPassword();

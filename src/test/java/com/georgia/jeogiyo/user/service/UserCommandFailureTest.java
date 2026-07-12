@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
 import com.georgia.jeogiyo.user.exception.UserErrorCode;
@@ -49,7 +50,7 @@ public class UserCommandFailureTest {
 	
 	@BeforeEach
 	void setUp() {
-		user = userRepository.save(User.create(userSignupRequest, passwordEncoder));
+		user = userRepository.save(User.customerCreate(userSignupRequest, passwordEncoder));
 		
 		userId = user.getUserId();
 	}
@@ -65,7 +66,7 @@ public class UserCommandFailureTest {
 				userSignupRequest.getEmail()
 		);
 		
-		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestEmail))
+		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestEmail, Role.CUSTOMER))
 		.isInstanceOf(UserDomainException.class)
 		.hasMessage(UserErrorCode.DUPLICATE_EMAIL.getMessage());
 	}
@@ -81,7 +82,7 @@ public class UserCommandFailureTest {
 				"failtest@email.com"
 		);
 		
-		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname))
+		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname, Role.CUSTOMER))
 		.isInstanceOf(UserDomainException.class)
 		.hasMessage(UserErrorCode.DUPLICATE_NICKNAME.getMessage());
 	}
@@ -97,7 +98,7 @@ public class UserCommandFailureTest {
 				"failtest@email.com"
 		);
 		
-		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname))
+		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname, Role.CUSTOMER))
 		.isInstanceOf(UserDomainException.class)
 		.hasMessage(UserErrorCode.DUPLICATION_LOGIN_ID.getMessage());
 	}
@@ -126,7 +127,7 @@ public class UserCommandFailureTest {
 				"failtest@email.com"
 		);
 		
-		userCommandService.signup(userSignupRequestGiven);
+		userCommandService.signup(userSignupRequestGiven, Role.CUSTOMER);
 		
 		User given = userFinder.getUserByLoginId(userSignupRequestGiven.getLoginId());
 		

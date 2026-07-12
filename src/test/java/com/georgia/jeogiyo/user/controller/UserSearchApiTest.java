@@ -65,7 +65,7 @@ public class UserSearchApiTest {
 	@BeforeEach
 	void setUp() {
 		userSignupRequest = UserFix.getUserSignupRequest();
-		userLoginId = userService.signup(userSignupRequest).getLoginId();
+		userLoginId = userService.signup(userSignupRequest, Role.CUSTOMER).getLoginId();
 		user = userFinder.getUserByLoginId(userLoginId);
 		user.changeRole(Role.MASTER);
 		
@@ -127,7 +127,7 @@ public class UserSearchApiTest {
 		);
 		testUserListNameTest.stream()
 		.forEach(u -> {
-			userService.signup(u);
+			userService.signup(u, Role.CUSTOMER);
 		});
 		
 		em.flush();

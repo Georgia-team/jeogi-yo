@@ -90,7 +90,7 @@ public final class DomainTestFixture {
                 loginId + "@test.com"
         );
 
-        User user = User.create(request, TEST_PASSWORD_ENCODER);
+        User user = User.customerCreate(request, TEST_PASSWORD_ENCODER);
         user.changeRole(role);
         ReflectionTestUtils.setField(user, "userId", userId);
         markAudited(user);

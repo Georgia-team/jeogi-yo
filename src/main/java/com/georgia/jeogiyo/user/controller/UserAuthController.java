@@ -6,14 +6,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.georgia.jeogiyo.global.jwt.JwtUtil;
-import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
-import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.service.UserService;
 
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -23,12 +20,16 @@ public class UserAuthController {
 	
 	private final UserService userCommandService;
 	
-	private final JwtUtil jwtUtil;
-	
 	@PostMapping("/signup")
-	public ResponseEntity<UserSignupResponse> signup(@RequestBody UserSignupRequest userSignup) {
-		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
-		UserSignupResponse signupResponse = userCommandService.signup(userSignup);
+	public ResponseEntity<UserSignupResponse> signupCustomer(@RequestBody UserSignupRequest userSignup) {
+		UserSignupResponse signupResponse = userCommandService.signup(userSignup, Role.CUSTOMER);
+		
+		return ResponseEntity.ok(signupResponse);
+	}
+	
+	@PostMapping("/signup/owner")
+	public ResponseEntity<UserSignupResponse> signupOwner(@RequestBody UserSignupRequest ownerSignup) {
+		UserSignupResponse signupResponse = userCommandService.signup(ownerSignup, Role.OWNER);
 		
 		return ResponseEntity.ok(signupResponse);
 	}

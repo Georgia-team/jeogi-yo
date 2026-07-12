@@ -26,6 +26,7 @@ import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 import com.georgia.jeogiyo.user.service.UserFinder;
@@ -64,7 +65,7 @@ public class UserApiTest {
 	@BeforeEach
 	void setUp() {
 		userSignupRequest = UserFix.getUserSignupRequest();
-		userLoginId = userService.signup(userSignupRequest).getLoginId();
+		userLoginId = userService.signup(userSignupRequest, Role.CUSTOMER).getLoginId();
 		user = userFinder.getUserByLoginId(userLoginId);
 		
 		em.flush();
