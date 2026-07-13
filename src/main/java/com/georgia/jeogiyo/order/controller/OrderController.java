@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.order.controller;
 
 
+import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
 import com.georgia.jeogiyo.order.dto.response.*;
@@ -68,6 +69,16 @@ public class OrderController {
             @Valid @RequestBody OrderStatusUpdateRequest request
     ) {
         OrderStatusUpdateResponse response = orderService.updateOrderStatus(loginId, orderId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<OrderCancelResponse> cancelOrder(
+            @PathVariable UUID orderId,
+            @RequestParam String loginId,
+            @RequestBody OrderCancelRequest request
+    ) {
+        OrderCancelResponse response = orderService.cancelOrder(loginId, orderId, request);
         return ResponseEntity.ok(response);
     }
 }

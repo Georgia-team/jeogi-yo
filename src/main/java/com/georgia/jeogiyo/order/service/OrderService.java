@@ -2,14 +2,18 @@ package com.georgia.jeogiyo.order.service;
 
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
+import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
 import com.georgia.jeogiyo.order.dto.response.*;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
+import com.georgia.jeogiyo.order.dto.response.OrderCancelResponse;
+import java.time.LocalDateTime;
 import com.georgia.jeogiyo.orderitem.entity.OrderItem;
 import com.georgia.jeogiyo.orderitem.repository.OrderItemRepository;
+import com.georgia.jeogiyo.payment.repository.PaymentRepository;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
@@ -25,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import jakarta.persistence.EntityManager;
 
@@ -45,6 +50,7 @@ public class OrderService {
     private final UserRepository userRepository;
     private final JPAQueryFactory queryFactory;
     private final EntityManager entityManager;
+    private final PaymentRepository paymentRepository;
 
     private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_TRANSITIONS = Map.of(
             OrderStatus.ORDER_REQUESTED, Set.of(OrderStatus.ORDER_ACCEPTED, OrderStatus.ORDER_REJECTED),
@@ -53,7 +59,7 @@ public class OrderService {
             OrderStatus.DELIVERY_PICKED_UP, Set.of(OrderStatus.DELIVERED)
     );
 
-    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository,ProductRepository productRepository,OrderItemRepository orderItemRepository, StoreRepository storeRepository,UserRepository userRepository,JPAQueryFactory queryFactory,EntityManager entityManager) {
+    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository,ProductRepository productRepository,OrderItemRepository orderItemRepository, StoreRepository storeRepository,UserRepository userRepository,JPAQueryFactory queryFactory,EntityManager entityManager,PaymentRepository paymentRepository) {
 
         this.orderRepository = orderRepository;
         this.addressRepository = addressRepository;
@@ -63,6 +69,7 @@ public class OrderService {
         this.userRepository = userRepository;
         this.queryFactory = queryFactory;
         this.entityManager = entityManager;
+        this.paymentRepository = paymentRepository;
     }
     public Order getOrder(UUID orderId){
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId).orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다"));
@@ -340,6 +347,84 @@ public class OrderService {
         response.setUpdatedAt(order.getUpdatedAt());
 
         return response;
+    }
+
+    @Transactional
+    public OrderCancelResponse cancelOrder(String loginId, UUID orderId, OrderCancelRequest request) {
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.MASTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "취소 권한이 없습니다.");
+        }
+
+        Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        if (user.getRole() == Role.CUSTOMER) {
+            if (!order.getUserId().equals(user.getUserId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 주문만 취소할 수 있습니다.");
+            }
+            if (order.getOrderStatus() != OrderStatus.ORDER_REQUESTED) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "취소할 수 없는 상태의 주문입니다.");
+            }
+            if (order.getCreatedAt().plusMinutes(5).isBefore(LocalDateTime.now())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "주문 후 5분이 지나 취소할 수 없습니다.");
+            }
+        } else {
+            if (order.getOrderStatus() == OrderStatus.DELIVERED
+                    || order.getOrderStatus() == OrderStatus.CANCELLED
+                    || order.getOrderStatus() == OrderStatus.ORDER_REJECTED) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "취소할 수 없는 상태의 주문입니다.");
+            }
+        }
+
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+        for (OrderItem item : orderItems) {
+            Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId()).orElse(null);
+            if (product != null) {
+                product.restoreStock(item.getQuantity());
+            }
+        }
+
+        paymentRepository.findByOrderIdAndIsDeletedFalse(orderId).ifPresent(payment -> {
+            if (payment.getPaymentStatus() == com.georgia.jeogiyo.payment.entity.PaymentStatus.SUCCESS) {
+                payment.cancel(request.getCancelReason());
+            }
+        });
+
+        order.changeStatus(OrderStatus.CANCELLED);
+        entityManager.flush();
+
+        OrderCancelResponse response = new OrderCancelResponse();
+        response.setOrderId(order.getOrderId());
+        response.setOrderStatus(order.getOrderStatus().name());
+        response.setCanceledAt(order.getUpdatedAt());
+        response.setCancelReason(request.getCancelReason());
+
+        return response;
+    }
+
+    @Transactional
+    public void cancelByPayment(UUID orderId, String loginId) {
+
+        Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        if (order.getOrderStatus() != OrderStatus.ORDER_REQUESTED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "취소할 수 없는 상태의 주문입니다.");
+        }
+
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+        for (OrderItem item : orderItems) {
+            Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId()).orElse(null);
+            if (product != null) {
+                product.restoreStock(item.getQuantity());
+            }
+        }
+
+        order.changeStatus(OrderStatus.CANCELLED);
     }
 
 }
