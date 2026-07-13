@@ -18,16 +18,27 @@ import com.georgia.jeogiyo.address.dto.response.AddressDeleteResponse;
 import com.georgia.jeogiyo.address.dto.response.AddressUpdateResponse;
 import com.georgia.jeogiyo.address.service.AddressService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
+@Tag(name = "Address", description = "주소 Command API")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/address")
 public class AddressCommandController {
 
 	private final AddressService addressService;
 	
+	@Operation(summary = "주소 등록", description = "유저 본인의 주소를 등록합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "주소 등록 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+		@ApiResponse(responseCode = "403", description = "권한 없음")
+	})
 	@PostMapping("")
 	public ResponseEntity<AddressCreateResponse> addressCreate(
 			@AuthenticationPrincipal UserDetails userDetails,
@@ -40,6 +51,13 @@ public class AddressCommandController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@Operation(summary = "주소 수정", description = "유저 본인이 등록한 주소를 수정합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "주소 수정 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+		@ApiResponse(responseCode = "403", description = "권한 없음"),
+		@ApiResponse(responseCode = "404", description = "주소를 찾을 수 없음")
+	})
 	@PatchMapping("/{addressId}")
 	public ResponseEntity<AddressUpdateResponse> addressUpdate(
 			@AuthenticationPrincipal UserDetails userDetails,
@@ -53,6 +71,14 @@ public class AddressCommandController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@Operation(summary = "주소 삭제", description = "유저 본인이 등록한 주소를 삭제합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "주소 삭제 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+		@ApiResponse(responseCode = "403", description = "권한 없음"),
+		@ApiResponse(responseCode = "404", description = "주소를 찾을 수 없음"),
+		@ApiResponse(responseCode = "409", description = "마지막 배송지는 삭제할 수 없음")
+	})
 	@DeleteMapping("/{addressId}")
 	public ResponseEntity<AddressDeleteResponse> addressDelete(
 			@AuthenticationPrincipal UserDetails userDetails,

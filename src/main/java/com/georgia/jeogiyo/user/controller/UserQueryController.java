@@ -15,16 +15,26 @@ import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinderService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
+@Tag(name = "User", description = "회원 Query API")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserQueryController {
 
 	private final UserFinderService userFinderService;
 	
-	// 내 정보 조회 API
+	@Operation(summary = "내 정보 조회", description = "내 정보를 조회합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "내 정보 조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+		@ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+	})
 	@GetMapping("/me")
 	public ResponseEntity<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
@@ -36,8 +46,12 @@ public class UserQueryController {
 		return ResponseEntity.ok(response);
 	}
 	
-	// 유저 목록 검색 API
-	// 마스터 권한
+	@Operation(summary = "유저 목록 조회", description = "마스터 권한용 유저 목록 조회")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "유저 목록 조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+		@ApiResponse(responseCode = "403", description = "권한 없음")
+	})
 	@GetMapping("")
 	public ResponseEntity<List<UserInfoResponse>> masterGetUserList(
 			@AuthenticationPrincipal UserDetails userDetails,

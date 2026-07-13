@@ -15,15 +15,28 @@ import com.georgia.jeogiyo.user.dto.response.UserDeleteResponse;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
+@Tag(name = "User", description = "회원 Command API")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserCommandController {
 
 	private final UserService userCommandService;
 	
+	@Operation(summary = "회원 수정", description = "본인의 회원 정보를 수정합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "회원 수정 성공"),
+		@ApiResponse(responseCode = "400", description = "요청값 검증 실패"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+		@ApiResponse(responseCode = "403", description = "권한 없음"),
+		@ApiResponse(responseCode = "409", description = "이메일 중복, 닉네임 중복")
+	})
 	@PatchMapping("/me")
 	public ResponseEntity<UserInfoResponse> updateMe(
 			@AuthenticationPrincipal UserDetails userDetails,
@@ -39,6 +52,12 @@ public class UserCommandController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@Operation(summary = "회원 삭제", description = "회원 탈퇴합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "회원 탈퇴 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+		@ApiResponse(responseCode = "409", description = "이미 탈퇴한 회원")
+	})
 	@DeleteMapping("/me")
 	public ResponseEntity<UserDeleteResponse> deleteMe(
 			@AuthenticationPrincipal UserDetails userDetails,
