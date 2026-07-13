@@ -1,9 +1,10 @@
 package com.georgia.jeogiyo.product.controller;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.product.dto.request.ProductCreateRequest;
 import com.georgia.jeogiyo.product.dto.request.ProductUpdateRequest;
 import com.georgia.jeogiyo.product.dto.response.ProductResponse;
-import com.georgia.jeogiyo.product.dto.response.ProductSearchPageResponse;
+import com.georgia.jeogiyo.product.dto.response.ProductSearchResponse;
 import com.georgia.jeogiyo.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,8 +16,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.UUID;
 
 @RestController
@@ -69,7 +71,7 @@ public class ProductController {
             @ApiResponse(responseCode = "200", description = "상품 목록 검색 성공")
     })
     @GetMapping("/stores/{storeId}/products")
-    public ResponseEntity<ProductSearchPageResponse> searchProducts(
+    public ResponseEntity<PageResponse<ProductSearchResponse>> searchProducts(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
             @Parameter(description = "카테고리 ID", example = "22222222-2222-2222-2222-222222222221")
@@ -84,7 +86,7 @@ public class ProductController {
             @RequestParam(defaultValue = "desc") String sort,
             @Parameter(hidden = true) Authentication authentication
     ) {
-        ProductSearchPageResponse response = productService.searchProducts(
+        PageResponse<ProductSearchResponse> response = productService.searchProducts(
                 storeId,
                 categoryId,
                 keyword,

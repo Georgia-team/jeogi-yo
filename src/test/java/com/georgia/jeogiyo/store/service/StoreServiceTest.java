@@ -2,11 +2,12 @@ package com.georgia.jeogiyo.store.service;
 
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreUpdateRequest;
 import com.georgia.jeogiyo.store.dto.response.StoreResponse;
-import com.georgia.jeogiyo.store.dto.response.StoreSearchPageResponse;
+import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
@@ -25,25 +26,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
 
-import static com.georgia.jeogiyo.support.DomainTestFixture.CATEGORY_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.CUSTOMER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.MASTER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.OWNER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.STORE_ID;
+import static com.georgia.jeogiyo.support.DomainTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 /**
  * StoreServiceImpl 단위 테스트입니다.
@@ -270,7 +264,8 @@ class StoreServiceTest {
                 .willReturn(new PageImpl<>(List.of()));
 
         // when: page=-1, size=20처럼 정책 밖의 요청이 들어온다.
-        StoreSearchPageResponse response = storeService.searchStores(CATEGORY_ID, "테스트", -1, 20, "desc");
+        PageResponse<StoreSearchResponse> response =
+                storeService.searchStores(CATEGORY_ID, "테스트", -1, 20, "desc");
 
         // then: page는 0, size는 10으로 보정되어 repository에 전달된다.
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);

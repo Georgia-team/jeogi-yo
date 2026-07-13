@@ -1,10 +1,11 @@
 package com.georgia.jeogiyo.store.controller;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreUpdateRequest;
 import com.georgia.jeogiyo.store.dto.response.StoreResponse;
-import com.georgia.jeogiyo.store.dto.response.StoreSearchPageResponse;
+import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 import com.georgia.jeogiyo.store.service.StoreService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,8 +17,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.UUID;
 
 @RestController
@@ -61,8 +63,8 @@ public class StoreController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "가게 목록 검색 성공")
     })
-    @GetMapping
-    public ResponseEntity<StoreSearchPageResponse> searchStores(
+    @GetMapping("/stores")
+    public ResponseEntity<PageResponse<StoreSearchResponse>> searchStores(
             @Parameter(description = "카테고리 ID", example = "22222222-2222-2222-2222-222222222221")
             @RequestParam(required = false) UUID categoryId,
             @Parameter(description = "검색 키워드", example = "치킨")
@@ -74,13 +76,8 @@ public class StoreController {
             @Parameter(description = "정렬 방향", example = "desc")
             @RequestParam(defaultValue = "desc") String sort
     ) {
-        StoreSearchPageResponse response = storeService.searchStores(
-                categoryId,
-                keyword,
-                page,
-                size,
-                sort
-        );
+        PageResponse<StoreSearchResponse> response =
+                storeService.searchStores(categoryId, keyword, page, size, sort);
 
         return ResponseEntity.ok(response);
     }

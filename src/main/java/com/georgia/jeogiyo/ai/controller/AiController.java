@@ -3,20 +3,21 @@ package com.georgia.jeogiyo.ai.controller;
 import com.georgia.jeogiyo.ai.dto.request.AiDescriptionRequest;
 import com.georgia.jeogiyo.ai.dto.response.AiDescriptionResponse;
 import com.georgia.jeogiyo.ai.dto.response.AiHistoryResponse;
-import com.georgia.jeogiyo.ai.dto.response.AiHistorySearchResponse;
 import com.georgia.jeogiyo.ai.entity.AiStatus;
 import com.georgia.jeogiyo.ai.service.AiService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
+import com.georgia.jeogiyo.global.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.UUID;
 
 @RestController
@@ -67,7 +68,7 @@ public class AiController {
             @ApiResponse(responseCode = "403", description = "MASTER 권한 없음")
     })
     @GetMapping("/ai-histories")
-    public ResponseEntity<AiHistorySearchResponse> searchAiHistories(
+    public ResponseEntity<PageResponse<AiHistoryResponse>> searchAiHistories(
             @Parameter(description = "AI 처리 상태", example = "SUCCESS")
             @RequestParam(required = false) AiStatus aiStatus,
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
@@ -82,7 +83,16 @@ public class AiController {
             @RequestParam(defaultValue = "desc") String sort,
             @Parameter(hidden = true) Authentication authentication
     ) {
-        AiHistorySearchResponse response = aiService.searchAiHistories(aiStatus, productId, userId, page, size, sort, authentication.getName());
+        PageResponse<AiHistoryResponse> response = aiService.searchAiHistories(
+                aiStatus,
+                productId,
+                userId,
+                page,
+                size,
+                sort,
+                authentication.getName()
+        );
+
         return ResponseEntity.ok(response);
     }
 }
