@@ -19,6 +19,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.georgia.jeogiyo.user.entity.Role;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +43,7 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "주문 없음")
     })
+    @Secured(Role.Authority.CUSTOMER)
     @PostMapping("/orders/{orderId}/payments")
     public ResponseEntity<PaymentCreateResponse> createPayment(
             @Parameter(description = "주문 ID", example = "66666666-6666-6666-6666-666666666661")
@@ -59,6 +62,7 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "본인 결제가 아니거나 권한 없음"),
             @ApiResponse(responseCode = "404", description = "결제 정보 없음")
     })
+    @Secured({Role.Authority.CUSTOMER, Role.Authority.MASTER})
     @GetMapping("/payments/{paymentId}")
     public ResponseEntity<PaymentResponse> getPayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
@@ -74,6 +78,7 @@ public class PaymentController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
+    @Secured({Role.Authority.CUSTOMER, Role.Authority.MASTER})
     @GetMapping("/payments")
     public ResponseEntity<PageResponse<PaymentSearchResponse>> searchPayments(
             @Parameter(description = "결제 상태", example = "SUCCESS")
@@ -100,6 +105,7 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "본인 결제가 아니거나 권한 없음"),
             @ApiResponse(responseCode = "404", description = "결제 또는 주문 정보 없음")
     })
+    @Secured({Role.Authority.CUSTOMER, Role.Authority.MASTER})
     @PatchMapping("/payments/{paymentId}/cancel")
     public ResponseEntity<PaymentCancelResponse> cancelPayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
@@ -118,6 +124,7 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "MASTER 권한 없음"),
             @ApiResponse(responseCode = "404", description = "결제 정보 없음")
     })
+    @Secured(Role.Authority.MASTER)
     @DeleteMapping("/payments/{paymentId}")
     public ResponseEntity<Void> deletePayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
