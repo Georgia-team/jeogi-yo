@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import com.georgia.jeogiyo.user.entity.Role;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +37,7 @@ public class AiController {
             @ApiResponse(responseCode = "400", description = "요청값 검증 실패"),
             @ApiResponse(responseCode = "403", description = "OWNER 권한 없음")
     })
+    @Secured(Role.Authority.OWNER)
     @PostMapping("/products/{productId}/ai-description")
     public ResponseEntity<AiDescriptionResponse> createAiDescription(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
@@ -52,6 +55,7 @@ public class AiController {
             @ApiResponse(responseCode = "403", description = "MASTER 권한 없음"),
             @ApiResponse(responseCode = "404", description = "AI 이력 없음")
     })
+    @Secured(Role.Authority.MASTER)
     @GetMapping("/ai-histories/{aiHistoryId}")
     public ResponseEntity<AiHistoryResponse> getAiHistory(
             @Parameter(description = "AI 이력 ID", example = "55555555-5555-5555-5555-555555555551")
@@ -67,6 +71,7 @@ public class AiController {
             @ApiResponse(responseCode = "200", description = "AI 이력 검색 성공"),
             @ApiResponse(responseCode = "403", description = "MASTER 권한 없음")
     })
+    @Secured(Role.Authority.MASTER)
     @GetMapping("/ai-histories")
     public ResponseEntity<PageResponse<AiHistoryResponse>> searchAiHistories(
             @Parameter(description = "AI 처리 상태", example = "SUCCESS")

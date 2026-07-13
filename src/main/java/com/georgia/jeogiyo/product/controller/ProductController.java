@@ -16,6 +16,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.georgia.jeogiyo.user.entity.Role;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +39,7 @@ public class ProductController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
+    @Secured(Role.Authority.OWNER)
     @PostMapping("/stores/{storeId}/products")
     public ResponseEntity<ProductResponse> createProduct(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
@@ -55,6 +58,7 @@ public class ProductController {
             @ApiResponse(responseCode = "403", description = "숨김 상품 조회 권한 없음"),
             @ApiResponse(responseCode = "404", description = "상품 없음")
     })
+    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
     @GetMapping("/products/{productId}")
     public ResponseEntity<ProductResponse> getProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
@@ -70,6 +74,7 @@ public class ProductController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "상품 목록 검색 성공")
     })
+    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
     @GetMapping("/stores/{storeId}/products")
     public ResponseEntity<PageResponse<ProductSearchResponse>> searchProducts(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
@@ -107,6 +112,7 @@ public class ProductController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "상품 또는 카테고리 없음")
     })
+    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
     @PatchMapping("/products/{productId}")
     public ResponseEntity<ProductResponse> updateProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
@@ -126,6 +132,7 @@ public class ProductController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "상품 없음")
     })
+    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
     @DeleteMapping("/products/{productId}")
     public ResponseEntity<Void> deleteProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")

@@ -17,6 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.georgia.jeogiyo.user.entity.Role;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +40,7 @@ public class StoreController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
+    @Secured(Role.Authority.OWNER)
     @PostMapping
     public ResponseEntity<StoreResponse> createStore(
             @Parameter(hidden = true) Authentication authentication,
@@ -52,6 +55,7 @@ public class StoreController {
             @ApiResponse(responseCode = "200", description = "가게 조회 성공"),
             @ApiResponse(responseCode = "404", description = "가게 없음")
     })
+    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
     @GetMapping("/{storeId}")
     public ResponseEntity<StoreResponse> getStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
@@ -63,7 +67,8 @@ public class StoreController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "가게 목록 검색 성공")
     })
-    @GetMapping("/stores")
+    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
+    @GetMapping
     public ResponseEntity<PageResponse<StoreSearchResponse>> searchStores(
             @Parameter(description = "카테고리 ID", example = "22222222-2222-2222-2222-222222222221")
             @RequestParam(required = false) UUID categoryId,
@@ -90,6 +95,7 @@ public class StoreController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "가게 또는 카테고리 없음")
     })
+    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
     @PatchMapping("/{storeId}")
     public ResponseEntity<StoreResponse> updateStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
@@ -108,6 +114,7 @@ public class StoreController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "가게 없음")
     })
+    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
     @PatchMapping({"/{storeId}/status", "/{storeId}/storestatus"})
     public ResponseEntity<StoreResponse> updateStoreStatus(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
@@ -125,6 +132,7 @@ public class StoreController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "가게 없음")
     })
+    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
     @DeleteMapping("/{storeId}")
     public ResponseEntity<Void> deleteStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
