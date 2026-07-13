@@ -53,13 +53,13 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // 주문 1건에는 결제 1건만 허용한다. DB에서도 p_payment.order_id unique로 한 번 더 막는다.
-        if (paymentRepository.existsByOrderId(orderId)) {
+        if (paymentRepository.existsByOrder_OrderId(orderId)) {
             throw new IllegalArgumentException("이미 결제 이력이 존재하는 주문입니다.");
         }
 
         Payment payment = new Payment(
-                order.getOrderId(),
-                user.getUserId(),
+                order,
+                user,
                 request.getPaymentMethod(),
                 order.getTotalPrice()
         );

@@ -70,7 +70,7 @@ class PaymentServiceTest {
 
         given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
-        given(paymentRepository.existsByOrderId(ORDER_ID)).willReturn(false);
+        given(paymentRepository.existsByOrder_OrderId(ORDER_ID)).willReturn(false);
         given(paymentRepository.save(any(Payment.class))).willAnswer(invocation -> {
             Payment payment = invocation.getArgument(0);
             DomainTestFixture.markPersisted(payment, PAYMENT_ID);
@@ -129,7 +129,7 @@ class PaymentServiceTest {
 
         given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
-        given(paymentRepository.existsByOrderId(ORDER_ID)).willReturn(true);
+        given(paymentRepository.existsByOrder_OrderId(ORDER_ID)).willReturn(true);
 
         assertThatThrownBy(() -> paymentService.createPayment(ORDER_ID, CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)
