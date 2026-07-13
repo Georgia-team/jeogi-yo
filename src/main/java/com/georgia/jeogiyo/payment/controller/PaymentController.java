@@ -1,0 +1,126 @@
+package com.georgia.jeogiyo.payment.controller;
+
+import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
+import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
+import com.georgia.jeogiyo.payment.dto.response.PaymentCancelResponse;
+import com.georgia.jeogiyo.payment.dto.response.PaymentCreateResponse;
+import com.georgia.jeogiyo.payment.dto.response.PaymentResponse;
+import com.georgia.jeogiyo.payment.dto.response.PaymentSearchPageResponse;
+import com.georgia.jeogiyo.payment.entity.PaymentStatus;
+import com.georgia.jeogiyo.payment.service.PaymentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@Tag(name = "Payment", description = "결제 API")
+@SecurityRequirement(name = "bearerAuth")
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1")
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    @Operation(summary = "결제 생성", description = "CUSTOMER가 본인 주문에 대해 결제를 생성합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "결제 생성 성공"),
+            @ApiResponse(responseCode = "400", description = "요청값 검증 실패 또는 중복 결제"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "권한 없음"),
+            @ApiResponse(responseCode = "404", description = "주문 없음")
+    })
+    @PostMapping("/orders/{orderId}/payments")
+    public ResponseEntity<PaymentCreateResponse> createPayment(
+            @Parameter(description = "주문 ID", example = "66666666-6666-6666-6666-666666666661")
+            @PathVariable UUID orderId,
+            @Parameter(hidden = true) Authentication authentication,
+            @Valid @RequestBody PaymentCreateRequest request
+    ) {
+        PaymentCreateResponse response = paymentService.createPayment(orderId, authentication.getName(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "결제 상세 조회", description = "CUSTOMER는 본인 결제, MASTER는 전체 결제를 조회합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "결제 상세 조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "본인 결제가 아니거나 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "결제 정보 없음")
+    })
+    @GetMapping("/payments/{paymentId}")
+    public ResponseEntity<PaymentResponse> getPayment(
+            @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
+            @PathVariable UUID paymentId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(paymentService.getPayment(paymentId, authentication.getName()));
+    }
+
+    @Operation(summary = "결제 목록 검색", description = "CUSTOMER는 본인 결제, MASTER는 전체 결제를 검색합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "결제 목록 검색 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "권한 없음")
+    })
+    @GetMapping("/payments")
+    public ResponseEntity<PaymentSearchPageResponse> searchPayments(
+            @Parameter(description = "결제 상태", example = "SUCCESS")
+            @RequestParam(name = "paymentstatus", required = false) PaymentStatus paymentStatus,
+            @Parameter(description = "페이지 번호. 음수 요청 시 0으로 보정됩니다.", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기. 10, 30, 50만 허용하며 그 외 값은 10으로 보정됩니다.", example = "10")
+            @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "정렬 방향. asc 또는 desc", example = "desc")
+            @RequestParam(defaultValue = "desc") String sort,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        return ResponseEntity.ok(paymentService.searchPayments(paymentStatus, page, size, sort, authentication.getName()));
+    }
+
+    @Operation(summary = "결제 취소", description = "CUSTOMER는 본인 결제, MASTER는 전체 결제를 취소합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "결제 취소 성공"),
+            @ApiResponse(responseCode = "400", description = "취소 불가능한 결제 상태 또는 주문 상태"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "본인 결제가 아니거나 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "결제 또는 주문 정보 없음")
+    })
+    @PatchMapping("/payments/{paymentId}/cancel")
+    public ResponseEntity<PaymentCancelResponse> cancelPayment(
+            @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
+            @PathVariable UUID paymentId,
+            @Parameter(hidden = true) Authentication authentication,
+            @Valid @RequestBody PaymentCancelRequest request
+    ) {
+        return ResponseEntity.ok(paymentService.cancelPayment(paymentId, authentication.getName(), request));
+    }
+
+    @Operation(summary = "결제 이력 삭제", description = "MASTER가 취소 상태 결제를 soft delete 처리합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "결제 이력 삭제 성공"),
+            @ApiResponse(responseCode = "400", description = "취소 상태가 아닌 결제는 삭제 불가"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "MASTER 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "결제 정보 없음")
+    })
+    @DeleteMapping("/payments/{paymentId}")
+    public ResponseEntity<Void> deletePayment(
+            @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
+            @PathVariable UUID paymentId,
+            @Parameter(hidden = true) Authentication authentication
+    ) {
+        paymentService.deletePayment(paymentId, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+}
