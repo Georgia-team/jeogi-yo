@@ -33,4 +33,12 @@ public class OrderItem extends BaseEntity {
 
     @Column(name = "item_total_price", nullable = false)
     private Integer itemTotalPrice;
+
+    public OrderItem(UUID orderId, UUID productId, Integer quantity, Integer unitPrice, Integer itemTotalPrice) {
+        this.orderId = orderId;
+        this.productId = productId;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.itemTotalPrice = itemTotalPrice;
+    }
 }
