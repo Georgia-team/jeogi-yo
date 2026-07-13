@@ -50,9 +50,13 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                     setAuthentication(info.getSubject());
                 } catch (Exception e) {
                     log.error("Authentication Error: {}", e.getMessage());
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return; // 인증 객체 생성 실패 -> 즉시 종료 (401)
                 }
             } else {
                 log.error("Token Error");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return; // 토큰이 유효하지 않음 -> 즉시 종료 (401)
             }
         }
 

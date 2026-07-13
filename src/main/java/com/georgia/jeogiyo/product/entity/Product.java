@@ -112,9 +112,13 @@ public class Product extends BaseEntity {
     /**
      * 주문 가능 여부 확인
      * 숨김 상품이 아니고 재고가 1개 이상이어야 주문 가능
+     * Order 쪽에서 실수로 삭제된 상품을 findById()로 가져와도 주문을 막도록 추가
      */
     public boolean isOrderable() {
-        return !isHidden && stock > 0;
+        return !isDeleted()
+                && !store.isDeleted()
+                && !Boolean.TRUE.equals(isHidden)
+                && stock > 0;
     }
 
     /**

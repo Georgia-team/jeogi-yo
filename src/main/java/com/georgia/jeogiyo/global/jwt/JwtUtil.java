@@ -118,6 +118,13 @@ public class JwtUtil {
 
     // HttpServletRequest 에서 Cookie Value : JWT 가져오기
     public String getTokenFromRequest(HttpServletRequest req) {
+        // Authorization 헤더 확인 (Swagger Authorize 버튼 등에서 사용)
+        String headerValue = req.getHeader(AUTHORIZATION_HEADER);
+        if (StringUtils.hasText(headerValue)) {
+            return headerValue; // 헤더 값은 URL 인코딩되어 오지 않으므로 그대로 반환
+        }
+
+        // 쿠키 확인
         Cookie[] cookies = req.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
