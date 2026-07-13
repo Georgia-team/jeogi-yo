@@ -154,6 +154,13 @@ public class StoreServiceImpl implements StoreService {
         log.info("Store soft deleted. storeId={}, deletedBy={}", store.getStoreId(), loginId);
     }
 
+    // USER 탈퇴 로직에서 이 OWNER가 삭제되지 않은 가게를 가지고 있는지 확인합니다.
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsActiveStoreByOwnerId(UUID ownerId) {
+        return storeRepository.existsByOwner_UserIdAndIsDeletedFalse(ownerId);
+    }
+
     private Store findStore(UUID storeId) {
         return storeRepository.findByStoreIdAndIsDeletedFalse(storeId)
                 .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));

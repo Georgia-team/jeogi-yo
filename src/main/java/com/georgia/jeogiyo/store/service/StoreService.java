@@ -27,4 +27,6 @@ public interface StoreService {
     StoreResponse updateStoreStatus(UUID storeId, String loginId, StoreStatusUpdateRequest request);
 
     void deleteStore(UUID storeId, String loginId);
+
+    boolean existsActiveStoreByOwnerId(UUID ownerId);
 }
