@@ -3,9 +3,8 @@ package com.georgia.jeogiyo.order.service;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
-import com.georgia.jeogiyo.order.dto.response.OrderCreateResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderDetailResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderStoreSearchResponse;
+import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
+import com.georgia.jeogiyo.order.dto.response.*;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
@@ -21,20 +20,20 @@ import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.georgia.jeogiyo.store.entity.QStore;
-import com.georgia.jeogiyo.order.dto.response.OrderSearchResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import java.util.ArrayList;
+
+import java.util.*;
+import jakarta.persistence.EntityManager;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 public class OrderService {
@@ -45,8 +44,16 @@ public class OrderService {
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
     private final JPAQueryFactory queryFactory;
+    private final EntityManager entityManager;
 
-    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository,ProductRepository productRepository,OrderItemRepository orderItemRepository, StoreRepository storeRepository,UserRepository userRepository,JPAQueryFactory queryFactory) {
+    private static final Map<OrderStatus, Set<OrderStatus>> ALLOWED_TRANSITIONS = Map.of(
+            OrderStatus.ORDER_REQUESTED, Set.of(OrderStatus.ORDER_ACCEPTED, OrderStatus.ORDER_REJECTED),
+            OrderStatus.ORDER_ACCEPTED, Set.of(OrderStatus.COOKING_COMPLETED),
+            OrderStatus.COOKING_COMPLETED, Set.of(OrderStatus.DELIVERY_PICKED_UP),
+            OrderStatus.DELIVERY_PICKED_UP, Set.of(OrderStatus.DELIVERED)
+    );
+
+    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository,ProductRepository productRepository,OrderItemRepository orderItemRepository, StoreRepository storeRepository,UserRepository userRepository,JPAQueryFactory queryFactory,EntityManager entityManager) {
 
         this.orderRepository = orderRepository;
         this.addressRepository = addressRepository;
@@ -55,6 +62,7 @@ public class OrderService {
         this.storeRepository = storeRepository;
         this.userRepository = userRepository;
         this.queryFactory = queryFactory;
+        this.entityManager = entityManager;
     }
     public Order getOrder(UUID orderId){
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId).orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다"));
@@ -291,6 +299,45 @@ public class OrderService {
         response.setSize(orderPage.getSize());
         response.setTotalElements(orderPage.getTotalElements());
         response.setTotalPages(orderPage.getTotalPages());
+
+        return response;
+    }
+    @Transactional
+    public OrderStatusUpdateResponse updateOrderStatus(String loginId, UUID orderId, OrderStatusUpdateRequest request) {
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        if (user.getRole() != Role.OWNER && user.getRole() != Role.MASTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "변경 권한이 없습니다.");
+        }
+
+        Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        if (user.getRole() == Role.OWNER) {
+            Store store = storeRepository.findByStoreIdAndIsDeletedFalse(order.getStoreId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
+            if (!store.getOwner().getUserId().equals(user.getUserId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 가게의 주문만 변경할 수 있습니다.");
+            }
+        }
+
+        OrderStatus currentStatus = order.getOrderStatus();
+        OrderStatus nextStatus = request.getOrderStatus();
+
+        Set<OrderStatus> allowedNext = ALLOWED_TRANSITIONS.get(currentStatus);
+        if (allowedNext == null || !allowedNext.contains(nextStatus)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "허용되지 않은 상태 변경입니다.");
+        }
+
+        order.changeStatus(nextStatus);
+        entityManager.flush();
+
+        OrderStatusUpdateResponse response = new OrderStatusUpdateResponse();
+        response.setOrderId(order.getOrderId());
+        response.setOrderStatus(order.getOrderStatus().name());
+        response.setUpdatedAt(order.getUpdatedAt());
 
         return response;
     }

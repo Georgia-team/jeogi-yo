@@ -44,6 +44,10 @@ public class Order extends BaseEntity {
     @Column(name = "order_status", nullable = false)
     private OrderStatus orderStatus;
 
+    public void changeStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
     public Order(UUID userId, UUID storeId, UUID addressId, String roadAddress,
                  String detailAddress, String zipcode, Integer totalPrice, OrderStatus orderStatus) {
         this.userId = userId;

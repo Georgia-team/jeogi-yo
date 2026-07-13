@@ -2,10 +2,8 @@ package com.georgia.jeogiyo.order.controller;
 
 
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
-import com.georgia.jeogiyo.order.dto.response.OrderCreateResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderDetailResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderSearchResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderStoreSearchResponse;
+import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
+import com.georgia.jeogiyo.order.dto.response.*;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.service.OrderService;
 import jakarta.validation.Valid;
@@ -61,6 +59,15 @@ public class OrderController {
             @RequestParam String loginId
     ) {
         OrderStoreSearchResponse response = orderService.searchOrdersByStore(loginId, storeId, orderStatus, page, size, sort);
+        return ResponseEntity.ok(response);
+    }
+    @PatchMapping("/{orderId}/orderstatus")
+    public ResponseEntity<OrderStatusUpdateResponse> updateOrderStatus(
+            @PathVariable UUID orderId,
+            @RequestParam String loginId,
+            @Valid @RequestBody OrderStatusUpdateRequest request
+    ) {
+        OrderStatusUpdateResponse response = orderService.updateOrderStatus(loginId, orderId, request);
         return ResponseEntity.ok(response);
     }
 }
