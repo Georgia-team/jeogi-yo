@@ -24,10 +24,10 @@ public class UserSearchRequest {
 	public void setSize(Integer size) {
 		List<Integer> sizes = List.of(10, 30, 50);
 		
-		if(size == null || sizes.contains(size)) {
-			this.size = 10;
-		} else {
+		if(size != null && sizes.contains(size)) {
 			this.size = size;
+		} else {
+			this.size = 10;
 		}
 	}
 	

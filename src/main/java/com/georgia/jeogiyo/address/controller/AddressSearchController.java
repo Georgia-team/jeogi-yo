@@ -1,7 +1,6 @@
 package com.georgia.jeogiyo.address.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -37,12 +36,15 @@ public class AddressSearchController {
 	}
 	
 	@GetMapping("")
-	public ResponseEntity<List<AddressInfoResponse>> addressInfoAll(
+	public ResponseEntity<Page<AddressInfoResponse>> addressInfoAll(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@ModelAttribute AddressSearchRequest addressSearch) {
 		
-		return null;
+		String loginId = userDetails.getUsername();
 		
+		Page<AddressInfoResponse> response = addressFinder.getAddressInfoAll(loginId, addressSearch.toPageable("createdAt"));
+		
+		return ResponseEntity.ok(response);
 	}
 	
 }
