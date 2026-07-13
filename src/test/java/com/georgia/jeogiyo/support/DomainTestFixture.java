@@ -17,6 +17,14 @@ import com.georgia.jeogiyo.user.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.georgia.jeogiyo.order.entity.Order;
+import com.georgia.jeogiyo.order.entity.OrderStatus;
+import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
+import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
+import com.georgia.jeogiyo.payment.entity.Payment;
+import com.georgia.jeogiyo.payment.entity.PaymentMethod;
+import com.georgia.jeogiyo.payment.entity.PaymentStatus;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -47,6 +55,10 @@ public final class DomainTestFixture {
     public static final UUID OTHER_OWNER_STORE_ID = UUID.fromString("33333333-3333-3333-3333-333333333334");
     public static final UUID PRODUCT_ID = UUID.fromString("44444444-4444-4444-4444-444444444441");
     public static final UUID AI_HISTORY_ID = UUID.fromString("55555555-5555-5555-5555-555555555551");
+
+    public static final UUID ORDER_ID = UUID.fromString("66666666-6666-6666-6666-666666666661");
+    public static final UUID PAYMENT_ID = UUID.fromString("77777777-7777-7777-7777-777777777771");
+    public static final UUID ADDRESS_ID = UUID.fromString("88888888-8888-8888-8888-888888888881");
 
     private static final LocalDateTime TEST_NOW = LocalDateTime.of(2026, 7, 9, 12, 0);
 
@@ -224,11 +236,62 @@ public final class DomainTestFixture {
         return request;
     }
 
+    public static Order order(UUID userId, OrderStatus orderStatus) {
+        Order order = new Order(
+                userId,
+                STORE_ID,
+                ADDRESS_ID,
+                "서울특별시 종로구 세종대로 172",
+                "101호",
+                "03154",
+                18000,
+                orderStatus
+        );
+
+        ReflectionTestUtils.setField(order, "orderId", ORDER_ID);
+        markAudited(order);
+        return order;
+    }
+
+    public static Payment payment(UUID userId, PaymentStatus paymentStatus) {
+        Payment payment = new Payment(
+                ORDER_ID,
+                userId,
+                PaymentMethod.CARD,
+                18000
+        );
+
+        ReflectionTestUtils.setField(payment, "paymentId", PAYMENT_ID);
+
+        if (paymentStatus == PaymentStatus.CANCEL) {
+            payment.cancel("고객 요청으로 인한 주문 취소");
+        } else if (paymentStatus != PaymentStatus.SUCCESS) {
+            ReflectionTestUtils.setField(payment, "paymentStatus", paymentStatus);
+        }
+
+        markAudited(payment);
+        return payment;
+    }
+
+    public static PaymentCreateRequest paymentCreateRequest(PaymentMethod paymentMethod) {
+        PaymentCreateRequest request = new PaymentCreateRequest();
+        ReflectionTestUtils.setField(request, "paymentMethod", paymentMethod);
+        return request;
+    }
+
+    public static PaymentCancelRequest paymentCancelRequest(String cancelReason) {
+        PaymentCancelRequest request = new PaymentCancelRequest();
+        ReflectionTestUtils.setField(request, "cancelReason", cancelReason);
+        return request;
+    }
+
     public static void markPersisted(Object entity, UUID id) {
         String idFieldName = switch (entity.getClass().getSimpleName()) {
             case "Store" -> "storeId";
             case "Product" -> "productId";
             case "AiHistory" -> "aiHistoryId";
+            case "Order" -> "orderId";
+            case "Payment" -> "paymentId";
             default -> throw new IllegalArgumentException("지원하지 않는 엔티티입니다.");
         };
         ReflectionTestUtils.setField(entity, idFieldName, id);
