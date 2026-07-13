@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.user.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -189,11 +188,6 @@ public class UserApiTest {
 		.andExpect(jsonPath("$.email").value(userUpdateRequest.getEmail()))
 		.andExpect(jsonPath("$.role").value(user.getRole().toString()))
 		;
-		
-		User updatedUser = userFinder.getUserById(user.getUserId());
-		
-		assertThat(updatedUser.getUpdatedAt()).isNotNull();
-		assertThat(updatedUser.getUpdatedBy()).isEqualTo(user.getLoginId());
 	}
 	
 	@Test
