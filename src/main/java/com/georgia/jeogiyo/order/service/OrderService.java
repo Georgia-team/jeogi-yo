@@ -4,6 +4,7 @@ import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.response.OrderCreateResponse;
+import com.georgia.jeogiyo.order.dto.response.OrderDetailResponse;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
@@ -14,13 +15,17 @@ import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -49,12 +54,14 @@ public class OrderService {
     @Transactional
     public OrderCreateResponse createOrder(String loginId, OrderCreateRequest orderCreateRequest) {
 
-        // 로그인 사용자 조회
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
         UUID userId = user.getUserId();
 
-        // 가게 검증
+        if (user.getRole() != Role.CUSTOMER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CUSTOMER만 주문을 생성할 수 있습니다.");
+        }
+
         Store store = storeRepository.findById(orderCreateRequest.getStoreId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
 
@@ -65,7 +72,6 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "영업 중이 아닌 가게입니다.");
         }
 
-        // 배송지 검증
         Address address = addressRepository.findById(orderCreateRequest.getAddressId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "배송지를 찾을 수 없습니다."));
 
@@ -78,7 +84,7 @@ public class OrderService {
 
         Integer totalPrice = 0;
         for (OrderCreateRequest.OrderItemRequest item : orderCreateRequest.getItems()) {
-            Product product = productRepository.findById(item.getProductId())
+            Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
 
             if (!product.getStore().getStoreId().equals(store.getStoreId())) {
@@ -99,7 +105,7 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         for (OrderCreateRequest.OrderItemRequest item : orderCreateRequest.getItems()) {
-            Product product = productRepository.findById(item.getProductId())
+            Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
             Integer itemTotalPrice = product.getPrice() * item.getQuantity();
 
@@ -118,8 +124,69 @@ public class OrderService {
 
         return response;
     }
+
     private boolean isServiceableArea(String roadAddress) {
 
         return roadAddress != null && roadAddress.contains("광화문");
     }
+
+    public OrderDetailResponse getOrderDetail(String loginId, UUID orderId) {
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+
+        validateOrderAccess(user, order);
+
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+
+        List<OrderDetailResponse.OrderItemResponse> itemResponses = new ArrayList<>();
+        for (OrderItem item : orderItems) {
+            Product product = productRepository.findById(item.getProductId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
+
+            OrderDetailResponse.OrderItemResponse itemResponse = new OrderDetailResponse.OrderItemResponse();
+            itemResponse.setProductId(item.getProductId());
+            itemResponse.setProductName(product.getProductName());
+            itemResponse.setQuantity(item.getQuantity());
+            itemResponse.setUnitPrice(item.getUnitPrice());
+            itemResponse.setItemTotalPrice(item.getItemTotalPrice());
+            itemResponses.add(itemResponse);
+        }
+
+        OrderDetailResponse response = new OrderDetailResponse();
+        response.setOrderId(order.getOrderId());
+        response.setStoreId(order.getStoreId());
+        response.setAddressId(order.getAddressId());
+        response.setOrderStatus(order.getOrderStatus().name());
+        response.setTotalPrice(order.getTotalPrice());
+        response.setCreatedAt(order.getCreatedAt());
+        response.setItems(itemResponses);
+
+        return response;
+    }
+
+    private void validateOrderAccess(User user, Order order) {
+        if (user.isMaster()) {
+            return;
+        }
+        if (user.getRole() == Role.CUSTOMER) {
+            if (!order.getUserId().equals(user.getUserId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 주문만 조회할 수 있습니다.");
+            }
+            return;
+        }
+        if (user.isOwner()) {
+            Store store = storeRepository.findById(order.getStoreId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
+            if (!store.getOwner().getUserId().equals(user.getUserId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 가게의 주문만 조회할 수 있습니다.");
+            }
+            return;
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다.");
+    }
+
 }
