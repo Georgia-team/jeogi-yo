@@ -30,7 +30,7 @@ public class Category extends BaseEntity {
         this.categoryName = categoryName;
     }
 
-    public void update(String categoryName, String updateBy) {
+    public void update(String categoryName) {
         this.categoryName = categoryName;
     }
 }
