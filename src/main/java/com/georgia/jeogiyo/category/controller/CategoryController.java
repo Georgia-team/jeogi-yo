@@ -8,10 +8,7 @@ package com.georgia.jeogiyo.category.controller;
 
 import com.georgia.jeogiyo.category.dto.request.CategoryCreateRequest;
 import com.georgia.jeogiyo.category.dto.request.CategoryUpdateRequest;
-import com.georgia.jeogiyo.category.dto.response.CategoryCreateResponse;
-import com.georgia.jeogiyo.category.dto.response.CategoryDeleteResponse;
-import com.georgia.jeogiyo.category.dto.response.CategoryReadResponse;
-import com.georgia.jeogiyo.category.dto.response.CategoryUpdateResponse;
+import com.georgia.jeogiyo.category.dto.response.*;
 import com.georgia.jeogiyo.category.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +25,28 @@ public class CategoryController {
 
     // TODO: 권한 관련 처리
     @PostMapping
-    public CategoryCreateResponse createCategory(@RequestBody CategoryCreateRequest requestDto, @RequestHeader("loginId") String loginId) {
+    public CategoryCreateResponse createCategory(
+            @Valid @RequestBody CategoryCreateRequest requestDto,
+            @RequestHeader("loginId") String loginId
+    ) {
         return categoryService.createCategory(requestDto, loginId);
     }
 
     @GetMapping("/{categoryId}")
-    public CategoryReadResponse readCategory(@PathVariable UUID categoryId) {
+    public CategoryReadResponse readCategory(
+            @PathVariable UUID categoryId
+    ) {
         return categoryService.readResponse(categoryId);
+    }
+
+    @GetMapping
+    public CategorySearchResponse searchCategories(
+            @RequestParam(required = false) String keyword, // 키워드 없으면 전체 카테고리 조회
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "desc") String sort
+    ) {
+        return categoryService.searchCategories(keyword, page, size, sort);
     }
 
     // TODO: 권한 관련 처리
