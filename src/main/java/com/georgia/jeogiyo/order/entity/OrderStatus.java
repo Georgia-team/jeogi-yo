@@ -7,5 +7,6 @@ public enum OrderStatus {
     COOKING_COMPLETED, // 조리완료
     DELIVERED,         // 배송수령
     DELIVERY_COMPLETED,// 배송완료
-    ORDER_COMPLETED    // 주문완료
+    ORDER_COMPLETED,   // 주문완료
+    CANCELLED          // 주문취소
 }
