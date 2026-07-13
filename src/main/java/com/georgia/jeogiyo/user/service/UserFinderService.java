@@ -1,8 +1,8 @@
 package com.georgia.jeogiyo.user.service;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,7 +71,7 @@ public class UserFinderService implements UserFinder {
 		return ownerUser;
 	}
 	
-	public List<UserInfoResponse> getUserList(String masterLoginId, UserSearchRequest userSearch) {
+	public Page<UserInfoResponse> getUserList(String masterLoginId, UserSearchRequest userSearch) {
 		// 1. DB에서 마스터 권한 검증
 		getMasterUserByLoginId(masterLoginId);
 		

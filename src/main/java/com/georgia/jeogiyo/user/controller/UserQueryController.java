@@ -1,7 +1,6 @@
 package com.georgia.jeogiyo.user.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,6 +9,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.entity.User;
@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -53,14 +54,16 @@ public class UserQueryController {
 		@ApiResponse(responseCode = "403", description = "권한 없음")
 	})
 	@GetMapping("")
-	public ResponseEntity<List<UserInfoResponse>> masterGetUserList(
+	public ResponseEntity<PageResponse<UserInfoResponse>> masterGetUserList(
 			@AuthenticationPrincipal UserDetails userDetails,
-			@ModelAttribute UserSearchRequest userSearchRequest
+			@Valid @ModelAttribute UserSearchRequest userSearchRequest
 	) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		String masterLoginId = userDetails.getUsername();
 		
-		List<UserInfoResponse> response = userFinderService.getUserList(masterLoginId, userSearchRequest);
+		Page<UserInfoResponse> userPagenation = userFinderService.getUserList(masterLoginId, userSearchRequest);
+		
+		PageResponse<UserInfoResponse> response = PageResponse.from(userPagenation, x -> x);
 		
 		return ResponseEntity.ok(response);
 	}

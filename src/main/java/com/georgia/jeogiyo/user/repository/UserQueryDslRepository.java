@@ -2,6 +2,8 @@ package com.georgia.jeogiyo.user.repository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
@@ -10,6 +12,8 @@ import com.georgia.jeogiyo.user.entity.QUser;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Wildcard;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import lombok.RequiredArgsConstructor;
@@ -20,7 +24,7 @@ public class UserQueryDslRepository {
 
 	private final JPAQueryFactory queryFactory;
 	
-	public List<UserInfoResponse> findByRoleAndKeyword(UserSearchRequest userSearch) {
+	public Page<UserInfoResponse> findByRoleAndKeyword(UserSearchRequest userSearch) {
 		QUser user = QUser.user;
 		
 		List<UserInfoResponse> search = queryFactory
@@ -43,7 +47,16 @@ public class UserQueryDslRepository {
 				.limit(userSearch.getSize())
 				.fetch();
 		
-		return search;
+		JPAQuery<Long> countQuery = queryFactory
+        .select(Wildcard.count) // user.count() 대신 성능상 Wildcard.count(count(*)) 추천
+        .from(user)
+        .where(
+                roleEq(userSearch),
+                keywordContains(userSearch),
+                user.isDeleted.eq(false)
+        );
+		
+		return PageableExecutionUtils.getPage(search, userSearch.toPageable("createdAt"), countQuery :: fetchOne);
 	}
 	
 	private BooleanExpression roleEq(UserSearchRequest userSearch) {

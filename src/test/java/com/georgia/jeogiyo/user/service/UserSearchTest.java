@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,42 +122,56 @@ public class UserSearchTest {
 		searchRequest.setSize(10);
 		searchRequest.setSort("desc");
 		
-		List<UserInfoResponse> userListNameTest10 = userFinderService.getUserList(masterLoginId, searchRequest);
+		Page<UserInfoResponse> userListNameTest10 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
 		assertThat(userListNameTest10).hasSize(page0NameTestUserCount);
 		
+		// List -> Page 로 변경
+		assertThat(userListNameTest10.getTotalElements()).isEqualTo(testUserListNameTest.size());
+		assertThat(userListNameTest10.getNumber()).isEqualTo(0);
+		
 		searchRequest.setPage(1);
 		
-		List<UserInfoResponse> userListNameTest2 = userFinderService.getUserList(masterLoginId, searchRequest);
+		Page<UserInfoResponse> userListNameTest2 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
 		assertThat(userListNameTest2).hasSize(page1NameTestUserCount);
+		assertThat(userListNameTest2.getTotalElements()).isEqualTo(testUserListNameTest.size());
+		assertThat(userListNameTest2.getNumber()).isEqualTo(1);
 		
 		searchRequest.setKeyword("math");
 		searchRequest.setPage(0);
 		
-		List<UserInfoResponse> userListNameMath10 = userFinderService.getUserList(masterLoginId, searchRequest);
+		Page<UserInfoResponse> userListNameMath10 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
 		assertThat(userListNameMath10).hasSize(page0NameMathUserCount);
+		assertThat(userListNameMath10.getTotalElements()).isEqualTo(testUserListNameMath.size());
+		assertThat(userListNameMath10.getNumber()).isEqualTo(0);
 		
 		searchRequest.setPage(1);
 		
-		List<UserInfoResponse> userListNameMath2 = userFinderService.getUserList(masterLoginId, searchRequest);
+		Page<UserInfoResponse> userListNameMath2 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
 		assertThat(userListNameMath2).hasSize(page1NameMathUserCount);
+		assertThat(userListNameMath2.getTotalElements()).isEqualTo(testUserListNameMath.size());
+		assertThat(userListNameMath2.getNumber()).isEqualTo(1);
 		
 		searchRequest.setRole(Role.OWNER);
+		searchRequest.setPage(0);
 		
-		List<UserInfoResponse> ownerUserList0 = userFinderService.getUserList(masterLoginId, searchRequest);
+		Page<UserInfoResponse> ownerUserList0 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
 		assertThat(ownerUserList0).hasSize(ownerUserCount);
+		assertThat(ownerUserList0.getTotalElements()).isEqualTo(ownerUserCount);
+		assertThat(ownerUserList0.getNumber()).isEqualTo(0);
 		
 		searchRequest.setRole(Role.MASTER);
 		searchRequest.setKeyword(masterLoginId);
-		searchRequest.setPage(0);
 		
-		List<UserInfoResponse> masterUserList1 = userFinderService.getUserList(masterLoginId, searchRequest);
+		Page<UserInfoResponse> masterUserList1 = userFinderService.getUserList(masterLoginId, searchRequest);
 		
 		assertThat(masterUserList1).hasSize(masterUserCount);
+		assertThat(masterUserList1.getTotalElements()).isEqualTo(masterUserCount);
+		assertThat(masterUserList1.getNumber()).isEqualTo(0);
 	}
 	
 }
