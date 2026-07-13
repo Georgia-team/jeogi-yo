@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.order.service;
 
+import com.georgia.jeogiyo.order.dto.response.OrderDetailResponse;
+import com.georgia.jeogiyo.orderitem.entity.OrderItem;
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
@@ -99,6 +101,15 @@ class OrderServiceTest {
         request.setItems(List.of(item));
 
         return request;
+    }
+    private Order order(UUID userId, UUID storeId, UUID addressId, UUID orderId, OrderStatus status, Integer totalPrice) {
+        Order order = new Order(userId, storeId, addressId, "서울시 종로구 광화문로 1", "상세주소", "03150", totalPrice, status);
+        ReflectionTestUtils.setField(order, "orderId", orderId);
+        return order;
+    }
+
+    private OrderItem orderItem(UUID orderId, UUID productId, Integer quantity, Integer unitPrice, Integer itemTotalPrice) {
+        return new OrderItem(orderId, productId, quantity, unitPrice, itemTotalPrice);
     }
 
     // ---------- 테스트 ----------
@@ -278,5 +289,123 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("재고가 부족합니다.");
+
+
+    }
+    @Test
+    @DisplayName("CUSTOMER는 본인 주문을 상세 조회할 수 있다")
+    void getOrderDetail_customer_own_success() {
+        User customer = customer();
+        Category category = category();
+        Store store = store(owner(), category);
+        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
+        Product product = product(store, category, 12000, 30, false);
+
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
+        given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
+        given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(product));
+
+        OrderDetailResponse response = orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID);
+
+        assertThat(response.getOrderId()).isEqualTo(ORDER_ID);
+        assertThat(response.getItems()).hasSize(1);
+        assertThat(response.getItems().get(0).getProductName()).isEqualTo("테스트 상품");
+    }
+
+    @Test
+    @DisplayName("CUSTOMER는 본인 것이 아닌 주문을 조회할 수 없다")
+    void getOrderDetail_customer_others_fail() {
+        User customer = customer();
+        Order othersOrder = order(OTHER_OWNER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(othersOrder));
+
+        assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("본인의 주문만");
+    }
+
+    @Test
+    @DisplayName("OWNER는 본인 가게의 주문을 상세 조회할 수 있다")
+    void getOrderDetail_owner_ownStore_success() {
+        User owner = owner();
+        Category category = category();
+        Store store = store(owner, category);
+        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
+        Product product = product(store, category, 12000, 30, false);
+
+        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
+        given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
+        given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
+        given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(product));
+
+        OrderDetailResponse response = orderService.getOrderDetail(OWNER_LOGIN_ID, ORDER_ID);
+
+        assertThat(response.getOrderId()).isEqualTo(ORDER_ID);
+    }
+
+    @Test
+    @DisplayName("OWNER는 본인 가게가 아닌 주문을 조회할 수 없다")
+    void getOrderDetail_owner_otherStore_fail() {
+        User owner = owner();
+        User otherOwner = otherOwner();
+        Category category = category();
+        Store otherStore = otherOwnerStore(otherOwner, category);
+        Order order = order(CUSTOMER_ID, OTHER_OWNER_STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+
+        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
+        given(storeRepository.findById(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
+
+        assertThatThrownBy(() -> orderService.getOrderDetail(OWNER_LOGIN_ID, ORDER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("본인 가게의 주문만");
+    }
+
+    @Test
+    @DisplayName("MASTER는 모든 주문을 조회할 수 있다")
+    void getOrderDetail_master_success() {
+        User master = master();
+        Category category = category();
+        Store store = store(owner(), category);
+        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
+        Product product = product(store, category, 12000, 30, false);
+
+        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
+        given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
+        given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(product));
+
+        OrderDetailResponse response = orderService.getOrderDetail(MASTER_LOGIN_ID, ORDER_ID);
+
+        assertThat(response.getOrderId()).isEqualTo(ORDER_ID);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 주문은 조회할 수 없다")
+    void getOrderDetail_orderNotFound_fail() {
+        User customer = customer();
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("주문을 찾을 수 없습니다");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자는 주문을 조회할 수 없다")
+    void getOrderDetail_userNotFound_fail() {
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("사용자를 찾을 수 없습니다");
     }
 }
