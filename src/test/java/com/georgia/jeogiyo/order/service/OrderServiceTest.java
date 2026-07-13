@@ -118,7 +118,7 @@ class OrderServiceTest {
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
-        given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(product));
+        given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
         given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
             Order order = invocation.getArgument(0);
             ReflectionTestUtils.setField(order, "orderId", ORDER_ID);
@@ -231,7 +231,7 @@ class OrderServiceTest {
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
-        given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(productFromOtherStore));
+        given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(productFromOtherStore));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -252,7 +252,7 @@ class OrderServiceTest {
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
-        given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(hiddenProduct));
+        given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(hiddenProduct));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -273,7 +273,7 @@ class OrderServiceTest {
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
-        given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(lowStockProduct));
+        given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(lowStockProduct));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)

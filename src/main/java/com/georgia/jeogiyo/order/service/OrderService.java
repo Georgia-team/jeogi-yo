@@ -14,6 +14,7 @@ import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -49,12 +50,14 @@ public class OrderService {
     @Transactional
     public OrderCreateResponse createOrder(String loginId, OrderCreateRequest orderCreateRequest) {
 
-        // 로그인 사용자 조회
         User user = userRepository.findByLoginId(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
         UUID userId = user.getUserId();
 
-        // 가게 검증
+        if (user.getRole() != Role.CUSTOMER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CUSTOMER만 주문을 생성할 수 있습니다.");
+        }
+
         Store store = storeRepository.findById(orderCreateRequest.getStoreId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
 
@@ -65,7 +68,6 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "영업 중이 아닌 가게입니다.");
         }
 
-        // 배송지 검증
         Address address = addressRepository.findById(orderCreateRequest.getAddressId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "배송지를 찾을 수 없습니다."));
 
@@ -78,7 +80,7 @@ public class OrderService {
 
         Integer totalPrice = 0;
         for (OrderCreateRequest.OrderItemRequest item : orderCreateRequest.getItems()) {
-            Product product = productRepository.findById(item.getProductId())
+            Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
 
             if (!product.getStore().getStoreId().equals(store.getStoreId())) {
@@ -99,7 +101,7 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         for (OrderCreateRequest.OrderItemRequest item : orderCreateRequest.getItems()) {
-            Product product = productRepository.findById(item.getProductId())
+            Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
             Integer itemTotalPrice = product.getPrice() * item.getQuantity();
 
@@ -118,6 +120,7 @@ public class OrderService {
 
         return response;
     }
+
     private boolean isServiceableArea(String roadAddress) {
 
         return roadAddress != null && roadAddress.contains("광화문");
