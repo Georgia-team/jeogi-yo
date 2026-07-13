@@ -18,4 +18,9 @@ public interface OrderRepositoryCustom {
             List<UUID> storeIds,
             Pageable pageable
     );
+    Page<Order> searchOrdersByStore(
+            UUID storeId,
+            OrderStatus orderStatus,
+            Pageable pageable
+    );
 }

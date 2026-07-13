@@ -56,6 +56,38 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
         return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
     }
 
+    @Override
+    public Page<com.georgia.jeogiyo.order.entity.Order> searchOrdersByStore(
+            UUID storeId,
+            OrderStatus orderStatus,
+            Pageable pageable
+    ) {
+        QOrder order = QOrder.order;
+
+        BooleanBuilder condition = new BooleanBuilder();
+        condition.and(order.isDeleted.isFalse());
+        condition.and(order.storeId.eq(storeId));
+
+        if (orderStatus != null) {
+            condition.and(order.orderStatus.eq(orderStatus));
+        }
+
+        List<com.georgia.jeogiyo.order.entity.Order> content = queryFactory
+                .selectFrom(order)
+                .where(condition)
+                .orderBy(createdAtOrder(pageable, order))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        JPAQuery<Long> countQuery = queryFactory
+                .select(order.count())
+                .from(order)
+                .where(condition);
+
+        return PageableExecutionUtils.getPage(content, pageable, countQuery::fetchOne);
+    }
+
     private void applyVisibilityCondition(
             BooleanBuilder condition, QOrder order, Role role, UUID userId, List<UUID> storeIds
     ) {

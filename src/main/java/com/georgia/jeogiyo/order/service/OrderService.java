@@ -5,6 +5,7 @@ import com.georgia.jeogiyo.address.repository.AddressRepository;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.response.OrderCreateResponse;
 import com.georgia.jeogiyo.order.dto.response.OrderDetailResponse;
+import com.georgia.jeogiyo.order.dto.response.OrderStoreSearchResponse;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
@@ -237,6 +238,54 @@ public class OrderService {
         }
 
         OrderSearchResponse response = new OrderSearchResponse();
+        response.setContent(items);
+        response.setPage(orderPage.getNumber());
+        response.setSize(orderPage.getSize());
+        response.setTotalElements(orderPage.getTotalElements());
+        response.setTotalPages(orderPage.getTotalPages());
+
+        return response;
+    }
+
+    public OrderStoreSearchResponse searchOrdersByStore(String loginId, UUID storeId, OrderStatus orderStatus, int page, int size, String sort) {
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
+
+        if (user.getRole() == Role.OWNER) {
+            if (!store.getOwner().getUserId().equals(user.getUserId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 가게의 주문만 조회할 수 있습니다.");
+            }
+        } else if (user.getRole() != Role.MASTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다.");
+        }
+
+        int normalizedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
+        int normalizedPage = Math.max(page, 0);
+        Sort sortOption = "asc".equalsIgnoreCase(sort)
+                ? Sort.by("createdAt").ascending()
+                : Sort.by("createdAt").descending();
+        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize, sortOption);
+
+        Page<Order> orderPage = orderRepository.searchOrdersByStore(storeId, orderStatus, pageable);
+
+        List<OrderStoreSearchResponse.OrderStoreListItem> items = new ArrayList<>();
+        for (Order order : orderPage.getContent()) {
+            User customer = userRepository.findById(order.getUserId()).orElse(null);
+
+            OrderStoreSearchResponse.OrderStoreListItem item = new OrderStoreSearchResponse.OrderStoreListItem();
+            item.setOrderId(order.getOrderId());
+            item.setCustomerName(customer != null ? customer.getNickname() : null);
+            item.setOrderStatus(order.getOrderStatus().name());
+            item.setTotalPrice(order.getTotalPrice());
+            item.setCreatedAt(order.getCreatedAt());
+            items.add(item);
+        }
+
+        OrderStoreSearchResponse response = new OrderStoreSearchResponse();
         response.setContent(items);
         response.setPage(orderPage.getNumber());
         response.setSize(orderPage.getSize());
