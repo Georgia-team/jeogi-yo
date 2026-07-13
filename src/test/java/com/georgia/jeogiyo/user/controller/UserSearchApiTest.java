@@ -170,7 +170,11 @@ public class UserSearchApiTest {
 				.params(params)
 		)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$", hasSize(10)))
+		.andExpect(jsonPath("$.content", hasSize(10)))
+		.andExpect(jsonPath("$.page").value(0))
+		.andExpect(jsonPath("$.size").value(10))
+		.andExpect(jsonPath("$.totalElements").value(testUserListNameTest.size()))
+		.andExpect(jsonPath("$.totalPages").value(2))
 		;
 	}
 	

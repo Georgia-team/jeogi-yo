@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.global.jwt.JwtUtil;
+import com.georgia.jeogiyo.store.service.StoreService;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
@@ -38,6 +39,8 @@ public class UserService {
 	private final PasswordEncoder passwordEncoder;
 	
 	private final UserInfoUpdateService userInfoUpdateService;
+	
+	private final StoreService storeService;
 	
 	@Transactional(rollbackFor = Exception.class)
 	public UserLoginResponse login(UserLoginRequest userLogin) {
@@ -119,17 +122,16 @@ public class UserService {
 		if(user.verifyCredentialsForDelete(deleteUser, passwordEncoder)) {
 			
 			if(user.isMaster()) {
-				long masterUserCount = userRepository.countByRole(Role.MASTER);
+				long masterUserCount = userRepository.countByRoleAndIsDeletedFalse(Role.MASTER);
 				log.info("MASTER 권한 탈퇴 요청 검증 시작: masterUserCount={}", masterUserCount);
 				
 				if(masterUserCount <= 1) {
 					throw new UserDomainException(UserErrorCode.DELETE_FAILURE_LAST_MASTER);
 				}
 			} else if(user.isOwner()) {
-				// TODO: storeService 에서 해당 회원의 활성 가게 존재 여부 확인
-				
-				// TODO: 활성화된 가게 존재시 예외 발생
-				//throw new UserDomainException(UserErrorCode.DELETE_FAILURE_OPEN_STORES);
+				if(storeService.existsActiveStoreByOwnerId(user.getUserId())) {
+					throw new UserDomainException(UserErrorCode.DELETE_FAILURE_OPEN_STORES);
+				}
 			}
 			
 			user.softDelete(user.getLoginId());

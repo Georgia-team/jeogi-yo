@@ -3,6 +3,8 @@ package com.georgia.jeogiyo.address.repository;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.georgia.jeogiyo.address.entity.Address;
@@ -17,4 +19,6 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
 	Optional<Address> findFirstByUserOrderByCreatedAtDesc(User user);
 
 	Optional<Address> findFirstByUserAndIsDefaultOrderByCreatedAtDesc(User user, boolean isDefault);
+	
+	Page<Address> findByUser(User user, Pageable pageable);
 }

@@ -24,6 +24,7 @@ import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.exception.UserDomainException;
 import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.fixture.UserFix;
+import com.georgia.jeogiyo.user.repository.UserRepository;
 
 import io.jsonwebtoken.Claims;
 import jakarta.persistence.EntityManager;
@@ -32,6 +33,9 @@ import jakarta.persistence.EntityManager;
 @Transactional
 public class UserCommandTest {
 
+	@Autowired
+	private UserRepository userRepository;
+	
 	@Autowired
 	private UserService userCommandService;
 	
@@ -290,7 +294,8 @@ public class UserCommandTest {
 		em.flush();
 		em.clear();
 		
-		User updated = userFinder.getUserById(userDeleteResponse.getUserId());
+		User updated = userRepository.findById(userDeleteResponse.getUserId())
+				.orElseThrow();
 		
 		assertThat(updated.getDeletedAt()).isNotNull();
 		assertThat(updated.getDeletedBy()).isEqualTo(given.getLoginId());

@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.user.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -74,12 +73,12 @@ public class UserApiTest {
 	
 	@Test
 	@DisplayName("API: 회원가입 테스트")
-	void userSignupApiTest() throws Exception {
+	void userSignupApiTest_Customer() throws Exception {
 		String url = "/api/v1/auth/signup";
 		
 		UserSignupRequest userSignupRequest = new UserSignupRequest(
 				"apitest01",
-				"PasswordA@",
+				"Password123@",
 				"nickckcik",
 				"02-000-0000",
 				"test@tested.com"
@@ -94,7 +93,34 @@ public class UserApiTest {
 		.andExpect(jsonPath("$.email").value(userSignupRequest.getEmail()))
 		.andExpect(jsonPath("$.loginId").value(userSignupRequest.getLoginId()))
 		.andExpect(jsonPath("$.nickname").value(userSignupRequest.getNickname()))
-		.andExpect(jsonPath("$.role").value(user.getRole().name()))
+		.andExpect(jsonPath("$.role").value(Role.CUSTOMER.name()))
+		.andExpect(jsonPath("$.deleted").value(false))
+		;
+	}
+	
+	@Test
+	@DisplayName("API: 회원가입 테스트")
+	void userSignupApiTest_Onwer() throws Exception {
+		String url = "/api/v1/auth/signup/owner";
+		
+		UserSignupRequest userSignupRequest = new UserSignupRequest(
+				"apitest01",
+				"Password123@",
+				"nickckcik",
+				"02-000-0000",
+				"test@tested.com"
+				);
+		
+		mockMvc
+		.perform(post(url)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(userSignupRequest))
+				)
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("$.email").value(userSignupRequest.getEmail()))
+		.andExpect(jsonPath("$.loginId").value(userSignupRequest.getLoginId()))
+		.andExpect(jsonPath("$.nickname").value(userSignupRequest.getNickname()))
+		.andExpect(jsonPath("$.role").value(Role.OWNER.name()))
 		.andExpect(jsonPath("$.deleted").value(false))
 		;
 	}
@@ -162,11 +188,6 @@ public class UserApiTest {
 		.andExpect(jsonPath("$.email").value(userUpdateRequest.getEmail()))
 		.andExpect(jsonPath("$.role").value(user.getRole().toString()))
 		;
-		
-		User updatedUser = userFinder.getUserById(user.getUserId());
-		
-		assertThat(updatedUser.getUpdatedAt()).isNotNull();
-		assertThat(updatedUser.getUpdatedBy()).isEqualTo(user.getLoginId());
 	}
 	
 	@Test

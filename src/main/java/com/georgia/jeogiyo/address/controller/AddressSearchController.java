@@ -1,7 +1,6 @@
 package com.georgia.jeogiyo.address.controller;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -15,15 +14,27 @@ import com.georgia.jeogiyo.address.dto.request.AddressSearchRequest;
 import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
 import com.georgia.jeogiyo.address.service.AddressFinderService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
+@Tag(name = "Address", description = "주소 Query API")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/address")
 public class AddressSearchController {
 
 	private final AddressFinderService addressFinder;
 	
+	@Operation(summary = "주소 한 건 조회", description = "주소를 한 건 조회합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "주소 조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+    @ApiResponse(responseCode = "403", description = "권한 없음"),
+    @ApiResponse(responseCode = "404", description = "주소를 찾을 수 없음")
+	})
 	@GetMapping("/{addressId}")
 	public ResponseEntity<AddressInfoResponse> addressInfoOne(
 			@AuthenticationPrincipal UserDetails userDetails,
@@ -36,13 +47,22 @@ public class AddressSearchController {
 		return ResponseEntity.ok(response);
 	}
 	
+	@Operation(summary = "주소 목록 조회", description = "주소 목록을 조회합니다.")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "주소 목록 조회 성공"),
+		@ApiResponse(responseCode = "401", description = "인증 실패"),
+    @ApiResponse(responseCode = "403", description = "권한 없음")
+	})
 	@GetMapping("")
-	public ResponseEntity<List<AddressInfoResponse>> addressInfoAll(
+	public ResponseEntity<Page<AddressInfoResponse>> addressInfoAll(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@ModelAttribute AddressSearchRequest addressSearch) {
 		
-		return null;
+		String loginId = userDetails.getUsername();
 		
+		Page<AddressInfoResponse> response = addressFinder.getAddressInfoAll(loginId, addressSearch.toPageable("createdAt"));
+		
+		return ResponseEntity.ok(response);
 	}
 	
 }

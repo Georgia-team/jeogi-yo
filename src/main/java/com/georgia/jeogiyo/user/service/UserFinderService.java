@@ -1,8 +1,8 @@
 package com.georgia.jeogiyo.user.service;
 
-import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +28,7 @@ public class UserFinderService implements UserFinder {
 	@Override
 	public User getUserById(UUID userId) {
 		// TODO: 공통 예외 클래스 완료 시 수정
-		return userRepository.findById(userId)
+		return userRepository.findByUserIdAndIsDeletedFalse(userId)
 				// TODO: 존재하지 않는 사용자입니다.
 				.orElseThrow(() -> new UserDomainException(UserErrorCode.NOT_FOUND_USER));
 	}
@@ -44,7 +44,7 @@ public class UserFinderService implements UserFinder {
 	@Override
 	public User getMasterUserByLoginId(String loginId) {
 		// TODO: 공통 예외 클래스 완료 시 수정
-		User masterUser = userRepository.findByLoginId(loginId)
+		User masterUser = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
 				// TODO: 존재하지 않는 사용자입니다.
 				.orElseThrow();
 		
@@ -59,7 +59,7 @@ public class UserFinderService implements UserFinder {
 	@Override
 	public User getOwnerUserByLoginId(String loginId) {
 		// TODO: 공통 예외 클래스 완료 시 수정
-		User ownerUser = userRepository.findByLoginId(loginId)
+		User ownerUser = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
 				// TODO: 존재하지 않는 사용자입니다.
 				.orElseThrow();
 		
@@ -71,7 +71,7 @@ public class UserFinderService implements UserFinder {
 		return ownerUser;
 	}
 	
-	public List<UserInfoResponse> getUserList(String masterLoginId, UserSearchRequest userSearch) {
+	public Page<UserInfoResponse> getUserList(String masterLoginId, UserSearchRequest userSearch) {
 		// 1. DB에서 마스터 권한 검증
 		getMasterUserByLoginId(masterLoginId);
 		
