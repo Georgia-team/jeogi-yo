@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.payment.service;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
@@ -8,7 +10,6 @@ import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCancelResponse;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCreateResponse;
 import com.georgia.jeogiyo.payment.dto.response.PaymentResponse;
-import com.georgia.jeogiyo.payment.dto.response.PaymentSearchPageResponse;
 import com.georgia.jeogiyo.payment.dto.response.PaymentSearchResponse;
 import com.georgia.jeogiyo.payment.entity.Payment;
 import com.georgia.jeogiyo.payment.entity.PaymentMethod;
@@ -21,13 +22,10 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -87,29 +85,26 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaymentSearchPageResponse searchPayments(PaymentStatus paymentStatus, int page, int size, String sort, String loginId) {
+    public PageResponse<PaymentSearchResponse> searchPayments(
+            PaymentStatus paymentStatus,
+            int page,
+            int size,
+            String sort,
+            String loginId
+    ) {
         User user = userFinder.getUserByLoginId(loginId);
         validateCustomerOrMaster(user);
 
-        Pageable pageable = createPageable(page, size, sort);
+        Pageable pageable = PageUtil.toPageable(page, size, sort);
 
         // CUSTOMER는 본인 결제만, MASTER는 관리 목적상 전체 결제를 조회한다.
         boolean includeDeleted = user.getRole() == Role.MASTER;
         UUID userId = user.getRole() == Role.MASTER ? null : user.getUserId();
 
-        Page<Payment> paymentPage = paymentRepository.searchPayments(paymentStatus, userId, includeDeleted, pageable);
+        Page<Payment> paymentPage =
+                paymentRepository.searchPayments(paymentStatus, userId, includeDeleted, pageable);
 
-        List<PaymentSearchResponse> content = paymentPage.getContent().stream()
-                .map(this::toSearchResponse)
-                .toList();
-
-        return PaymentSearchPageResponse.builder()
-                .content(content)
-                .page(paymentPage.getNumber())
-                .size(paymentPage.getSize())
-                .totalElements(paymentPage.getTotalElements())
-                .totalPages(paymentPage.getTotalPages())
-                .build();
+        return PageResponse.from(paymentPage, this::toSearchResponse);
     }
 
     @Override
@@ -213,14 +208,6 @@ public class PaymentServiceImpl implements PaymentService {
         if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.MASTER) {
             throw new IllegalArgumentException("결제 처리 권한이 없습니다.");
         }
-    }
-
-    private Pageable createPageable(int page, int size, String sort) {
-        int normalizedPage = Math.max(page, 0);
-        int normalizedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
-        Sort.Direction direction = "asc".equalsIgnoreCase(sort) ? Sort.Direction.ASC : Sort.Direction.DESC;
-
-        return PageRequest.of(normalizedPage, normalizedSize, Sort.by(direction, "createdAt"));
     }
 
     private PaymentCreateResponse toCreateResponse(Payment payment) {

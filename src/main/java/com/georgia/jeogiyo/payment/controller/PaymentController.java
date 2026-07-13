@@ -1,11 +1,12 @@
 package com.georgia.jeogiyo.payment.controller;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCancelResponse;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCreateResponse;
 import com.georgia.jeogiyo.payment.dto.response.PaymentResponse;
-import com.georgia.jeogiyo.payment.dto.response.PaymentSearchPageResponse;
+import com.georgia.jeogiyo.payment.dto.response.PaymentSearchResponse;
 import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 import com.georgia.jeogiyo.payment.service.PaymentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -74,7 +75,7 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
     @GetMapping("/payments")
-    public ResponseEntity<PaymentSearchPageResponse> searchPayments(
+    public ResponseEntity<PageResponse<PaymentSearchResponse>> searchPayments(
             @Parameter(description = "결제 상태", example = "SUCCESS")
             @RequestParam(name = "paymentstatus", required = false) PaymentStatus paymentStatus,
             @Parameter(description = "페이지 번호. 음수 요청 시 0으로 보정됩니다.", example = "0")
@@ -85,7 +86,10 @@ public class PaymentController {
             @RequestParam(defaultValue = "desc") String sort,
             @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.ok(paymentService.searchPayments(paymentStatus, page, size, sort, authentication.getName()));
+        PageResponse<PaymentSearchResponse> response =
+                paymentService.searchPayments(paymentStatus, page, size, sort, authentication.getName());
+
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "결제 취소", description = "CUSTOMER는 본인 결제, MASTER는 전체 결제를 취소합니다.")
