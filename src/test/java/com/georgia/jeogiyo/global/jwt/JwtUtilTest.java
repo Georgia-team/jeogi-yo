@@ -33,7 +33,6 @@ class JwtUtilTest {
                 .isInstanceOf(NullPointerException.class);
     }
 
-
     @Test
     @DisplayName("정상 발급된 토큰은 검증을 통과한다")
     void validTokenReturnsTrue() {
@@ -48,7 +47,11 @@ class JwtUtilTest {
     void validTokenReturnsFalse() {
         String token = jwtUtil.createToken("test1234", Role.CUSTOMER);
         String pureToken = jwtUtil.subStringToken(token);
-        String tampered = pureToken.substring(0, pureToken.length() - 1) + "X";
+
+        int payloadMiddleIndex = pureToken.indexOf(".") + 5; // header 다음 '.' 이후, payload 중간 지점
+        String tampered = pureToken.substring(0, payloadMiddleIndex)
+                + "X"
+                + pureToken.substring(payloadMiddleIndex + 1);
 
         assertThat(jwtUtil.validateToken(tampered)).isFalse();
     }
