@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.georgia.jeogiyo.address.entity.Address;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -26,6 +28,10 @@ public class AddressUpdateResponse {
 	private final LocalDateTime updatedAt;
 	
 	public static AddressUpdateResponse of(Address address) {
+		if(address.getAddressId() == null) {
+			throw new BusinessException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
+		}
+		
 		return new AddressUpdateResponse(
 				address.getAddressId(),
 				address.getRoadAddress(),

@@ -13,6 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinder;
 
@@ -30,7 +32,8 @@ public class AddressFinderService implements AddressFinder {
 	@Override
 	public Address findByUserAndAddressId(User user, UUID addressId) {
 		return addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, addressId)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원님의 배송지 정보를 불러올 수 없습니다."));
+				.orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ADDRESS));
+				//.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원님의 배송지 정보를 불러올 수 없습니다."));
 				// .orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
 	}
 
@@ -49,7 +52,8 @@ public class AddressFinderService implements AddressFinder {
 		User user = userFinder.getUserById(userId);
 		
 		return addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, addressId)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원님의 배송지 정보를 불러올 수 없습니다."));
+				.orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ADDRESS));
+				//.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원님의 배송지 정보를 불러올 수 없습니다."));
 				//.orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
 	}
 	
