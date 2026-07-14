@@ -28,8 +28,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 
-import java.time.LocalDateTime;
+
 import java.util.*;
 import jakarta.persistence.EntityManager;
 
@@ -389,7 +390,7 @@ public class OrderService {
         }
 
         paymentRepository.findByOrder_OrderIdAndIsDeletedFalse(orderId).ifPresent(payment -> {
-            if (payment.getPaymentStatus() == com.georgia.jeogiyo.payment.entity.PaymentStatus.SUCCESS) {
+            if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
                 payment.cancel(request.getCancelReason());
             }
         });
