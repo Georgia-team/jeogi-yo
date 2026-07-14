@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.store.controller;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
@@ -17,8 +18,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.georgia.jeogiyo.user.entity.Role;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,14 +40,15 @@ public class StoreController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
-    @Secured(Role.Authority.OWNER)
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
     @PostMapping
-    public ResponseEntity<StoreResponse> createStore(
+    public ResponseEntity<CommonResponse<StoreResponse>> createStore(
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody StoreCreateRequest request
     ) {
+        StoreResponse response = storeService.createStore(authentication.getName(), request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(storeService.createStore(authentication.getName(), request));
+                .body(CommonResponse.success("가게 등록 성공", response));
     }
 
     @Operation(summary = "가게 상세 조회", description = "storeId로 가게 상세 정보를 조회합니다.")
@@ -55,21 +56,22 @@ public class StoreController {
             @ApiResponse(responseCode = "200", description = "가게 조회 성공"),
             @ApiResponse(responseCode = "404", description = "가게 없음")
     })
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping("/{storeId}")
-    public ResponseEntity<StoreResponse> getStore(
+    public ResponseEntity<CommonResponse<StoreResponse>> getStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId) {
-        return ResponseEntity.ok(storeService.getStore(storeId));
+        StoreResponse response = storeService.getStore(storeId);
+        return ResponseEntity.ok(CommonResponse.success("가게 조회 성공", response));
     }
 
     @Operation(summary = "가게 목록 검색", description = "카테고리, 키워드, 페이지 조건으로 가게 목록을 검색합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "가게 목록 검색 성공")
     })
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping
-    public ResponseEntity<PageResponse<StoreSearchResponse>> searchStores(
+    public ResponseEntity<CommonResponse<PageResponse<StoreSearchResponse>>> searchStores(
             @Parameter(description = "카테고리 ID", example = "22222222-2222-2222-2222-222222222221")
             @RequestParam(required = false) UUID categoryId,
             @Parameter(description = "검색 키워드", example = "치킨")
@@ -83,8 +85,7 @@ public class StoreController {
     ) {
         PageResponse<StoreSearchResponse> response =
                 storeService.searchStores(categoryId, keyword, page, size, sort);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("가게 목록 조회 성공", response));
     }
 
     @Operation(summary = "가게 정보 수정", description = "OWNER 또는 MASTER가 가게 정보를 수정합니다.")
@@ -95,15 +96,16 @@ public class StoreController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "가게 또는 카테고리 없음")
     })
-    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER', 'ROLE_MASTER')")
     @PatchMapping("/{storeId}")
-    public ResponseEntity<StoreResponse> updateStore(
+    public ResponseEntity<CommonResponse<StoreResponse>> updateStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody StoreUpdateRequest request
     ) {
-        return ResponseEntity.ok(storeService.updateStore(storeId, authentication.getName(), request));
+        StoreResponse response = storeService.updateStore(storeId, authentication.getName(), request);
+        return ResponseEntity.ok(CommonResponse.success("가게 수정 성공", response));
     }
 
     @Operation(summary = "가게 상태 변경", description = "OWNER 또는 MASTER가 가게 영업 상태를 변경합니다.")
@@ -114,32 +116,33 @@ public class StoreController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "가게 없음")
     })
-    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER', 'ROLE_MASTER')")
     @PatchMapping({"/{storeId}/status", "/{storeId}/storestatus"})
-    public ResponseEntity<StoreResponse> updateStoreStatus(
+    public ResponseEntity<CommonResponse<StoreResponse>> updateStoreStatus(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody StoreStatusUpdateRequest request
     ) {
-        return ResponseEntity.ok(storeService.updateStoreStatus(storeId, authentication.getName(), request));
+        StoreResponse response = storeService.updateStoreStatus(storeId, authentication.getName(), request);
+        return ResponseEntity.ok(CommonResponse.success("가게 상태 변경 성공", response));
     }
 
     @Operation(summary = "가게 삭제", description = "OWNER 또는 MASTER가 가게를 soft delete 처리합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "가게 삭제 성공"),
+            @ApiResponse(responseCode = "200", description = "가게 삭제 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "가게 없음")
     })
-    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER', 'ROLE_MASTER')")
     @DeleteMapping("/{storeId}")
-    public ResponseEntity<Void> deleteStore(
+    public ResponseEntity<CommonResponse<Void>> deleteStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
             @Parameter(hidden = true) Authentication authentication
     ) {
         storeService.deleteStore(storeId, authentication.getName());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(CommonResponse.<Void>success("가게 삭제 성공", null));
     }
 }

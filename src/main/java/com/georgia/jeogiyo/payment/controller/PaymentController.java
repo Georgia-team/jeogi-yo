@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.payment.controller;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
@@ -19,8 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.georgia.jeogiyo.user.entity.Role;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,16 +43,18 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "주문 없음")
     })
-    @Secured(Role.Authority.CUSTOMER)
+    @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     @PostMapping("/orders/{orderId}/payments")
-    public ResponseEntity<PaymentCreateResponse> createPayment(
+    public ResponseEntity<CommonResponse<PaymentCreateResponse>> createPayment(
             @Parameter(description = "주문 ID", example = "66666666-6666-6666-6666-666666666661")
             @PathVariable UUID orderId,
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody PaymentCreateRequest request
     ) {
         PaymentCreateResponse response = paymentService.createPayment(orderId, authentication.getName(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CommonResponse.success("결제 생성 성공", response));
     }
 
     @Operation(summary = "결제 상세 조회", description = "CUSTOMER는 본인 결제, MASTER는 전체 결제를 조회합니다.")
@@ -62,14 +64,15 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "본인 결제가 아니거나 권한 없음"),
             @ApiResponse(responseCode = "404", description = "결제 정보 없음")
     })
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_MASTER')")
     @GetMapping("/payments/{paymentId}")
-    public ResponseEntity<PaymentResponse> getPayment(
+    public ResponseEntity<CommonResponse<PaymentResponse>> getPayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
             @PathVariable UUID paymentId,
             @Parameter(hidden = true) Authentication authentication
     ) {
-        return ResponseEntity.ok(paymentService.getPayment(paymentId, authentication.getName()));
+        PaymentResponse response = paymentService.getPayment(paymentId, authentication.getName());
+        return ResponseEntity.ok(CommonResponse.success("결제 상세 조회 성공", response));
     }
 
     @Operation(summary = "결제 목록 검색", description = "CUSTOMER는 본인 결제, MASTER는 전체 결제를 검색합니다.")
@@ -78,9 +81,9 @@ public class PaymentController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_MASTER')")
     @GetMapping("/payments")
-    public ResponseEntity<PageResponse<PaymentSearchResponse>> searchPayments(
+    public ResponseEntity<CommonResponse<PageResponse<PaymentSearchResponse>>> searchPayments(
             @Parameter(description = "결제 상태", example = "SUCCESS")
             @RequestParam(name = "paymentStatus", required = false) PaymentStatus paymentStatus,
             @Parameter(description = "페이지 번호. 음수 요청 시 0으로 보정됩니다.", example = "0")
@@ -94,7 +97,7 @@ public class PaymentController {
         PageResponse<PaymentSearchResponse> response =
                 paymentService.searchPayments(paymentStatus, page, size, sort, authentication.getName());
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("결제 목록 조회 성공", response));
     }
 
     @Operation(summary = "결제 취소", description = "CUSTOMER는 본인 결제, MASTER는 전체 결제를 취소합니다.")
@@ -105,33 +108,34 @@ public class PaymentController {
             @ApiResponse(responseCode = "403", description = "본인 결제가 아니거나 권한 없음"),
             @ApiResponse(responseCode = "404", description = "결제 또는 주문 정보 없음")
     })
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_MASTER')")
     @PatchMapping("/payments/{paymentId}/cancel")
-    public ResponseEntity<PaymentCancelResponse> cancelPayment(
+    public ResponseEntity<CommonResponse<PaymentCancelResponse>> cancelPayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
             @PathVariable UUID paymentId,
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody PaymentCancelRequest request
     ) {
-        return ResponseEntity.ok(paymentService.cancelPayment(paymentId, authentication.getName(), request));
+        PaymentCancelResponse response = paymentService.cancelPayment(paymentId, authentication.getName(), request);
+        return ResponseEntity.ok(CommonResponse.success("결제 취소 성공", response));
     }
 
     @Operation(summary = "결제 이력 삭제", description = "MASTER가 취소 상태 결제를 soft delete 처리합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "결제 이력 삭제 성공"),
+            @ApiResponse(responseCode = "200", description = "결제 이력 삭제 성공"),
             @ApiResponse(responseCode = "400", description = "취소 상태가 아닌 결제는 삭제 불가"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "MASTER 권한 없음"),
             @ApiResponse(responseCode = "404", description = "결제 정보 없음")
     })
-    @Secured(Role.Authority.MASTER)
+    @PreAuthorize("hasAuthority('ROLE_MASTER')")
     @DeleteMapping("/payments/{paymentId}")
-    public ResponseEntity<Void> deletePayment(
+    public ResponseEntity<CommonResponse<Void>> deletePayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
             @PathVariable UUID paymentId,
             @Parameter(hidden = true) Authentication authentication
     ) {
         paymentService.deletePayment(paymentId, authentication.getName());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(CommonResponse.<Void>success("결제 이력 삭제 성공", null));
     }
 }

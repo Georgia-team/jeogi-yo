@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.product.controller;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.product.dto.request.ProductCreateRequest;
 import com.georgia.jeogiyo.product.dto.request.ProductUpdateRequest;
@@ -16,8 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import com.georgia.jeogiyo.user.entity.Role;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,17 +39,17 @@ public class ProductController {
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음")
     })
-    @Secured(Role.Authority.OWNER)
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
     @PostMapping("/stores/{storeId}/products")
-    public ResponseEntity<ProductResponse> createProduct(
+    public ResponseEntity<CommonResponse<ProductResponse>> createProduct(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody ProductCreateRequest request
     ) {
         ProductResponse response = productService.createProduct(storeId, authentication.getName(), request);
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CommonResponse.success("상품 등록 성공", response));
     }
 
     @Operation(summary = "상품 상세 조회", description = "상품 상세 정보를 조회합니다. 숨김 상품은 권한에 따라 조회가 제한됩니다.")
@@ -58,25 +58,24 @@ public class ProductController {
             @ApiResponse(responseCode = "403", description = "숨김 상품 조회 권한 없음"),
             @ApiResponse(responseCode = "404", description = "상품 없음")
     })
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping("/products/{productId}")
-    public ResponseEntity<ProductResponse> getProduct(
+    public ResponseEntity<CommonResponse<ProductResponse>> getProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
             @Parameter(hidden = true) Authentication authentication
     ) {
         ProductResponse response = productService.getProduct(productId, authentication.getName());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("상품 조회 성공", response));
     }
 
     @Operation(summary = "상품 목록 검색", description = "가게별 상품 목록을 카테고리, 키워드, 페이지 조건으로 검색합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "상품 목록 검색 성공")
     })
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping("/stores/{storeId}/products")
-    public ResponseEntity<PageResponse<ProductSearchResponse>> searchProducts(
+    public ResponseEntity<CommonResponse<PageResponse<ProductSearchResponse>>> searchProducts(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
             @Parameter(description = "카테고리 ID", example = "22222222-2222-2222-2222-222222222221")
@@ -100,8 +99,7 @@ public class ProductController {
                 sort,
                 authentication.getName()
         );
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("상품 목록 조회 성공", response));
     }
 
     @Operation(summary = "상품 수정", description = "OWNER 또는 MASTER가 상품 정보를 수정합니다.")
@@ -112,35 +110,33 @@ public class ProductController {
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "상품 또는 카테고리 없음")
     })
-    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER', 'ROLE_MASTER')")
     @PatchMapping("/products/{productId}")
-    public ResponseEntity<ProductResponse> updateProduct(
+    public ResponseEntity<CommonResponse<ProductResponse>> updateProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody ProductUpdateRequest request
     ) {
         ProductResponse response = productService.updateProduct(productId, authentication.getName(), request);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("상품 수정 성공", response));
     }
 
     @Operation(summary = "상품 삭제", description = "OWNER 또는 MASTER가 상품을 soft delete 처리합니다.")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "상품 삭제 성공"),
+            @ApiResponse(responseCode = "200", description = "상품 삭제 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음"),
             @ApiResponse(responseCode = "404", description = "상품 없음")
     })
-    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER', 'ROLE_MASTER')")
     @DeleteMapping("/products/{productId}")
-    public ResponseEntity<Void> deleteProduct(
+    public ResponseEntity<CommonResponse<Void>> deleteProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
             @Parameter(hidden = true) Authentication authentication
     ) {
         productService.deleteProduct(productId, authentication.getName());
-
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(CommonResponse.<Void>success("상품 삭제 성공", null));
     }
 }
