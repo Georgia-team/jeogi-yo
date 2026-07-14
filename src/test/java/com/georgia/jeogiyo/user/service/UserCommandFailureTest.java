@@ -1,8 +1,7 @@
 package com.georgia.jeogiyo.user.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +11,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.category.entity.Category;
+import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.store.entity.Store;
+import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.entity.Role;
@@ -38,6 +42,12 @@ public class UserCommandFailureTest {
 	
 	@Autowired
 	private UserFinder userFinder;
+
+	@Autowired
+	private CategoryRepository categoryRepository;
+
+	@Autowired
+	private StoreRepository storeRepository;
 	
 	@Autowired
 	private EntityManager em;
@@ -46,13 +56,9 @@ public class UserCommandFailureTest {
 	
 	private User user;
 	
-	private UUID userId;
-	
 	@BeforeEach
 	void setUp() {
 		user = userRepository.save(User.customerCreate(userSignupRequest, passwordEncoder));
-		
-		userId = user.getUserId();
 	}
 	
 	@Test
@@ -141,6 +147,49 @@ public class UserCommandFailureTest {
 	}
 	
 	
+
+	@Test
+	@DisplayName("service-fail: 활성화된 가게가 있는 OWNER 유저 탈퇴 실패 케이스")
+	void failDeleteOwnerUserWithActiveStoreTest() {
+		user.changeRole(Role.OWNER);
+
+		Category category = categoryRepository.save(new Category("OWNER 탈퇴 실패 카테고리"));
+		storeRepository.save(new Store(
+				user,
+				category,
+				"OWNER 탈퇴 실패 가게",
+				"서울시 테스트구 테스트로 10",
+				"02-1234-5678"
+		));
+
+		String loginId = user.getLoginId();
+		String email = user.getEmail();
+		String password = userSignupRequest.getPassword();
+
+		em.flush();
+		em.clear();
+
+		User owner = userFinder.getUserByLoginId(loginId);
+
+		assertThat(owner.getRole()).isEqualTo(Role.OWNER);
+		assertThat(storeRepository.existsByOwner_UserIdAndIsDeletedFalse(owner.getUserId())).isTrue();
+
+		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(email, password);
+
+		assertThatThrownBy(() -> userCommandService.delete(loginId, userDeleteRequest))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DELETE_FAILURE_OPEN_STORES.getMessage());
+
+		em.flush();
+		em.clear();
+
+		User updated = userFinder.getUserByLoginId(loginId);
+
+		assertThat(updated.isDeleted()).isFalse();
+		assertThat(updated.getDeletedAt()).isNull();
+		assertThat(updated.getDeletedBy()).isNull();
+	}
+
 	// TODO: 회원가입 실패 테스트 케이스
 	
 }
