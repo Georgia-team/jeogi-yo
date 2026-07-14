@@ -3,21 +3,21 @@ package com.georgia.jeogiyo.order.service;
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
+import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
-import com.georgia.jeogiyo.order.dto.response.OrderCancelResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderCreateResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderDetailResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderSearchResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderStatusUpdateResponse;
-import com.georgia.jeogiyo.order.dto.response.OrderStoreSearchResponse;
+import com.georgia.jeogiyo.order.dto.response.*;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
 import com.georgia.jeogiyo.orderitem.entity.OrderItem;
 import com.georgia.jeogiyo.orderitem.repository.OrderItemRepository;
 import com.georgia.jeogiyo.category.entity.Category;
+import com.georgia.jeogiyo.payment.entity.Payment;
+import com.georgia.jeogiyo.payment.entity.PaymentMethod;
+import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 import com.georgia.jeogiyo.payment.repository.PaymentRepository;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
@@ -29,9 +29,6 @@ import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.georgia.jeogiyo.payment.entity.Payment;
-import com.georgia.jeogiyo.payment.entity.PaymentMethod;
-import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,11 +59,6 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-/**
- * OrderService 단위 테스트입니다.
- * 6-1(생성), 6-2(상세조회), 6-3(목록조회), 6-4(가게별 목록조회),
- * 6-5(상태변경), 6-6(취소)의 흐름과 검증을 DB 없이 검증합니다.
- */
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
 
@@ -108,12 +100,12 @@ class OrderServiceTest {
         ReflectionTestUtils.setField(address, "addressId", addressId);
         return address;
     }
+
     private Payment payment(UUID userId, PaymentStatus status) {
         Order order = order(userId, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         User user = customer();
         return new Payment(order, user, PaymentMethod.CARD, 24000);
     }
-
 
     private Product product(Store store, Category category, int price, int stock, boolean hidden) {
         Product product = new Product(store, category, "테스트 상품", "설명", price, stock, hidden);
@@ -453,13 +445,14 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner(), category);
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
 
-        OrderSearchResponse response = orderService.searchOrders(CUSTOMER_LOGIN_ID, null, 0, 10, "desc");
+        PageResponse<OrderSearchResponse> response = orderService.searchOrders(CUSTOMER_LOGIN_ID, null, pageable);
 
         assertThat(response.getContent()).hasSize(1);
         assertThat(response.getContent().get(0).getOrderId()).isEqualTo(ORDER_ID);
@@ -472,27 +465,29 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner(), category);
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(orderRepository.searchOrders(isNull(), eq(Role.MASTER), eq(MASTER_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
 
-        OrderSearchResponse response = orderService.searchOrders(MASTER_LOGIN_ID, null, 0, 10, "desc");
+        PageResponse<OrderSearchResponse> response = orderService.searchOrders(MASTER_LOGIN_ID, null, pageable);
 
         assertThat(response.getContent()).hasSize(1);
     }
 
     @Test
-    @DisplayName("size가 10/30/50이 아니면 기본값 10으로 보정된다")
+    @DisplayName("잘못된 size는 PageUtil에서 10으로 보정되어 repository에 전달된다")
     void searchOrders_invalidSize_normalized() {
         User customer = customer();
+        Pageable pageable = PageUtil.toPageable(0, 20, "desc");
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of()));
 
-        orderService.searchOrders(CUSTOMER_LOGIN_ID, null, 0, 20, "desc");
+        orderService.searchOrders(CUSTOMER_LOGIN_ID, null, pageable);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         then(orderRepository).should().searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), pageableCaptor.capture());
@@ -502,9 +497,10 @@ class OrderServiceTest {
     @Test
     @DisplayName("존재하지 않는 사용자는 목록을 조회할 수 없다")
     void searchOrders_userNotFound_fail() {
+        Pageable pageable = PageUtil.toPageable(0, 10, "desc");
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> orderService.searchOrders(CUSTOMER_LOGIN_ID, null, 0, 10, "desc"))
+        assertThatThrownBy(() -> orderService.searchOrders(CUSTOMER_LOGIN_ID, null, pageable))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("사용자를 찾을 수 없습니다");
     }
@@ -518,6 +514,7 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner, category);
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
@@ -525,7 +522,7 @@ class OrderServiceTest {
                 .willReturn(new PageImpl<>(List.of(order)));
         given(userRepository.findById(CUSTOMER_ID)).willReturn(Optional.of(customer()));
 
-        OrderStoreSearchResponse response = orderService.searchOrdersByStore(OWNER_LOGIN_ID, STORE_ID, null, 0, 10, "desc");
+        PageResponse<OrderStoreSearchResponse> response = orderService.searchOrdersByStore(OWNER_LOGIN_ID, STORE_ID, null, pageable);
 
         assertThat(response.getContent()).hasSize(1);
     }
@@ -537,11 +534,12 @@ class OrderServiceTest {
         User otherOwner = otherOwner();
         Category category = category();
         Store otherStore = otherOwnerStore(otherOwner, category);
+        Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(storeRepository.findById(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
 
-        assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, OTHER_OWNER_STORE_ID, null, 0, 10, "desc"))
+        assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, OTHER_OWNER_STORE_ID, null, pageable))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("본인 가게의 주문만");
     }
@@ -550,10 +548,11 @@ class OrderServiceTest {
     @DisplayName("존재하지 않는 가게는 조회할 수 없다")
     void searchOrdersByStore_storeNotFound_fail() {
         User owner = owner();
+        Pageable pageable = PageUtil.toPageable(0, 10, "desc");
         given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, STORE_ID, null, 0, 10, "desc"))
+        assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, STORE_ID, null, pageable))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("가게를 찾을 수 없습니다");
     }
@@ -565,6 +564,7 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner(), category);
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
@@ -572,7 +572,7 @@ class OrderServiceTest {
                 .willReturn(new PageImpl<>(List.of(order)));
         given(userRepository.findById(CUSTOMER_ID)).willReturn(Optional.of(customer()));
 
-        OrderStoreSearchResponse response = orderService.searchOrdersByStore(MASTER_LOGIN_ID, STORE_ID, null, 0, 10, "desc");
+        PageResponse<OrderStoreSearchResponse> response = orderService.searchOrdersByStore(MASTER_LOGIN_ID, STORE_ID, null, pageable);
 
         assertThat(response.getContent()).hasSize(1);
     }
@@ -679,6 +679,7 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner(), category);
         Product product = product(store, category, 12000, 28, false);
+        Payment payment = payment(CUSTOMER_ID, PaymentStatus.SUCCESS);
 
         OrderCancelRequest request = new OrderCancelRequest();
         request.setCancelReason("고객 변심");
@@ -687,11 +688,14 @@ class OrderServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
+        given(paymentRepository.findByOrder_OrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(payment));
 
         OrderCancelResponse response = orderService.cancelOrder(CUSTOMER_LOGIN_ID, ORDER_ID, request);
 
         assertThat(response.getOrderStatus()).isEqualTo("CANCELLED");
         assertThat(product.getStock()).isEqualTo(30);
+        assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.CANCEL);
+        assertThat(payment.getCancelReason()).isEqualTo("고객 변심");
     }
 
     @Test
