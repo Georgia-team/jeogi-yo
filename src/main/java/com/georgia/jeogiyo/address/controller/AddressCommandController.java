@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.address.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -42,7 +43,7 @@ public class AddressCommandController {
 	})
 	@PostMapping("")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<AddressCreateResponse> addressCreate(
+	public ResponseEntity<CommonResponse<AddressCreateResponse>> addressCreate(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressCreateRequest addressCreate) {
 		
@@ -50,7 +51,7 @@ public class AddressCommandController {
 		
 		AddressCreateResponse response = addressService.addressCreate(loginId, addressCreate);
 		
-		return CommonResponse.success("주소 등록 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("주소 등록 성공", response));
 	}
 	
 	@Operation(summary = "주소 수정", description = "유저 본인이 등록한 주소를 수정합니다.")
@@ -62,7 +63,7 @@ public class AddressCommandController {
 	})
 	@PatchMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<AddressUpdateResponse> addressUpdate(
+	public ResponseEntity<CommonResponse<AddressUpdateResponse>> addressUpdate(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressUpdateRequest addressUpdate,
 			@PathVariable String addressId) {
@@ -71,7 +72,7 @@ public class AddressCommandController {
 		
 		AddressUpdateResponse response = addressService.addressUpdate(loginId, addressId, addressUpdate);
 		
-		return CommonResponse.success("주소 수정 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("주소 수정 성공", response));
 	}
 	
 	@Operation(summary = "주소 삭제", description = "유저 본인이 등록한 주소를 삭제합니다.")
@@ -84,7 +85,7 @@ public class AddressCommandController {
 	})
 	@DeleteMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<AddressDeleteResponse> addressDelete(
+	public ResponseEntity<CommonResponse<AddressDeleteResponse>> addressDelete(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
 		
@@ -92,7 +93,7 @@ public class AddressCommandController {
 		
 		AddressDeleteResponse response = addressService.addressDelete(loginId, addressId);
 		
-		return CommonResponse.success("주소 삭제 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("주소 삭제 성공", response));
 	}
 	
 }

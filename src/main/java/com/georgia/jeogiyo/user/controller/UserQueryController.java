@@ -41,14 +41,14 @@ public class UserQueryController {
 	})
 	@GetMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<CommonResponse<UserInfoResponse>> getMe(@AuthenticationPrincipal UserDetails userDetails) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		
 		User user = userFinderService.getUserByLoginId(userDetails.getUsername());
 		
 		UserInfoResponse response = UserInfoResponse.of(user);
 		
-		return CommonResponse.success("내 정보 조회 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("내 정보 조회 성공", response));
 	}
 	
 	@Operation(summary = "유저 목록 조회", description = "마스터 권한용 유저 목록 조회")
@@ -59,7 +59,7 @@ public class UserQueryController {
 	})
 	@GetMapping("")
 	@PreAuthorize("hasAnyRole('MASTER') and #userDetails.username == principal.username")
-	public CommonResponse<PageResponse<UserInfoResponse>> masterGetUserList(
+	public ResponseEntity<CommonResponse<PageResponse<UserInfoResponse>>> masterGetUserList(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @ModelAttribute UserSearchRequest userSearchRequest
 	) {
@@ -70,7 +70,7 @@ public class UserQueryController {
 		
 		PageResponse<UserInfoResponse> response = PageResponse.from(userPagenation, x -> x);
 		
-		return CommonResponse.success("유저 목록 조회 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("유저 목록 조회 성공", response));
 	}
 	
 }

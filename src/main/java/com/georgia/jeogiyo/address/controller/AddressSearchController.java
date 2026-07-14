@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.address.controller;
 
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,7 +41,7 @@ public class AddressSearchController {
 	})
 	@GetMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<AddressInfoResponse> addressInfoOne(
+	public ResponseEntity<CommonResponse<AddressInfoResponse>> addressInfoOne(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
 		
@@ -48,7 +49,7 @@ public class AddressSearchController {
 		
 		AddressInfoResponse response = addressFinder.getAddressInfoOne(loginId, addressId);
 		
-		return CommonResponse.success("주소 조회 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("주소 조회 성공", response));
 	}
 	
 	@Operation(summary = "주소 목록 조회", description = "주소 목록을 조회합니다.")
@@ -59,7 +60,7 @@ public class AddressSearchController {
 	})
 	@GetMapping("")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<PageResponse<AddressInfoResponse>> addressInfoAll(
+	public ResponseEntity<CommonResponse<PageResponse<AddressInfoResponse>>> addressInfoAll(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@ModelAttribute AddressSearchRequest addressSearch) {
 		
@@ -69,7 +70,7 @@ public class AddressSearchController {
 		
 		PageResponse<AddressInfoResponse> response = PageResponse.from(addressPages, x -> x);
 		
-		return CommonResponse.success("주소 목록 조회 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("주소 목록 조회 성공", response));
 	}
 	
 }

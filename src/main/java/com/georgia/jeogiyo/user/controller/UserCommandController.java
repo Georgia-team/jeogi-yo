@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.user.controller;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -40,7 +41,7 @@ public class UserCommandController {
 	})
 	@PatchMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<UserInfoResponse> updateMe(
+	public ResponseEntity<CommonResponse<UserInfoResponse>> updateMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
@@ -48,7 +49,7 @@ public class UserCommandController {
 		
 		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
-		return CommonResponse.success("회원 수정 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("회원 수정 성공", response));
 	}
 	
 	@Operation(summary = "회원 삭제", description = "회원 탈퇴합니다.")
@@ -59,7 +60,7 @@ public class UserCommandController {
 	})
 	@DeleteMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<UserDeleteResponse> deleteMe(
+	public ResponseEntity<CommonResponse<UserDeleteResponse>> deleteMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserDeleteRequest userDelete
 	) {
@@ -67,7 +68,7 @@ public class UserCommandController {
 		
 		UserDeleteResponse response = userCommandService.delete(loginId, userDelete);
 		
-		return CommonResponse.success("회원 탈퇴 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("회원 탈퇴 성공", response));
 	}
 	
 }
