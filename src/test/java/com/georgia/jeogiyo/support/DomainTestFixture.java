@@ -1,8 +1,17 @@
 package com.georgia.jeogiyo.support;
 
+import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
+import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.ai.dto.request.AiDescriptionRequest;
 import com.georgia.jeogiyo.ai.entity.AiHistory;
 import com.georgia.jeogiyo.category.entity.Category;
+import com.georgia.jeogiyo.order.entity.Order;
+import com.georgia.jeogiyo.order.entity.OrderStatus;
+import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
+import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
+import com.georgia.jeogiyo.payment.entity.Payment;
+import com.georgia.jeogiyo.payment.entity.PaymentMethod;
+import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 import com.georgia.jeogiyo.product.dto.request.ProductCreateRequest;
 import com.georgia.jeogiyo.product.dto.request.ProductUpdateRequest;
 import com.georgia.jeogiyo.product.entity.Product;
@@ -16,14 +25,6 @@ import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import com.georgia.jeogiyo.order.entity.Order;
-import com.georgia.jeogiyo.order.entity.OrderStatus;
-import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
-import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
-import com.georgia.jeogiyo.payment.entity.Payment;
-import com.georgia.jeogiyo.payment.entity.PaymentMethod;
-import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -136,6 +137,20 @@ public final class DomainTestFixture {
         return store;
     }
 
+    public static Address address(User user) {
+        AddressCreateRequest request = new AddressCreateRequest(
+                "서울특별시 종로구 세종대로 175",
+                "101호",
+                "03154",
+                true
+        );
+
+        Address address = Address.create(user, request);
+        ReflectionTestUtils.setField(address, "addressId", ADDRESS_ID);
+        markAudited(address);
+        return address;
+    }
+
     public static Store otherOwnerStore(User otherOwner, Category category) {
         Store store = store(otherOwner, category);
         ReflectionTestUtils.setField(store, "storeId", OTHER_OWNER_STORE_ID);
@@ -243,13 +258,28 @@ public final class DomainTestFixture {
     }
 
     public static Order order(UUID userId, OrderStatus orderStatus) {
+        User user = CUSTOMER_ID.equals(userId)
+                ? customer()
+                : OTHER_CUSTOMER_ID.equals(userId)
+                  ? otherCustomer()
+                  : user(userId, "orderUser", Role.CUSTOMER);
+
+        return order(user, orderStatus);
+    }
+
+    public static Order order(User user, OrderStatus orderStatus) {
+
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(user);
+
         Order order = new Order(
-                userId,
-                STORE_ID,
-                ADDRESS_ID,
-                "서울특별시 종로구 세종대로 172",
-                "101호",
-                "03154",
+                user,
+                store,
+                address,
+                address.getRoadAddress(),
+                address.getDetailAddress(),
+                address.getZipcode(),
                 18000,
                 orderStatus
         );
@@ -266,7 +296,7 @@ public final class DomainTestFixture {
                   ? otherCustomer()
                   : user(userId, "paymentUser", Role.CUSTOMER);
 
-        Order order = order(user.getUserId(), OrderStatus.ORDER_REQUESTED);
+        Order order = order(user, OrderStatus.ORDER_REQUESTED);
 
         Payment payment = new Payment(
                 order,
