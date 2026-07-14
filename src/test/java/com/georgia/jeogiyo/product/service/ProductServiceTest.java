@@ -6,6 +6,8 @@ import com.georgia.jeogiyo.ai.service.AiGeminiService;
 import com.georgia.jeogiyo.ai.service.AiHistoryRecorder;
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.product.dto.request.ProductCreateRequest;
 import com.georgia.jeogiyo.product.dto.request.ProductUpdateRequest;
@@ -18,8 +20,6 @@ import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
-import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,19 +43,17 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
-import com.georgia.jeogiyo.global.exception.BusinessException;
-import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 /**
  * ProductServiceImpl 단위 테스트입니다.
  *
- * 상품 도메인의 핵심 규칙을 DB 없이 검증합니다.
- * 등록/수정/삭제 권한, AI 사용/미사용 등록 조건, 숨김 상품 조회 권한,
- * 삭제된 상품과 삭제된 가게의 상품 차단이 주요 검증 대상입니다.
- *
- * AI 설명 생성 포함 상품 등록은 실제 Gemini를 호출하지 않고 AiGeminiService를 mock 처리합니다.
- * TODO 주문 도메인 연동 후 재고 차감/복구 정책은 별도 테스트로 추가해야 합니다.
- * TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 기준으로 테스트를 변경해야 합니다.
+ * - 상품 도메인의 핵심 규칙을 DB 없이 검증합니다.
+ * - 등록/수정/삭제 권한, AI 사용/미사용 등록 조건, 숨김 상품 조회 권한,
+ *   삭제된 상품과 삭제된 가게의 상품 차단이 주요 검증 대상입니다.
+ * - 공통 예외 처리 적용에 따라 BusinessException과 GlobalErrorCode 기준으로 검증합니다.
+ * - AI 설명 생성 포함 상품 등록은 실제 Gemini를 호출하지 않고 AiGeminiService를 mock 처리합니다.
+ * - Service 단위 테스트에서는 loginId를 직접 전달해 비즈니스 로직을 검증하고,
+ *   인증 사용자 추출 흐름은 Controller/통합 테스트에서 검증합니다.
  */
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
@@ -170,12 +168,12 @@ class ProductServiceTest {
         ProductCreateRequest request = DomainTestFixture.productCreateRequest(CATEGORY_ID, false);
 
         given(userFinder.getOwnerUserByLoginId(CUSTOMER_LOGIN_ID))
-                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
+                .willThrow(new BusinessException(GlobalErrorCode.FORBIDDEN));
 
         // when & then: OWNER 권한 검증에서 실패하므로 가게/카테고리/상품 저장 로직까지 가지 않는다.
         assertThatThrownBy(() -> productService.createProduct(STORE_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(UserDomainException.class)
-                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 
         verifyNoInteractions(storeRepository, categoryRepository, productRepository,
                 aiGeminiService, aiHistoryRepository, aiHistoryRecorder);
