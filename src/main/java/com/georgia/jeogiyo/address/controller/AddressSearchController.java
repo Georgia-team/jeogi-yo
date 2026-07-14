@@ -16,6 +16,7 @@ import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
 import com.georgia.jeogiyo.address.service.AddressFinderService;
 import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -65,7 +66,7 @@ public class AddressSearchController {
 		
 		String loginId = userDetails.getUsername();
 		
-		Page<AddressInfoResponse> addressPages = addressFinder.getAddressInfoAll(loginId, addressSearch.toPageable("createdAt"));
+		Page<AddressInfoResponse> addressPages = addressFinder.getAddressInfoAll(loginId, PageUtil.toPageable(addressSearch.getPage(), addressSearch.getSize(), addressSearch.getSort()));
 		
 		PageResponse<AddressInfoResponse> response = PageResponse.from(addressPages, x -> x);
 		
