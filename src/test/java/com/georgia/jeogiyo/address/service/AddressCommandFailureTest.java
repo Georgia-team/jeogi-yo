@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.dto.request.AddressUpdateRequest;
@@ -58,7 +59,7 @@ public class AddressCommandFailureTest {
 		String loginId = user.getLoginId();
 
 		UUID addressId = addressService.addressCreate(loginId, new AddressCreateRequest(
-				"Seoul Gangnam Teheran-ro 123",
+				"서울특별시 종로구 새문안로 123",
 				"101-1001",
 				"06234",
 				true
@@ -68,7 +69,7 @@ public class AddressCommandFailureTest {
 		em.clear();
 
 		assertThatThrownBy(() -> addressService.addressDelete(loginId, addressId.toString()))
-		.isInstanceOf(IllegalStateException.class);
+		.isInstanceOf(ResponseStatusException.class);
 
 		em.flush();
 		em.clear();
@@ -87,7 +88,7 @@ public class AddressCommandFailureTest {
 		String loginId = user.getLoginId();
 
 		UUID addressId = addressService.addressCreate(loginId, new AddressCreateRequest(
-				"Seoul Gangnam Teheran-ro 123",
+				"서울특별시 종로구 새문안로 123",
 				"101-1001",
 				"06234",
 				true
@@ -106,13 +107,13 @@ public class AddressCommandFailureTest {
 		em.clear();
 
 		AddressUpdateRequest updateRequest = new AddressUpdateRequest(
-				"Seoul Gangnam Teheran-ro 999",
+				"서울특별시 종로구 새문안로 123",
 				"999-9999",
 				"06299",
 				false
 		);
 
 		assertThatThrownBy(() -> addressService.addressUpdate(otherLoginId, addressId.toString(), updateRequest))
-		.isInstanceOf(IllegalArgumentException.class);
+		.isInstanceOf(ResponseStatusException.class);
 	}
 }

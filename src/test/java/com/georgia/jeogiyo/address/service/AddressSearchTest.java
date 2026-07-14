@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
@@ -62,7 +63,7 @@ public class AddressSearchTest {
 		String loginId = user.getLoginId();
 
 		AddressCreateRequest request = new AddressCreateRequest(
-				"Seoul Gangnam Teheran-ro 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101-1001",
 				"06234",
 				true
@@ -88,14 +89,14 @@ public class AddressSearchTest {
 		String loginId = user.getLoginId();
 
 		UUID address1Id = addressService.addressCreate(loginId, new AddressCreateRequest(
-				"Seoul Gangnam Teheran-ro 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101-1001",
 				"06234",
 				true
 		)).getAddressId();
 
 		UUID address2Id = addressService.addressCreate(loginId, new AddressCreateRequest(
-				"Seoul Gangnam Teheran-ro 234",
+				"서울특별시 종로구 종로 1길 123",
 				"102-1002",
 				"06235",
 				true
@@ -120,14 +121,14 @@ public class AddressSearchTest {
 		String loginId = user.getLoginId();
 
 		UUID address1Id = addressService.addressCreate(loginId, new AddressCreateRequest(
-				"Seoul Gangnam Teheran-ro 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101-1001",
 				"06234",
 				true
 		)).getAddressId();
 
 		UUID address2Id = addressService.addressCreate(loginId, new AddressCreateRequest(
-				"Seoul Gangnam Teheran-ro 234",
+				"서울특별시 종로구 종로 1길 123",
 				"102-1002",
 				"06235",
 				true
@@ -139,7 +140,7 @@ public class AddressSearchTest {
 		em.clear();
 
 		assertThatThrownBy(() -> addressFinder.findByUserAndAddressId(user, address2Id))
-		.isInstanceOf(IllegalArgumentException.class);
+		.isInstanceOf(ResponseStatusException.class);
 
 		assertThat(addressFinder.findByUserAndAddressId(user, address1Id).isDefault()).isTrue();
 	}

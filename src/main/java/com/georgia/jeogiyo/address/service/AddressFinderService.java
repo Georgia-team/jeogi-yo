@@ -5,8 +5,10 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
 import com.georgia.jeogiyo.address.entity.Address;
@@ -28,7 +30,8 @@ public class AddressFinderService implements AddressFinder {
 	@Override
 	public Address findByUserAndAddressId(User user, UUID addressId) {
 		return addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, addressId)
-				.orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원님의 배송지 정보를 불러올 수 없습니다."));
+				// .orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
 	}
 
 	@Override
@@ -46,7 +49,8 @@ public class AddressFinderService implements AddressFinder {
 		User user = userFinder.getUserById(userId);
 		
 		return addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, addressId)
-				.orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "회원님의 배송지 정보를 불러올 수 없습니다."));
+				//.orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
 	}
 	
 	public AddressInfoResponse getAddressInfoOne(String loginId, String addressId) {

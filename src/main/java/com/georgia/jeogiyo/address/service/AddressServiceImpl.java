@@ -3,8 +3,10 @@ package com.georgia.jeogiyo.address.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.dto.request.AddressUpdateRequest;
@@ -31,7 +33,7 @@ public class AddressServiceImpl implements AddressService {
 	
 	private static final String ROAD_ADDRESS_PREFIX = "서울특별시 종로구 "; 
 	
-	private final List<String> deliveryAreaRoads = List.of(
+	private static final List<String> DELIVERY_AREA_ROADS = List.of(
 			"세종대로", "새문안로", "종로1길", "종로3길", "사직로", "율곡로", "자하문로", "우정국로", "삼청로", "경희궁길", "경희궁1길"
 	);
 	
@@ -89,7 +91,7 @@ public class AddressServiceImpl implements AddressService {
 		
 		if(address.isDefault()) {
 			Address latestAddress = addressFinder.findFirstByUserOrderByCreatedAtDesc(user)
-					.orElseThrow(() -> new IllegalStateException("기본 배송지 하나만 있는 경우 삭제 처리가 불가합니다."));
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "기본 배송지 하나만 있는 경우 삭제 처리가 불가합니다."));
 			
 			latestAddress.changeDefault();
 		}
@@ -104,15 +106,16 @@ public class AddressServiceImpl implements AddressService {
 		String normalizedPrefix = ROAD_ADDRESS_PREFIX.replace(" ", "");
 		
 		if (!normalizedRoadAddress.startsWith(normalizedPrefix)) {
-			throw new IllegalArgumentException("배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
 	  }
 		
-		boolean isAllowedArea = deliveryAreaRoads.stream()
+		boolean isAllowedArea = DELIVERY_AREA_ROADS.stream()
 				.map(road -> road.replace(" ", ""))
 				.anyMatch(normalizedRoadAddress::contains);
 		
 		if(!isAllowedArea) {
-			throw new IllegalArgumentException("배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
+			//throw new IllegalArgumentException("배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
 		}
 	}
 	

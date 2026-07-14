@@ -77,7 +77,7 @@ public class AddressApiTest {
 	void addressCreateApiTest() throws Exception {
 		String url = "/api/v1/address";
 		
-		AddressCreateRequest request = createAddressRequest("Seoul Gangnam Teheran-ro 123", "101-1001", "06234", true);
+		AddressCreateRequest request = createAddressRequest("서울특별시 종로구 새문안로 123", "101-1001", "06234", true);
 		
 		mockMvc
 		.perform(post(url)
@@ -110,7 +110,7 @@ public class AddressApiTest {
 	@DisplayName("API: 배송지 수정 API 테스트")
 	void addressUpdateApiTest() throws Exception {
 		UUID addressId = addressService.addressCreate(loginId,
-				createAddressRequest("Seoul Gangnam Teheran-ro 123", "101-1001", "06234", true)
+				createAddressRequest("서울특별시 종로구 새문안로 123", "101-1001", "06234", true)
 		).getAddressId();
 		
 		em.flush();
@@ -119,7 +119,7 @@ public class AddressApiTest {
 		String url = "/api/v1/address/" + addressId;
 		
 		AddressUpdateRequest request = new AddressUpdateRequest(
-				"Seoul Gangnam Teheran-ro 234",
+				"서울특별시 종로구 새문안로 123",
 				"102-1002",
 				"06235",
 				true
@@ -155,10 +155,10 @@ public class AddressApiTest {
 	@DisplayName("API: 배송지 삭제 API 테스트")
 	void addressDeleteApiTest() throws Exception {
 		addressService.addressCreate(loginId,
-				createAddressRequest("Seoul Gangnam Teheran-ro 123", "101-1001", "06234", true)
+				createAddressRequest("서울특별시 종로구 새문안로 123", "101-1001", "06234", true)
 		);
 		UUID addressId = addressService.addressCreate(loginId,
-				createAddressRequest("Seoul Gangnam Teheran-ro 234", "102-1002", "06235", false)
+				createAddressRequest("서울특별시 종로구 새문안로 123", "102-1002", "06235", false)
 		).getAddressId();
 		
 		em.flush();
@@ -191,7 +191,7 @@ public class AddressApiTest {
 	@Test
 	@DisplayName("API: 배송지 한 건 조회 API 테스트")
 	void addressInfoOneApiTest() throws Exception {
-		AddressCreateRequest request = createAddressRequest("Seoul Gangnam Teheran-ro 123", "101-1001", "06234", true);
+		AddressCreateRequest request = createAddressRequest("서울특별시 종로구 새문안로 123", "101-1001", "06234", true);
 		UUID addressId = addressService.addressCreate(loginId, request).getAddressId();
 		
 		em.flush();
@@ -227,10 +227,10 @@ public class AddressApiTest {
 	@DisplayName("API: 배송지 목록 조회 API 테스트")
 	void addressInfoAllApiTest() throws Exception {
 		addressService.addressCreate(loginId,
-				createAddressRequest("Seoul Gangnam Teheran-ro 123", "101-1001", "06234", true)
+				createAddressRequest("서울특별시 종로구 새문안로 123", "101-1001", "06234", true)
 		);
 		addressService.addressCreate(loginId,
-				createAddressRequest("Seoul Gangnam Teheran-ro 234", "102-1002", "06235", false)
+				createAddressRequest("서울특별시 종로구 새문안로 123", "102-1002", "06235", false)
 		);
 		
 		em.flush();
