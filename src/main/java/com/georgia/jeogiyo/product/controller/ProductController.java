@@ -18,7 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -44,10 +45,11 @@ public class ProductController {
     public ResponseEntity<CommonResponse<ProductResponse>> createProduct(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody ProductCreateRequest request
     ) {
-        ProductResponse response = productService.createProduct(storeId, authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        ProductResponse response = productService.createProduct(storeId, loginId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.success("상품 등록 성공", response));
     }
@@ -63,9 +65,10 @@ public class ProductController {
     public ResponseEntity<CommonResponse<ProductResponse>> getProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
-        ProductResponse response = productService.getProduct(productId, authentication.getName());
+        String loginId = userDetails.getUsername();
+        ProductResponse response = productService.getProduct(productId, loginId);
         return ResponseEntity.ok(CommonResponse.success("상품 조회 성공", response));
     }
 
@@ -88,8 +91,9 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "정렬 방향", example = "desc")
             @RequestParam(defaultValue = "desc") String sort,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
+        String loginId = userDetails.getUsername();
         PageResponse<ProductSearchResponse> response = productService.searchProducts(
                 storeId,
                 categoryId,
@@ -97,7 +101,7 @@ public class ProductController {
                 page,
                 size,
                 sort,
-                authentication.getName()
+                loginId
         );
         return ResponseEntity.ok(CommonResponse.success("상품 목록 조회 성공", response));
     }
@@ -115,10 +119,11 @@ public class ProductController {
     public ResponseEntity<CommonResponse<ProductResponse>> updateProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody ProductUpdateRequest request
     ) {
-        ProductResponse response = productService.updateProduct(productId, authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        ProductResponse response = productService.updateProduct(productId, loginId, request);
         return ResponseEntity.ok(CommonResponse.success("상품 수정 성공", response));
     }
 
@@ -134,9 +139,10 @@ public class ProductController {
     public ResponseEntity<CommonResponse<Void>> deleteProduct(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
-        productService.deleteProduct(productId, authentication.getName());
+        String loginId = userDetails.getUsername();
+        productService.deleteProduct(productId, loginId);
         return ResponseEntity.ok(CommonResponse.<Void>success("상품 삭제 성공", null));
     }
 }

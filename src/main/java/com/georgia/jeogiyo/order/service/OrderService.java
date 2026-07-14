@@ -1,5 +1,5 @@
 package com.georgia.jeogiyo.order.service;
-
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
 import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
@@ -80,7 +80,7 @@ public class OrderService {
     @Transactional
     public OrderCreateResponse createOrder(String loginId, OrderCreateRequest orderCreateRequest) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
         UUID userId = user.getUserId();
 
@@ -103,7 +103,7 @@ public class OrderService {
 
 
         if (!isServiceableArea(address.getRoadAddress())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "서비스 가능 지역이 아닙니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "서비스 가능 지역이 아닙니다.");
         }
 
         Integer totalPrice = 0;
@@ -156,7 +156,7 @@ public class OrderService {
 
     public OrderDetailResponse getOrderDetail(String loginId, UUID orderId) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
@@ -213,17 +213,10 @@ public class OrderService {
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다.");
     }
 
-    public OrderSearchResponse searchOrders(String loginId, OrderStatus orderStatus, int page, int size, String sort) {
+    public PageResponse<OrderSearchResponse> searchOrders(String loginId, OrderStatus orderStatus, Pageable pageable) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-
-        int normalizedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
-        int normalizedPage = Math.max(page, 0);
-        Sort sortOption = "asc".equalsIgnoreCase(sort)
-                ? Sort.by("createdAt").ascending()
-                : Sort.by("createdAt").descending();
-        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize, sortOption);
 
         List<UUID> storeIds = null;
         if (user.getRole() == Role.OWNER) {
@@ -237,33 +230,23 @@ public class OrderService {
 
         Page<Order> orderPage = orderRepository.searchOrders(orderStatus, user.getRole(), user.getUserId(), storeIds, pageable);
 
-        List<OrderSearchResponse.OrderListItem> items = new ArrayList<>();
-        for (Order order : orderPage.getContent()) {
+        return PageResponse.from(orderPage, order -> {
             Store store = storeRepository.findById(order.getStoreId()).orElse(null);
 
-            OrderSearchResponse.OrderListItem item = new OrderSearchResponse.OrderListItem();
+            OrderSearchResponse item = new OrderSearchResponse();
             item.setOrderId(order.getOrderId());
             item.setStoreId(order.getStoreId());
             item.setStoreName(store != null ? store.getStoreName() : null);
             item.setOrderStatus(order.getOrderStatus().name());
             item.setTotalPrice(order.getTotalPrice());
             item.setCreatedAt(order.getCreatedAt());
-            items.add(item);
-        }
-
-        OrderSearchResponse response = new OrderSearchResponse();
-        response.setContent(items);
-        response.setPage(orderPage.getNumber());
-        response.setSize(orderPage.getSize());
-        response.setTotalElements(orderPage.getTotalElements());
-        response.setTotalPages(orderPage.getTotalPages());
-
-        return response;
+            return item;
+        });
     }
 
-    public OrderStoreSearchResponse searchOrdersByStore(String loginId, UUID storeId, OrderStatus orderStatus, int page, int size, String sort) {
+    public PageResponse<OrderStoreSearchResponse> searchOrdersByStore(String loginId, UUID storeId, OrderStatus orderStatus, Pageable pageable) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         Store store = storeRepository.findById(storeId)
@@ -277,41 +260,25 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다.");
         }
 
-        int normalizedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
-        int normalizedPage = Math.max(page, 0);
-        Sort sortOption = "asc".equalsIgnoreCase(sort)
-                ? Sort.by("createdAt").ascending()
-                : Sort.by("createdAt").descending();
-        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize, sortOption);
-
         Page<Order> orderPage = orderRepository.searchOrdersByStore(storeId, orderStatus, pageable);
 
-        List<OrderStoreSearchResponse.OrderStoreListItem> items = new ArrayList<>();
-        for (Order order : orderPage.getContent()) {
+        return PageResponse.from(orderPage, order -> {
             User customer = userRepository.findById(order.getUserId()).orElse(null);
 
-            OrderStoreSearchResponse.OrderStoreListItem item = new OrderStoreSearchResponse.OrderStoreListItem();
+            OrderStoreSearchResponse item = new OrderStoreSearchResponse();
             item.setOrderId(order.getOrderId());
             item.setCustomerName(customer != null ? customer.getNickname() : null);
             item.setOrderStatus(order.getOrderStatus().name());
             item.setTotalPrice(order.getTotalPrice());
             item.setCreatedAt(order.getCreatedAt());
-            items.add(item);
-        }
+            return item;
+        });
 
-        OrderStoreSearchResponse response = new OrderStoreSearchResponse();
-        response.setContent(items);
-        response.setPage(orderPage.getNumber());
-        response.setSize(orderPage.getSize());
-        response.setTotalElements(orderPage.getTotalElements());
-        response.setTotalPages(orderPage.getTotalPages());
-
-        return response;
     }
     @Transactional
     public OrderStatusUpdateResponse updateOrderStatus(String loginId, UUID orderId, OrderStatusUpdateRequest request) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         if (user.getRole() != Role.OWNER && user.getRole() != Role.MASTER) {
@@ -351,7 +318,7 @@ public class OrderService {
     @Transactional
     public OrderCancelResponse cancelOrder(String loginId, UUID orderId, OrderCancelRequest request) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.MASTER) {

@@ -1,18 +1,22 @@
 package com.georgia.jeogiyo.order.controller;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
+import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
+import com.georgia.jeogiyo.global.security.UserDetailsImpl;
 import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
 import com.georgia.jeogiyo.order.dto.response.*;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.service.OrderService;
-import com.georgia.jeogiyo.user.entity.Role;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.annotation.Secured;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -25,69 +29,72 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/orders")
-    @Secured(Role.Authority.CUSTOMER)
-    public ResponseEntity<OrderCreateResponse> createOrder(
-            Authentication authentication,
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<CommonResponse<OrderCreateResponse>> createOrder(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody OrderCreateRequest request
     ) {
-        OrderCreateResponse response = orderService.createOrder(authentication.getName(), request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        OrderCreateResponse response = orderService.createOrder(userDetails.getUsername(), request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(CommonResponse.success("주문이 생성되었습니다.", response));
     }
 
     @GetMapping("/orders/{orderId}")
-    public ResponseEntity<OrderDetailResponse> getOrderDetail(
+    public ResponseEntity<CommonResponse<OrderDetailResponse>> getOrderDetail(
             @PathVariable UUID orderId,
-            Authentication authentication
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        OrderDetailResponse response = orderService.getOrderDetail(authentication.getName(), orderId);
-        return ResponseEntity.ok(response);
+        OrderDetailResponse response = orderService.getOrderDetail(userDetails.getUsername(), orderId);
+        return ResponseEntity.ok(CommonResponse.success( "주문 정보를 조회했습니다.", response));
     }
 
     @GetMapping("/orders")
-    public ResponseEntity<OrderSearchResponse> searchOrders(
+    public ResponseEntity<CommonResponse<PageResponse<OrderSearchResponse>>> searchOrders(
             @RequestParam(required = false) OrderStatus orderStatus,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "desc") String sort,
-            Authentication authentication
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        OrderSearchResponse response = orderService.searchOrders(authentication.getName(), orderStatus, page, size, sort);
-        return ResponseEntity.ok(response);
+        Pageable pageable = PageUtil.toPageable(page, size, sort);
+        PageResponse<OrderSearchResponse> response = orderService.searchOrders(userDetails.getUsername(), orderStatus, pageable);
+        return ResponseEntity.ok(CommonResponse.success( "주문 목록을 조회했습니다.", response));
     }
 
     @GetMapping("/stores/{storeId}/orders")
-    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
-    public ResponseEntity<OrderStoreSearchResponse> searchOrdersByStore(
+    @PreAuthorize("hasAnyRole('OWNER','MASTER')")
+    public ResponseEntity<CommonResponse<PageResponse<OrderStoreSearchResponse>>> searchOrdersByStore(
             @PathVariable UUID storeId,
             @RequestParam(required = false) OrderStatus orderStatus,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "desc") String sort,
-            Authentication authentication
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        OrderStoreSearchResponse response = orderService.searchOrdersByStore(authentication.getName(), storeId, orderStatus, page, size, sort);
-        return ResponseEntity.ok(response);
+        Pageable pageable = PageUtil.toPageable(page, size, sort);
+        PageResponse<OrderStoreSearchResponse> response = orderService.searchOrdersByStore(userDetails.getUsername(), storeId, orderStatus, pageable);
+        return ResponseEntity.ok(CommonResponse.success( "가게 주문 목록을 조회했습니다.", response));
     }
 
     @PatchMapping("/orders/{orderId}/orderstatus")
-    @Secured({Role.Authority.OWNER, Role.Authority.MASTER})
-    public ResponseEntity<OrderStatusUpdateResponse> updateOrderStatus(
+    @PreAuthorize("hasAnyRole('OWNER','MASTER')")
+    public ResponseEntity<CommonResponse<OrderStatusUpdateResponse>> updateOrderStatus(
             @PathVariable UUID orderId,
-            Authentication authentication,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @Valid @RequestBody OrderStatusUpdateRequest request
     ) {
-        OrderStatusUpdateResponse response = orderService.updateOrderStatus(authentication.getName(), orderId, request);
-        return ResponseEntity.ok(response);
+        OrderStatusUpdateResponse response = orderService.updateOrderStatus(userDetails.getUsername(), orderId, request);
+        return ResponseEntity.ok(CommonResponse.success( "주문 상태가 변경되었습니다.", response));
     }
 
     @PatchMapping("/orders/{orderId}/cancel")
-    @Secured({Role.Authority.CUSTOMER, Role.Authority.MASTER})
-    public ResponseEntity<OrderCancelResponse> cancelOrder(
+    @PreAuthorize("hasAnyRole('CUSTOMER','MASTER')")
+    public ResponseEntity<CommonResponse<OrderCancelResponse>> cancelOrder(
             @PathVariable UUID orderId,
-            Authentication authentication,
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
             @RequestBody OrderCancelRequest request
     ) {
-        OrderCancelResponse response = orderService.cancelOrder(authentication.getName(), orderId, request);
-        return ResponseEntity.ok(response);
+        OrderCancelResponse response = orderService.cancelOrder(userDetails.getUsername(), orderId, request);
+        return ResponseEntity.ok(CommonResponse.success("주문이 취소되었습니다.", response));
     }
 }
