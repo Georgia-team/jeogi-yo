@@ -3,21 +3,22 @@ package com.georgia.jeogiyo.ai.service;
 import com.georgia.jeogiyo.ai.dto.request.AiDescriptionRequest;
 import com.georgia.jeogiyo.ai.dto.response.AiDescriptionResponse;
 import com.georgia.jeogiyo.ai.dto.response.AiHistoryResponse;
-import com.georgia.jeogiyo.ai.dto.response.AiHistorySearchResponse;
 import com.georgia.jeogiyo.ai.entity.AiHistory;
 import com.georgia.jeogiyo.ai.entity.AiStatus;
 import com.georgia.jeogiyo.ai.repository.AiHistoryRepository;
+import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -120,35 +121,24 @@ public class AiServiceImpl implements AiService {
 
     @Override
     @Transactional(readOnly = true)
-    public AiHistorySearchResponse searchAiHistories(AiStatus aiStatus, UUID productId, UUID userId, int page, int size, String sort, String loginId) {
+    public PageResponse<AiHistoryResponse> searchAiHistories(
+            AiStatus aiStatus,
+            UUID productId,
+            UUID userId,
+            int page,
+            int size,
+            String sort,
+            String loginId
+    ) {
 
         userFinder.getMasterUserByLoginId(loginId); // MASTER 검증
 
-        int validatedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
-        Sort.Direction direction = "asc".equalsIgnoreCase(sort)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
-
-        Pageable pageable = PageRequest.of(
-                Math.max(page, 0),
-                validatedSize,
-                Sort.by(direction, "createdAt")
-        );
+        Pageable pageable = PageUtil.toPageable(page, size, sort);
 
         Page<AiHistory> aiHistoryPage =
                 aiHistoryRepository.searchAiHistories(aiStatus, productId, userId, pageable);
 
-        List<AiHistoryResponse> content = aiHistoryPage.getContent().stream()
-                .map(this::toHistoryResponse)
-                .toList();
-
-        return AiHistorySearchResponse.builder()
-                .content(content)
-                .page(aiHistoryPage.getNumber())
-                .size(aiHistoryPage.getSize())
-                .totalElements(aiHistoryPage.getTotalElements())
-                .totalPages(aiHistoryPage.getTotalPages())
-                .build();
+        return PageResponse.from(aiHistoryPage, this::toHistoryResponse);
     }
 
     private void validateOwner(User user, Product product) {

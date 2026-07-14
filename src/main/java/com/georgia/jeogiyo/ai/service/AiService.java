@@ -3,8 +3,8 @@ package com.georgia.jeogiyo.ai.service;
 import com.georgia.jeogiyo.ai.dto.request.AiDescriptionRequest;
 import com.georgia.jeogiyo.ai.dto.response.AiDescriptionResponse;
 import com.georgia.jeogiyo.ai.dto.response.AiHistoryResponse;
-import com.georgia.jeogiyo.ai.dto.response.AiHistorySearchResponse;
 import com.georgia.jeogiyo.ai.entity.AiStatus;
+import com.georgia.jeogiyo.global.response.PageResponse;
 
 import java.util.UUID;
 
@@ -14,5 +14,13 @@ public interface AiService {
 
     AiHistoryResponse getAiHistory(UUID aiHistoryId, String loginId);
 
-    AiHistorySearchResponse searchAiHistories(AiStatus aiStatus, UUID productId, UUID userId,  int page, int size, String sort, String loginId);
+    PageResponse<AiHistoryResponse> searchAiHistories(
+            AiStatus aiStatus,
+            UUID productId,
+            UUID userId,
+            int page,
+            int size,
+            String sort,
+            String loginId
+    );
 }

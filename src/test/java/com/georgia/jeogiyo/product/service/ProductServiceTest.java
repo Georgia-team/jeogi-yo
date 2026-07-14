@@ -6,10 +6,11 @@ import com.georgia.jeogiyo.ai.service.AiGeminiService;
 import com.georgia.jeogiyo.ai.service.AiHistoryRecorder;
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.product.dto.request.ProductCreateRequest;
 import com.georgia.jeogiyo.product.dto.request.ProductUpdateRequest;
 import com.georgia.jeogiyo.product.dto.response.ProductResponse;
-import com.georgia.jeogiyo.product.dto.response.ProductSearchPageResponse;
+import com.georgia.jeogiyo.product.dto.response.ProductSearchResponse;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
@@ -35,22 +36,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 import java.util.Optional;
 
-import static com.georgia.jeogiyo.support.DomainTestFixture.CATEGORY_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.CUSTOMER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.MASTER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.OWNER_LOGIN_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.PRODUCT_ID;
-import static com.georgia.jeogiyo.support.DomainTestFixture.STORE_ID;
+import static com.georgia.jeogiyo.support.DomainTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.*;
 
 /**
  * ProductServiceImpl 단위 테스트입니다.
@@ -382,7 +374,7 @@ class ProductServiceTest {
         )).willReturn(new PageImpl<>(List.of()));
 
         // when: page=-1, size=20처럼 정책 밖의 요청이 들어온다.
-        ProductSearchPageResponse response = productService.searchProducts(
+        PageResponse<ProductSearchResponse> response = productService.searchProducts(
                 STORE_ID,
                 CATEGORY_ID,
                 "테스트",

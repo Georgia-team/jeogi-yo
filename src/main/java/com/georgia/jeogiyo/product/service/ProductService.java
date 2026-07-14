@@ -1,9 +1,10 @@
 package com.georgia.jeogiyo.product.service;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.product.dto.request.ProductCreateRequest;
 import com.georgia.jeogiyo.product.dto.request.ProductUpdateRequest;
 import com.georgia.jeogiyo.product.dto.response.ProductResponse;
-import com.georgia.jeogiyo.product.dto.response.ProductSearchPageResponse;
+import com.georgia.jeogiyo.product.dto.response.ProductSearchResponse;
 
 import java.util.UUID;
 
@@ -13,7 +14,7 @@ public interface ProductService {
 
     ProductResponse getProduct(UUID productId, String loginId);
 
-    ProductSearchPageResponse searchProducts(
+    PageResponse<ProductSearchResponse> searchProducts(
             UUID storeId,
             UUID categoryId,
             String keyword,
@@ -27,5 +28,4 @@ public interface ProductService {
 
     void deleteProduct(UUID productId, String loginId);
 
-    // validateOrderableProduct, decreaseStock, restoreStock
 }
