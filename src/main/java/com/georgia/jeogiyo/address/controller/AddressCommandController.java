@@ -49,11 +49,7 @@ public class AddressCommandController {
 		
 		AddressCreateResponse response = addressService.addressCreate(loginId, addressCreate);
 		
-		return new CommonResponse<AddressCreateResponse>(
-				true,
-				"주소 등록 성공",
-				response
-		);
+		return CommonResponse.success("주소 등록 성공", response);
 	}
 	
 	@Operation(summary = "주소 수정", description = "유저 본인이 등록한 주소를 수정합니다.")
@@ -73,11 +69,7 @@ public class AddressCommandController {
 		
 		AddressUpdateResponse response = addressService.addressUpdate(loginId, addressId, addressUpdate);
 		
-		return new CommonResponse<AddressUpdateResponse>(
-				true,
-				"주소 수정 성공",
-				response
-		);
+		return CommonResponse.success("주소 수정 성공", response);
 	}
 	
 	@Operation(summary = "주소 삭제", description = "유저 본인이 등록한 주소를 삭제합니다.")
@@ -97,11 +89,7 @@ public class AddressCommandController {
 		
 		AddressDeleteResponse response = addressService.addressDelete(loginId, addressId);
 		
-		return new CommonResponse<AddressDeleteResponse>(
-				true,
-				"주소 삭제 성공",
-				response
-		);
+		return CommonResponse.success("주소 삭제 성공", response);
 	}
 	
 }

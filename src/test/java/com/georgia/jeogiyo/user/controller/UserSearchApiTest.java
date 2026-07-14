@@ -76,7 +76,7 @@ public class UserSearchApiTest {
 		.perform(get(url)
 				.contentType(MediaType.APPLICATION_JSON)
 		)
-		.andExpect(status().isForbidden())
+		.andExpect(status().isUnauthorized())
 		;
 		
 		UserLoginRequest userLoginRequest = new UserLoginRequest(
@@ -156,7 +156,7 @@ public class UserSearchApiTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.params(params)
 		)
-		.andExpect(status().isForbidden())
+		.andExpect(status().isUnauthorized())
 		;
 		
 		mockMvc

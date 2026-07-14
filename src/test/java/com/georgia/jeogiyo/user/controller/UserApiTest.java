@@ -174,7 +174,7 @@ public class UserApiTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(userUpdateRequest))
 		)
-		.andExpect(status().isForbidden())
+		.andExpect(status().isUnauthorized())
 		;
 		
 		UserLoginRequest userLoginRequest = new UserLoginRequest(
@@ -219,7 +219,7 @@ public class UserApiTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(userDeleteRequest))
 		)
-		.andExpect(status().isForbidden())
+		.andExpect(status().isUnauthorized())
 		;
 		
 		UserLoginRequest userLoginRequest = new UserLoginRequest(

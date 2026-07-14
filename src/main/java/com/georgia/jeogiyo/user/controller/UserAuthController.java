@@ -36,11 +36,7 @@ public class UserAuthController {
 	public CommonResponse<UserSignupResponse> signupCustomer(@Valid @RequestBody UserSignupRequest userSignup) {
 		UserSignupResponse signupResponse = userCommandService.signup(userSignup, Role.CUSTOMER);
 		
-		return new CommonResponse<UserSignupResponse>(
-				true,
-				"회원가입 성공",
-				signupResponse
-		);
+		return CommonResponse.success("회원가입 성공", signupResponse);
 	}
 	
 	@Operation(summary = "사장 회원가입", description = "OWNER 권한으로 회원가입 합니다.")
@@ -53,11 +49,7 @@ public class UserAuthController {
 	public CommonResponse<UserSignupResponse> signupOwner(@Valid @RequestBody UserSignupRequest ownerSignup) {
 		UserSignupResponse signupResponse = userCommandService.signup(ownerSignup, Role.OWNER);
 		
-		return new CommonResponse<UserSignupResponse>(
-				true,
-				"회원가입 성공",
-				signupResponse
-		);
+		return CommonResponse.success("회원가입 성공", signupResponse);
 	}
 	
 	/*
