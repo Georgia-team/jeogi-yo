@@ -36,6 +36,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.verifyNoInteractions;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 /**
  * AiServiceImpl 단위 테스트입니다.
@@ -164,8 +166,8 @@ class AiServiceTest {
 
         // when & then: 삭제된 상품은 없는 상품처럼 처리한다.
         assertThatThrownBy(() -> aiService.createAiDescription(PRODUCT_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("상품을 찾을 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.NOT_FOUND_PRODUCT.getMessage());
 
         verifyNoInteractions(aiGeminiService, aiHistoryRepository);
     }
@@ -187,8 +189,8 @@ class AiServiceTest {
 
         // when & then: 부모 가게가 삭제되었으면 AI 설명 생성도 막는다.
         assertThatThrownBy(() -> aiService.createAiDescription(PRODUCT_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("삭제된 가게의 상품은 AI 설명을 생성할 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.ALREADY_DELETED_STORE.getMessage());
 
         verifyNoInteractions(aiGeminiService, aiHistoryRepository);
     }

@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.UUID;
 
@@ -129,7 +131,7 @@ public class Product extends BaseEntity {
         validateQuantity(quantity);
 
         if (stock < quantity) {
-            throw new IllegalArgumentException("재고가 부족합니다.");
+            throw new BusinessException(GlobalErrorCode.INSUFFICIENT_STOCK);
         }
 
         stock -= quantity;
@@ -149,7 +151,7 @@ public class Product extends BaseEntity {
      */
     private void validateQuantity(int quantity) {
         if (quantity <= 0) {
-            throw new IllegalArgumentException("수량은 1개 이상이어야 합니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
     }
 }

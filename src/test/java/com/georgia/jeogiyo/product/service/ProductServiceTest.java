@@ -43,6 +43,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 /**
  * ProductServiceImpl 단위 테스트입니다.
@@ -195,8 +197,8 @@ class ProductServiceTest {
 
         // when & then: 직접 설명이 없으면 상품 등록을 막는다.
         assertThatThrownBy(() -> productService.createProduct(STORE_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("AI 설명 생성을 사용하지 않으면 상품 설명은 필수입니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.INVALID_INPUT_VALUE.getMessage());
 
         then(productRepository).should(never()).save(any(Product.class));
     }
@@ -217,8 +219,8 @@ class ProductServiceTest {
 
         // when & then: AI 프롬프트가 없으면 Gemini 호출 전에 실패한다.
         assertThatThrownBy(() -> productService.createProduct(STORE_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("AI 프롬프트는 필수입니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.INVALID_INPUT_VALUE.getMessage());
 
         verifyNoInteractions(aiGeminiService);
     }
@@ -238,8 +240,8 @@ class ProductServiceTest {
 
         // when & then: CUSTOMER는 숨김 상품을 볼 수 없다.
         assertThatThrownBy(() -> productService.getProduct(PRODUCT_ID, CUSTOMER_LOGIN_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("숨김 처리된 상품은 조회할 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN_PRODUCT.getMessage());
     }
 
     @Test
@@ -326,8 +328,8 @@ class ProductServiceTest {
 
         // when & then: 부모 가게가 삭제되었으면 상품 처리도 막는다.
         assertThatThrownBy(() -> productService.updateProduct(PRODUCT_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("삭제된 가게의 상품은 처리할 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.ALREADY_DELETED_STORE.getMessage());
 
         verify(entityManager, never()).flush();
     }

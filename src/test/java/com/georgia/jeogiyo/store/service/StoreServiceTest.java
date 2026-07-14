@@ -38,6 +38,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.*;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 /**
  * StoreServiceImpl 단위 테스트입니다.
@@ -49,7 +51,7 @@ import static org.mockito.Mockito.*;
  * 를 검증합니다.
  *
  * TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 기준으로 테스트를 변경해야 합니다.
- * TODO 공통 예외 처리 적용 후 IllegalArgumentException 검증은 CustomException 검증으로 변경할 수 있습니다.
+ * 공통 예외 처리 적용에 따라 BusinessException과 GlobalErrorCode 기준으로 검증합니다.
  */
 @ExtendWith(MockitoExtension.class)
 class StoreServiceTest {
@@ -136,8 +138,8 @@ class StoreServiceTest {
 
         // when & then: 잘못된 카테고리로는 가게를 저장하지 않는다.
         assertThatThrownBy(() -> storeService.createStore(OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("카테고리를 찾을 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.NOT_FOUND_CATEGORY.getMessage());
 
         then(storeRepository).should(never()).save(any(Store.class));
     }
@@ -185,8 +187,8 @@ class StoreServiceTest {
                 OWNER_LOGIN_ID,
                 request
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("본인 가게만 처리할 수 있습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN_STORE.getMessage());
 
         verify(entityManager, never()).flush();
     }
@@ -232,9 +234,8 @@ class StoreServiceTest {
 
         // when & then: 폐업 가게는 상태 변경을 다시 허용하지 않는다.
         assertThatThrownBy(() -> storeService.updateStoreStatus(STORE_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("폐업 상태의 가게는 상태를 변경할 수 없습니다.");
-
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.INVALID_STORE_STATUS.getMessage());
         verify(entityManager, never()).flush();
     }
 
@@ -250,8 +251,8 @@ class StoreServiceTest {
 
         // when & then: 삭제된 가게는 없는 가게처럼 처리한다.
         assertThatThrownBy(() -> storeService.updateStore(STORE_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("가게를 찾을 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.NOT_FOUND_STORE.getMessage());
     }
 
     @Test
