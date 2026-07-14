@@ -22,7 +22,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Order> searchOrders(
+    public Page<com.georgia.jeogiyo.order.entity.Order> searchOrders(
             OrderStatus orderStatus,
             Role role,
             UUID userId,
@@ -40,7 +40,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
 
         applyVisibilityCondition(condition, order, role, userId, storeIds);
 
-        List<Order> content = queryFactory
+        List<com.georgia.jeogiyo.order.entity.Order> content = queryFactory
                 .selectFrom(order)
                 .where(condition)
                 .orderBy(createdAtOrder(pageable, order))
@@ -57,7 +57,7 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
     }
 
     @Override
-    public Page<Order> searchOrdersByStore(
+    public Page<com.georgia.jeogiyo.order.entity.Order> searchOrdersByStore(
             UUID storeId,
             OrderStatus orderStatus,
             Pageable pageable
@@ -66,13 +66,13 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
 
         BooleanBuilder condition = new BooleanBuilder();
         condition.and(order.isDeleted.isFalse());
-        condition.and(order.store.storeId.eq(storeId));
+        condition.and(order.storeId.eq(storeId));
 
         if (orderStatus != null) {
             condition.and(order.orderStatus.eq(orderStatus));
         }
 
-        List<Order> content = queryFactory
+        List<com.georgia.jeogiyo.order.entity.Order> content = queryFactory
                 .selectFrom(order)
                 .where(condition)
                 .orderBy(createdAtOrder(pageable, order))
@@ -95,13 +95,13 @@ public class OrderRepositoryImpl implements OrderRepositoryCustom {
             return;
         }
         if (role == Role.CUSTOMER) {
-            condition.and(order.user.userId.eq(userId));
+            condition.and(order.userId.eq(userId));
             return;
         }
         if (storeIds == null || storeIds.isEmpty()) {
             condition.and(order.orderId.isNull());
         } else {
-            condition.and(order.store.storeId.in(storeIds));
+            condition.and(order.storeId.in(storeIds));
         }
     }
 
