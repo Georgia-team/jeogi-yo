@@ -82,7 +82,7 @@ public class PaymentController {
     @GetMapping("/payments")
     public ResponseEntity<PageResponse<PaymentSearchResponse>> searchPayments(
             @Parameter(description = "결제 상태", example = "SUCCESS")
-            @RequestParam(name = "paymentstatus", required = false) PaymentStatus paymentStatus,
+            @RequestParam(name = "paymentStatus", required = false) PaymentStatus paymentStatus,
             @Parameter(description = "페이지 번호. 음수 요청 시 0으로 보정됩니다.", example = "0")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기. 10, 30, 50만 허용하며 그 외 값은 10으로 보정됩니다.", example = "10")

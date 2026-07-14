@@ -115,15 +115,15 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = findPaymentById(paymentId);
         validateReadable(user, payment);
 
-        // 주문 상태 변경은 OrderStatus 정책 확정 후 Order 도메인과 연동한다.
-        // 현재는 결제 상태만 CANCEL로 변경한다.
         Order order = findOrderById(payment.getOrderId());
         validateCancelableOrder(order);
 
         payment.cancel(request.getCancelReason());
+        order.cancel();
         entityManager.flush();
 
-        log.info("Payment canceled. paymentId={}, canceledBy={}", payment.getPaymentId(), loginId);
+        log.info("Payment canceled. paymentId={}, orderId={}, canceledBy={}",
+                payment.getPaymentId(), order.getOrderId(), loginId);
 
         return PaymentCancelResponse.builder()
                 .paymentId(payment.getPaymentId())

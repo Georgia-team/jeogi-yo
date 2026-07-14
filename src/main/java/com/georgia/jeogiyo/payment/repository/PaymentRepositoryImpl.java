@@ -50,6 +50,8 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
 
         List<Payment> content = queryFactory
                 .selectFrom(payment)
+                .leftJoin(payment.order).fetchJoin()
+                .leftJoin(payment.user).fetchJoin()
                 .where(condition)
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
