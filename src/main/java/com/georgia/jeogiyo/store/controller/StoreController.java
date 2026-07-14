@@ -19,7 +19,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -43,10 +44,11 @@ public class StoreController {
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
     @PostMapping
     public ResponseEntity<CommonResponse<StoreResponse>> createStore(
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody StoreCreateRequest request
     ) {
-        StoreResponse response = storeService.createStore(authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        StoreResponse response = storeService.createStore(loginId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.success("가게 등록 성공", response));
     }
@@ -101,10 +103,11 @@ public class StoreController {
     public ResponseEntity<CommonResponse<StoreResponse>> updateStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody StoreUpdateRequest request
     ) {
-        StoreResponse response = storeService.updateStore(storeId, authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        StoreResponse response = storeService.updateStore(storeId, loginId, request);
         return ResponseEntity.ok(CommonResponse.success("가게 수정 성공", response));
     }
 
@@ -121,10 +124,11 @@ public class StoreController {
     public ResponseEntity<CommonResponse<StoreResponse>> updateStoreStatus(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody StoreStatusUpdateRequest request
     ) {
-        StoreResponse response = storeService.updateStoreStatus(storeId, authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        StoreResponse response = storeService.updateStoreStatus(storeId, loginId, request);
         return ResponseEntity.ok(CommonResponse.success("가게 상태 변경 성공", response));
     }
 
@@ -140,9 +144,10 @@ public class StoreController {
     public ResponseEntity<CommonResponse<Void>> deleteStore(
             @Parameter(description = "가게 ID", example = "33333333-3333-3333-3333-333333333331")
             @PathVariable UUID storeId,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
-        storeService.deleteStore(storeId, authentication.getName());
+        String loginId = userDetails.getUsername();
+        storeService.deleteStore(storeId, loginId);
         return ResponseEntity.ok(CommonResponse.<Void>success("가게 삭제 성공", null));
     }
 }
