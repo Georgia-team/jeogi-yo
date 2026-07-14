@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.georgia.jeogiyo.address.dto.request.AddressSearchRequest;
 import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
 import com.georgia.jeogiyo.address.service.AddressFinderService;
+import com.georgia.jeogiyo.global.response.CommonResponse;
+import com.georgia.jeogiyo.global.response.PageResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,7 +38,7 @@ public class AddressSearchController {
     @ApiResponse(responseCode = "404", description = "주소를 찾을 수 없음")
 	})
 	@GetMapping("/{addressId}")
-	public ResponseEntity<AddressInfoResponse> addressInfoOne(
+	public CommonResponse<AddressInfoResponse> addressInfoOne(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
 		
@@ -44,7 +46,11 @@ public class AddressSearchController {
 		
 		AddressInfoResponse response = addressFinder.getAddressInfoOne(loginId, addressId);
 		
-		return ResponseEntity.ok(response);
+		return new CommonResponse<AddressInfoResponse>(
+				true,
+				"주소 조회 성공",
+				response
+		);
 	}
 	
 	@Operation(summary = "주소 목록 조회", description = "주소 목록을 조회합니다.")
@@ -54,15 +60,21 @@ public class AddressSearchController {
     @ApiResponse(responseCode = "403", description = "권한 없음")
 	})
 	@GetMapping("")
-	public ResponseEntity<Page<AddressInfoResponse>> addressInfoAll(
+	public CommonResponse<PageResponse<AddressInfoResponse>> addressInfoAll(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@ModelAttribute AddressSearchRequest addressSearch) {
 		
 		String loginId = userDetails.getUsername();
 		
-		Page<AddressInfoResponse> response = addressFinder.getAddressInfoAll(loginId, addressSearch.toPageable("createdAt"));
+		Page<AddressInfoResponse> addressPages = addressFinder.getAddressInfoAll(loginId, addressSearch.toPageable("createdAt"));
 		
-		return ResponseEntity.ok(response);
+		PageResponse<AddressInfoResponse> response = PageResponse.from(addressPages, x -> x);
+		
+		return new CommonResponse<PageResponse<AddressInfoResponse>>(
+				true,
+				"주소 목록 조회 성공",
+				response
+		);
 	}
 	
 }
