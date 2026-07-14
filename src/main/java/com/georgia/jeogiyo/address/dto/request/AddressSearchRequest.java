@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 public class AddressSearchRequest {
 
-	private Integer page;
+	private Integer page = 0;
 	
 	private Integer size = 10;
 	
