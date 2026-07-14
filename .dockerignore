@@ -1,0 +1,16 @@
+.git
+.gradle
+.settings
+build
+bin
+out
+.classpath
+.project
+.factorypath
+.apt_generated
+.idea
+.vscode
+*.iml
+*.iws
+*.ipr
+.env
