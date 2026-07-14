@@ -252,23 +252,31 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("SUCCESS 결제는 취소할 수 있다")
+    @DisplayName("CUSTOMER는 본인 결제를 취소할 수 있다")
     void cancelPayment_success() {
+        // given: CUSTOMER 본인의 성공 결제와 취소 가능한 주문 상태가 준비되어 있다.
         User customer = DomainTestFixture.customer();
         Payment payment = DomainTestFixture.payment(CUSTOMER_ID, PaymentStatus.SUCCESS);
-        Order order = DomainTestFixture.order(CUSTOMER_ID, OrderStatus.ORDER_REQUESTED);
         PaymentCancelRequest request = DomainTestFixture.paymentCancelRequest("고객 요청으로 인한 주문 취소");
+        Order order = DomainTestFixture.order(CUSTOMER_ID, OrderStatus.ORDER_REQUESTED);
 
         given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
         given(paymentRepository.findByPaymentIdAndIsDeletedFalse(PAYMENT_ID)).willReturn(Optional.of(payment));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
+        // when: CUSTOMER가 결제 취소를 요청한다.
         PaymentCancelResponse response = paymentService.cancelPayment(PAYMENT_ID, CUSTOMER_LOGIN_ID, request);
 
+        // then: 결제는 CANCEL 상태가 되고 주문도 CANCELLED 상태가 된다.
         assertThat(response.getPaymentId()).isEqualTo(PAYMENT_ID);
         assertThat(response.getPaymentStatus()).isEqualTo(PaymentStatus.CANCEL);
         assertThat(response.getCancelReason()).isEqualTo("고객 요청으로 인한 주문 취소");
-        assertThat(response.getCanceledAt()).isNotNull();
+
+        assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.CANCEL);
+        assertThat(payment.getCanceledAt()).isNotNull();
+        assertThat(payment.getCancelReason()).isEqualTo("고객 요청으로 인한 주문 취소");
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.CANCELLED);
+
         verify(entityManager).flush();
     }
 
