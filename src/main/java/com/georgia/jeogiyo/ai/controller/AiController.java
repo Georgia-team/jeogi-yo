@@ -5,6 +5,7 @@ import com.georgia.jeogiyo.ai.dto.response.AiDescriptionResponse;
 import com.georgia.jeogiyo.ai.dto.response.AiHistoryResponse;
 import com.georgia.jeogiyo.ai.entity.AiStatus;
 import com.georgia.jeogiyo.ai.service.AiService;
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,8 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import com.georgia.jeogiyo.user.entity.Role;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,16 +37,16 @@ public class AiController {
             @ApiResponse(responseCode = "400", description = "요청값 검증 실패"),
             @ApiResponse(responseCode = "403", description = "OWNER 권한 없음")
     })
-    @Secured(Role.Authority.OWNER)
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
     @PostMapping("/products/{productId}/ai-description")
-    public ResponseEntity<AiDescriptionResponse> createAiDescription(
+    public ResponseEntity<CommonResponse<AiDescriptionResponse>> createAiDescription(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
             @Parameter(hidden = true) Authentication authentication,
             @Valid @RequestBody AiDescriptionRequest request
     ) {
         AiDescriptionResponse response = aiService.createAiDescription(productId, authentication.getName(), request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("AI 상품 설명 생성 성공", response));
     }
 
     @Operation(summary = "AI 이력 상세 조회", description = "MASTER가 AI 응답 이력 상세 정보를 조회합니다.")
@@ -55,15 +55,15 @@ public class AiController {
             @ApiResponse(responseCode = "403", description = "MASTER 권한 없음"),
             @ApiResponse(responseCode = "404", description = "AI 이력 없음")
     })
-    @Secured(Role.Authority.MASTER)
+    @PreAuthorize("hasAuthority('ROLE_MASTER')")
     @GetMapping("/ai-histories/{aiHistoryId}")
-    public ResponseEntity<AiHistoryResponse> getAiHistory(
+    public ResponseEntity<CommonResponse<AiHistoryResponse>> getAiHistory(
             @Parameter(description = "AI 이력 ID", example = "55555555-5555-5555-5555-555555555551")
             @PathVariable UUID aiHistoryId,
             @Parameter(hidden = true) Authentication authentication
             ) {
         AiHistoryResponse response = aiService.getAiHistory(aiHistoryId, authentication.getName());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("AI 이력 조회 성공", response));
     }
 
     @Operation(summary = "AI 이력 목록 검색", description = "MASTER가 AI 이력을 상태, 상품, 사용자 조건으로 검색합니다.")
@@ -71,9 +71,9 @@ public class AiController {
             @ApiResponse(responseCode = "200", description = "AI 이력 검색 성공"),
             @ApiResponse(responseCode = "403", description = "MASTER 권한 없음")
     })
-    @Secured(Role.Authority.MASTER)
+    @PreAuthorize("hasAuthority('ROLE_MASTER')")
     @GetMapping("/ai-histories")
-    public ResponseEntity<PageResponse<AiHistoryResponse>> searchAiHistories(
+    public ResponseEntity<CommonResponse<PageResponse<AiHistoryResponse>>> searchAiHistories(
             @Parameter(description = "AI 처리 상태", example = "SUCCESS")
             @RequestParam(required = false) AiStatus aiStatus,
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
@@ -97,7 +97,6 @@ public class AiController {
                 sort,
                 authentication.getName()
         );
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(CommonResponse.success("AI 이력 목록 조회 성공", response));
     }
 }
