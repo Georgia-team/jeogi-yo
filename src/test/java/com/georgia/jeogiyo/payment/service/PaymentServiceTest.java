@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.payment.service;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
@@ -8,7 +9,7 @@ import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCancelResponse;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCreateResponse;
 import com.georgia.jeogiyo.payment.dto.response.PaymentResponse;
-import com.georgia.jeogiyo.payment.dto.response.PaymentSearchPageResponse;
+import com.georgia.jeogiyo.payment.dto.response.PaymentSearchResponse;
 import com.georgia.jeogiyo.payment.entity.Payment;
 import com.georgia.jeogiyo.payment.entity.PaymentMethod;
 import com.georgia.jeogiyo.payment.entity.PaymentStatus;
@@ -32,10 +33,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.georgia.jeogiyo.support.DomainTestFixture.*;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -69,7 +70,7 @@ class PaymentServiceTest {
 
         given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
-        given(paymentRepository.existsByOrderId(ORDER_ID)).willReturn(false);
+        given(paymentRepository.existsByOrder_OrderId(ORDER_ID)).willReturn(false);
         given(paymentRepository.save(any(Payment.class))).willAnswer(invocation -> {
             Payment payment = invocation.getArgument(0);
             DomainTestFixture.markPersisted(payment, PAYMENT_ID);
@@ -128,7 +129,7 @@ class PaymentServiceTest {
 
         given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
-        given(paymentRepository.existsByOrderId(ORDER_ID)).willReturn(true);
+        given(paymentRepository.existsByOrder_OrderId(ORDER_ID)).willReturn(true);
 
         assertThatThrownBy(() -> paymentService.createPayment(ORDER_ID, CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -207,7 +208,7 @@ class PaymentServiceTest {
         given(paymentRepository.searchPayments(eq(PaymentStatus.SUCCESS), eq(CUSTOMER_ID), eq(false), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(payment)));
 
-        PaymentSearchPageResponse response =
+        PageResponse<PaymentSearchResponse> response =
                 paymentService.searchPayments(PaymentStatus.SUCCESS, 0, 10, "desc", CUSTOMER_LOGIN_ID);
 
         assertThat(response.getContent()).hasSize(1);
@@ -223,7 +224,7 @@ class PaymentServiceTest {
         given(paymentRepository.searchPayments(isNull(), isNull(), eq(true), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of()));
 
-        PaymentSearchPageResponse response =
+        PageResponse<PaymentSearchResponse> response =
                 paymentService.searchPayments(null, 0, 10, "desc", MASTER_LOGIN_ID);
 
         assertThat(response.getContent()).isEmpty();
@@ -238,7 +239,7 @@ class PaymentServiceTest {
         given(paymentRepository.searchPayments(isNull(), eq(CUSTOMER_ID), eq(false), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of()));
 
-        PaymentSearchPageResponse response =
+        PageResponse<PaymentSearchResponse> response =
                 paymentService.searchPayments(null, -1, 20, "desc", CUSTOMER_LOGIN_ID);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);

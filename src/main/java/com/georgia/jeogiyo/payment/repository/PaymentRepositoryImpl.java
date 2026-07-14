@@ -40,7 +40,7 @@ public class PaymentRepositoryImpl implements PaymentRepositoryCustom {
         }
 
         if (userId != null) {
-            condition.and(payment.userId.eq(userId));
+            condition.and(payment.user.userId.eq(userId));
         }
 
         OrderSpecifier<?> orderSpecifier = pageable.getSort().stream()
