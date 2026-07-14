@@ -10,6 +10,7 @@ import com.georgia.jeogiyo.store.dto.request.StoreUpdateRequest;
 import com.georgia.jeogiyo.store.dto.response.StoreResponse;
 import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 import com.georgia.jeogiyo.store.entity.Store;
+import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -113,7 +115,7 @@ public class StoreServiceImpl implements StoreService {
         // 변경 감지 flush 확인
         entityManager.flush();
 
-        log.info("Store status changed. storeId={}, status={}", store.getStoreId(), store.getStoreStatus());
+        log.info("Store updated. storeId={}", store.getStoreId());
 
         return toResponse(store);
     }
@@ -145,11 +147,16 @@ public class StoreServiceImpl implements StoreService {
         log.info("Store soft deleted. storeId={}, deletedBy={}", store.getStoreId(), loginId);
     }
 
-    // USER 탈퇴 로직에서 이 OWNER가 삭제되지 않은 가게를 가지고 있는지 확인합니다.
+    // USER 탈퇴 로직에서 OWNER가 활성 가게를 가지고 있는지 확인합니다.
+    // 활성 가게 기준은 isDeleted=false AND storeStatus IN (OPEN, CLOSED)입니다.
+    // OUT_OF_BUSINESS 상태의 가게는 탈퇴 가능한 상태로 봅니다.
     @Override
     @Transactional(readOnly = true)
     public boolean existsActiveStoreByOwnerId(UUID ownerId) {
-        return storeRepository.existsByOwner_UserIdAndIsDeletedFalse(ownerId);
+        return storeRepository.existsByOwner_UserIdAndStoreStatusInAndIsDeletedFalse(
+                ownerId,
+                List.of(StoreStatus.OPEN, StoreStatus.CLOSED)
+        );
     }
 
     private Store findStore(UUID storeId) {

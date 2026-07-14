@@ -1,8 +1,10 @@
 package com.georgia.jeogiyo.store.repository;
 
 import com.georgia.jeogiyo.store.entity.Store;
+import com.georgia.jeogiyo.store.entity.StoreStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,4 +14,11 @@ import java.util.UUID;
 public interface StoreRepository extends JpaRepository<Store, UUID>, StoreRepositoryCustom {
     Optional<Store> findByStoreIdAndIsDeletedFalse(UUID storeId);
     boolean existsByOwner_UserIdAndIsDeletedFalse(UUID ownerId);
+
+    boolean existsByOwner_UserIdAndStoreStatusInAndIsDeletedFalse(
+            UUID ownerId,
+            Collection<StoreStatus> storeStatuses
+    );
+
+    boolean existsByCategory_CategoryIdAndIsDeletedFalse(UUID categoryId);
 }
