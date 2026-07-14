@@ -6,11 +6,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
-import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.repository.UserQueryDslRepository;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
@@ -30,7 +30,7 @@ public class UserFinderService implements UserFinder {
 		// TODO: 공통 예외 클래스 완료 시 수정
 		return userRepository.findByUserIdAndIsDeletedFalse(userId)
 				// TODO: 존재하지 않는 사용자입니다.
-				.orElseThrow(() -> new UserDomainException(UserErrorCode.NOT_FOUND_USER));
+				.orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 	}
 
 	@Override
@@ -38,19 +38,18 @@ public class UserFinderService implements UserFinder {
 		// TODO: 공통 예외 클래스 완료 시 수정
 		return userRepository.findByLoginIdAndIsDeleted(loginId, false)
 				// TODO: 존재하지 않는 사용자입니다.
-				.orElseThrow(() -> new UserDomainException(UserErrorCode.NOT_FOUND_USER));
+				.orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 	}
 
 	@Override
 	public User getMasterUserByLoginId(String loginId) {
 		// TODO: 공통 예외 클래스 완료 시 수정
 		User masterUser = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-				// TODO: 존재하지 않는 사용자입니다.
-				.orElseThrow();
+				.orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 		
 		if(!masterUser.isMaster()) {
 			// TODO: 해당 요청에 대한 권한이 없습니다.
-			throw new UserDomainException(UserErrorCode.NOT_AUTHORIZATION);
+			throw new BusinessException(GlobalErrorCode.FORBIDDEN);
 		}
 		
 		return masterUser;
@@ -58,14 +57,11 @@ public class UserFinderService implements UserFinder {
 	
 	@Override
 	public User getOwnerUserByLoginId(String loginId) {
-		// TODO: 공통 예외 클래스 완료 시 수정
 		User ownerUser = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-				// TODO: 존재하지 않는 사용자입니다.
-				.orElseThrow();
+				.orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 		
 		if(!ownerUser.isOwner()) {
-			// TODO: 해당 요청에 대한 권한이 없습니다.
-			throw new UserDomainException(UserErrorCode.NOT_AUTHORIZATION);
+			throw new BusinessException(GlobalErrorCode.FORBIDDEN);
 		}
 		
 		return ownerUser;

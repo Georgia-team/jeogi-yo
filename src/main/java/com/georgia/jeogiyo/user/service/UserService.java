@@ -6,6 +6,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.global.jwt.JwtUtil;
 import com.georgia.jeogiyo.store.service.StoreService;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
@@ -18,8 +20,6 @@ import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
-import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -47,7 +47,7 @@ public class UserService {
 		User user = userFinder.getUserByLoginId(userLogin.getLoginId());
 		
 		if(!passwordEncoder.matches(userLogin.getPassword(), user.getPassword())) {
-			throw new UserDomainException(UserErrorCode.NOT_FOUND_USER);
+			throw new BusinessException(GlobalErrorCode.INVALID_LOGIN_INFO);
 		}
 		
 		String accessToken = jwtUtil.createToken(user.getLoginId(), user.getRole());
@@ -60,19 +60,19 @@ public class UserService {
 		if(userRepository.existsByEmail(signupUser.getEmail())) {
 			// TODO: 이미 사용중인 이메일입니다. 409
 			log.warn("SIGNUP_FAILED: Duplicate email = {}", signupUser.getEmail());
-			throw new UserDomainException(UserErrorCode.DUPLICATE_EMAIL);
+			throw new BusinessException(GlobalErrorCode.DUPLICATE_EMAIL);
 		}
 		
 		if(userRepository.existsByNickname(signupUser.getNickname())) {
 			// TODO: 이미 사용중인 닉네임입니다. 409
 			log.warn("SIGNUP_FAILED: Duplicate nickname = {}", signupUser.getNickname());
-			throw new UserDomainException(UserErrorCode.DUPLICATE_NICKNAME);
+			throw new BusinessException(GlobalErrorCode.DUPLICATE_NICKNAME);
 		}
 		
 		if(userRepository.existsByLoginId(signupUser.getLoginId())) {
 			// TODO: 이미 사용중인 아이디입니다. 409
 			log.warn("SIGNUP_FAILED: Duplicate loginId = {}", signupUser.getLoginId());
-			throw new UserDomainException(UserErrorCode.DUPLICATION_LOGIN_ID);
+			throw new BusinessException(GlobalErrorCode.DUPLICATE_LOGIN_ID);
 		}
 		
 		User user;
@@ -82,7 +82,7 @@ public class UserService {
 		} else if(role == Role.OWNER) {
 			user = User.ownerCreate(signupUser, passwordEncoder);
 		} else {
-			throw new UserDomainException(UserErrorCode.NOT_AUTHORIZATION);
+			throw new BusinessException(GlobalErrorCode.FORBIDDEN);
 		}
 		
 		User saved = userRepository.save(user);
@@ -103,8 +103,7 @@ public class UserService {
 				case "email" -> userInfoUpdateService.changeEmail(user, updateUser.getEmail());
 				case "password" -> userInfoUpdateService.changePassword(user, updateUser.getPassword(), passwordEncoder);
 				
-				// TODO: 업데이트를 진행할 수 없는 정보입니다.
-				default -> throw new UserDomainException(UserErrorCode.UPDATE_FAILURE);
+				default -> throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
 			}
 		});
 		
@@ -126,11 +125,11 @@ public class UserService {
 				log.info("MASTER 권한 탈퇴 요청 검증 시작: masterUserCount={}", masterUserCount);
 				
 				if(masterUserCount <= 1) {
-					throw new UserDomainException(UserErrorCode.DELETE_FAILURE_LAST_MASTER);
+					throw new BusinessException(GlobalErrorCode.DELETE_FAILURE_LAST_MASTER);
 				}
 			} else if(user.isOwner()) {
 				if(storeService.existsActiveStoreByOwnerId(user.getUserId())) {
-					throw new UserDomainException(UserErrorCode.DELETE_FAILURE_OPEN_STORES);
+					throw new BusinessException(GlobalErrorCode.DELETE_FAILURE_OPEN_STORES);
 				}
 			}
 			
@@ -141,7 +140,7 @@ public class UserService {
 			// 3. 실패 시
 			// TODO: 회원탈퇴를 진행할 수 없습니다.
 			log.warn("USER_DELETE_FAILED: Password mismatch loginId = {}", user.getLoginId());
-			throw new UserDomainException(UserErrorCode.DELETE_FAILURE);
+			throw new BusinessException(GlobalErrorCode.INVALID_LOGIN_INFO);
 		}
 		
 		User deleted = userRepository.save(user);

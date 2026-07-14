@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
@@ -21,8 +23,6 @@ import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
-import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
@@ -74,8 +74,8 @@ public class UserCommandFailureTest {
 		);
 		
 		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestEmail, Role.CUSTOMER))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DUPLICATE_EMAIL.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.DUPLICATE_EMAIL.getMessage());
 	}
 	
 	@Test
@@ -90,8 +90,8 @@ public class UserCommandFailureTest {
 		);
 		
 		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname, Role.CUSTOMER))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DUPLICATE_NICKNAME.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.DUPLICATE_NICKNAME.getMessage());
 	}
 	
 	@Test
@@ -106,8 +106,8 @@ public class UserCommandFailureTest {
 		);
 		
 		assertThatThrownBy(() -> userCommandService.signup(failSignupRequestNickname, Role.CUSTOMER))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DUPLICATION_LOGIN_ID.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.DUPLICATE_LOGIN_ID.getMessage());
 	}
 	
 	@Test
@@ -122,8 +122,8 @@ public class UserCommandFailureTest {
 		);
 
 		assertThatThrownBy(() -> userCommandService.signup(masterSignupRequest, Role.MASTER))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 	}
 
 	@Test
@@ -135,8 +135,8 @@ public class UserCommandFailureTest {
 		);
 
 		assertThatThrownBy(() -> userCommandService.login(failLoginRequest))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.NOT_FOUND_USER.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.INVALID_LOGIN_INFO.getMessage());
 	}
 	@Test
 	@DisplayName("service-fail: 회원 수정 테스트 실패 케이스: 중복 닉네임")
@@ -147,8 +147,8 @@ public class UserCommandFailureTest {
 		);
 		
 		assertThatThrownBy(() -> userCommandService.update(user.getLoginId(), failUpdateRequestNickname))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DUPLICATE_NICKNAME.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.DUPLICATE_NICKNAME.getMessage());
 	}
 	
 	@Test
@@ -171,8 +171,8 @@ public class UserCommandFailureTest {
 		);
 		
 		assertThatThrownBy(() -> userCommandService.update(given.getLoginId(), failUpdateRequestEmail))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DUPLICATE_EMAIL.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.DUPLICATE_EMAIL.getMessage());
 	}
 	
 	
@@ -186,8 +186,8 @@ public class UserCommandFailureTest {
 		);
 
 		assertThatThrownBy(() -> userCommandService.delete(user.getLoginId(), failDeleteRequest))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DELETE_FAILURE.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.INVALID_LOGIN_INFO.getMessage());
 
 		em.flush();
 		em.clear();
@@ -203,16 +203,16 @@ public class UserCommandFailureTest {
 	@DisplayName("service-fail: 권한 조회 실패 테스트: CUSTOMER를 MASTER로 조회")
 	void failGetMasterUserByLoginIdTest_Customer() {
 		assertThatThrownBy(() -> userFinder.getMasterUserByLoginId(user.getLoginId()))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 	}
 
 	@Test
 	@DisplayName("service-fail: 권한 조회 실패 테스트: CUSTOMER를 OWNER로 조회")
 	void failGetOwnerUserByLoginIdTest_Customer() {
 		assertThatThrownBy(() -> userFinder.getOwnerUserByLoginId(user.getLoginId()))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 	}
 	@Test
 	@DisplayName("service-fail: 활성화된 가게가 있는 OWNER 유저 탈퇴 실패 케이스")
@@ -243,8 +243,8 @@ public class UserCommandFailureTest {
 		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(email, password);
 
 		assertThatThrownBy(() -> userCommandService.delete(loginId, userDeleteRequest))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DELETE_FAILURE_OPEN_STORES.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.DELETE_FAILURE_OPEN_STORES.getMessage());
 
 		em.flush();
 		em.clear();
