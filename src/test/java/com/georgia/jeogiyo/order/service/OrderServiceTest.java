@@ -3,6 +3,7 @@ package com.georgia.jeogiyo.order.service;
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
@@ -38,12 +39,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -63,7 +61,6 @@ import static org.mockito.BDDMockito.then;
 class OrderServiceTest {
 
     private static final UUID ADDRESS_ID = UUID.fromString("66666666-6666-6666-6666-666666666661");
-    private static final UUID OTHER_ADDRESS_ID = UUID.fromString("66666666-6666-6666-6666-666666666662");
     private static final UUID ORDER_ID = UUID.fromString("77777777-7777-7777-7777-777777777771");
 
     @Mock private OrderRepository orderRepository;
@@ -101,10 +98,10 @@ class OrderServiceTest {
         return address;
     }
 
-    private Payment payment(UUID userId, PaymentStatus status) {
-        Order order = order(userId, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
-        User user = customer();
-        return new Payment(order, user, PaymentMethod.CARD, 24000);
+    private Payment payment(PaymentStatus status) {
+        Order order = order(customer(), store(owner(), category()), address(customer(), ADDRESS_ID, "서울시 종로구 광화문로 1"),
+                ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        return new Payment(order, customer(), PaymentMethod.CARD, 24000);
     }
 
     private Product product(Store store, Category category, int price, int stock, boolean hidden) {
@@ -126,12 +123,12 @@ class OrderServiceTest {
         return request;
     }
 
-    private Order order(UUID userId, UUID storeId, UUID addressId, UUID orderId, OrderStatus status, Integer totalPrice) {
-        return order(userId, storeId, addressId, orderId, status, totalPrice, LocalDateTime.now());
+    private Order order(User user, Store store, Address address, UUID orderId, OrderStatus status, Integer totalPrice) {
+        return order(user, store, address, orderId, status, totalPrice, LocalDateTime.now());
     }
 
-    private Order order(UUID userId, UUID storeId, UUID addressId, UUID orderId, OrderStatus status, Integer totalPrice, LocalDateTime createdAt) {
-        Order order = new Order(userId, storeId, addressId, "서울시 종로구 광화문로 1", "상세주소", "03150", totalPrice, status);
+    private Order order(User user, Store store, Address address, UUID orderId, OrderStatus status, Integer totalPrice, LocalDateTime createdAt) {
+        Order order = new Order(user, store, address, address.getRoadAddress(), address.getDetailAddress(), address.getZipcode(), totalPrice, status);
         ReflectionTestUtils.setField(order, "orderId", orderId);
         ReflectionTestUtils.setField(order, "createdAt", createdAt);
         ReflectionTestUtils.setField(order, "updatedAt", createdAt);
@@ -181,8 +178,8 @@ class OrderServiceTest {
         given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("사용자를 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("존재하지 않는 사용자");
     }
 
     @Test
@@ -195,8 +192,8 @@ class OrderServiceTest {
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("가게를 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("존재하지 않는 가게");
     }
 
     @Test
@@ -211,8 +208,8 @@ class OrderServiceTest {
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("영업 중이 아닌");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("영업중인 가게");
     }
 
     @Test
@@ -230,8 +227,8 @@ class OrderServiceTest {
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("배송지를 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("본인의 배송지");
     }
 
     @Test
@@ -249,8 +246,8 @@ class OrderServiceTest {
         given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(farAddress));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("서비스 가능 지역이 아닙니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("서비스 가능 지역");
     }
 
     @Test
@@ -271,8 +268,8 @@ class OrderServiceTest {
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(productFromOtherStore));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("속하지 않은 상품");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("입력값이 올바르지");
     }
 
     @Test
@@ -292,8 +289,8 @@ class OrderServiceTest {
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(hiddenProduct));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("주문할 수 없는 상품");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("재고가 부족");
     }
 
     @Test
@@ -325,7 +322,8 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
 
@@ -345,23 +343,28 @@ class OrderServiceTest {
     @DisplayName("CUSTOMER는 본인 것이 아닌 주문을 조회할 수 없다")
     void getOrderDetail_customer_others_fail() {
         User customer = customer();
-        Order othersOrder = order(OTHER_OWNER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(otherOwner(), ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order othersOrder = order(otherOwner(), store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(othersOrder));
 
         assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("본인의 주문만");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("주문에 접근할 권한");
     }
 
     @Test
     @DisplayName("OWNER는 본인 가게의 주문을 상세 조회할 수 있다")
     void getOrderDetail_owner_ownStore_success() {
         User owner = owner();
+        User customer = customer();
         Category category = category();
         Store store = store(owner, category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
 
@@ -380,27 +383,31 @@ class OrderServiceTest {
     @DisplayName("OWNER는 본인 가게가 아닌 주문을 조회할 수 없다")
     void getOrderDetail_owner_otherStore_fail() {
         User owner = owner();
+        User customer = customer();
         User otherOwner = otherOwner();
         Category category = category();
         Store otherStore = otherOwnerStore(otherOwner, category);
-        Order order = order(CUSTOMER_ID, OTHER_OWNER_STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, otherStore, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(storeRepository.findById(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
 
         assertThatThrownBy(() -> orderService.getOrderDetail(OWNER_LOGIN_ID, ORDER_ID))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("본인 가게의 주문만");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("주문에 접근할 권한");
     }
 
     @Test
     @DisplayName("MASTER는 모든 주문을 조회할 수 있다")
     void getOrderDetail_master_success() {
         User master = master();
+        User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
 
@@ -422,8 +429,8 @@ class OrderServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("주문을 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("존재하지 않는 주문");
     }
 
     @Test
@@ -432,8 +439,8 @@ class OrderServiceTest {
         given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("사용자를 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("존재하지 않는 사용자");
     }
 
     // ---------- 6-3: 주문 목록 조회 ----------
@@ -444,7 +451,8 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
@@ -462,9 +470,11 @@ class OrderServiceTest {
     @DisplayName("MASTER는 전체 주문 목록을 조회할 수 있다")
     void searchOrders_master_success() {
         User master = master();
+        User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
@@ -501,8 +511,8 @@ class OrderServiceTest {
         given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.searchOrders(CUSTOMER_LOGIN_ID, null, pageable))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("사용자를 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("존재하지 않는 사용자");
     }
 
     // ---------- 6-4: 가게별 주문 목록 조회 ----------
@@ -511,16 +521,18 @@ class OrderServiceTest {
     @DisplayName("OWNER는 본인 가게의 주문 목록을 조회할 수 있다")
     void searchOrdersByStore_owner_success() {
         User owner = owner();
+        User customer = customer();
         Category category = category();
         Store store = store(owner, category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(orderRepository.searchOrdersByStore(eq(STORE_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
-        given(userRepository.findById(CUSTOMER_ID)).willReturn(Optional.of(customer()));
+        given(userRepository.findById(CUSTOMER_ID)).willReturn(Optional.of(customer));
 
         PageResponse<OrderStoreSearchResponse> response = orderService.searchOrdersByStore(OWNER_LOGIN_ID, STORE_ID, null, pageable);
 
@@ -540,8 +552,8 @@ class OrderServiceTest {
         given(storeRepository.findById(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
 
         assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, OTHER_OWNER_STORE_ID, null, pageable))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("본인 가게의 주문만");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("주문에 접근할 권한");
     }
 
     @Test
@@ -553,24 +565,26 @@ class OrderServiceTest {
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, STORE_ID, null, pageable))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("가게를 찾을 수 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("존재하지 않는 가게");
     }
 
     @Test
     @DisplayName("MASTER는 모든 가게의 주문 목록을 조회할 수 있다")
     void searchOrdersByStore_master_success() {
         User master = master();
+        User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(orderRepository.searchOrdersByStore(eq(STORE_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
-        given(userRepository.findById(CUSTOMER_ID)).willReturn(Optional.of(customer()));
+        given(userRepository.findById(CUSTOMER_ID)).willReturn(Optional.of(customer));
 
         PageResponse<OrderStoreSearchResponse> response = orderService.searchOrdersByStore(MASTER_LOGIN_ID, STORE_ID, null, pageable);
 
@@ -583,9 +597,11 @@ class OrderServiceTest {
     @DisplayName("OWNER는 본인 가게 주문을 수락 상태로 변경할 수 있다")
     void updateOrderStatus_owner_accept_success() {
         User owner = owner();
+        User customer = customer();
         Category category = category();
         Store store = store(owner, category);
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.ORDER_ACCEPTED);
@@ -603,7 +619,11 @@ class OrderServiceTest {
     @DisplayName("MASTER는 아무 주문의 상태나 변경할 수 있다")
     void updateOrderStatus_master_success() {
         User master = master();
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        User customer = customer();
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.ORDER_REJECTED);
@@ -620,7 +640,11 @@ class OrderServiceTest {
     @DisplayName("허용되지 않은 상태 전이는 실패한다")
     void updateOrderStatus_invalidTransition_fail() {
         User master = master();
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        User customer = customer();
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.DELIVERED);
@@ -629,18 +653,20 @@ class OrderServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(MASTER_LOGIN_ID, ORDER_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("허용되지 않은 상태 변경");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("허용되지 않은 주문 상태");
     }
 
     @Test
     @DisplayName("OWNER는 본인 가게가 아닌 주문 상태를 변경할 수 없다")
     void updateOrderStatus_owner_otherStore_fail() {
         User owner = owner();
+        User customer = customer();
         User otherOwner = otherOwner();
         Category category = category();
         Store otherStore = otherOwnerStore(otherOwner, category);
-        Order order = order(CUSTOMER_ID, OTHER_OWNER_STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, otherStore, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.ORDER_ACCEPTED);
@@ -650,8 +676,8 @@ class OrderServiceTest {
         given(storeRepository.findByStoreIdAndIsDeletedFalse(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(OWNER_LOGIN_ID, ORDER_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("본인 가게의 주문만");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("주문에 접근할 권한");
     }
 
     @Test
@@ -664,8 +690,8 @@ class OrderServiceTest {
         given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(CUSTOMER_LOGIN_ID, ORDER_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("변경 권한이 없습니다");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("권한이 없습니다");
     }
 
     // ---------- 6-6: 주문 취소 ----------
@@ -674,12 +700,13 @@ class OrderServiceTest {
     @DisplayName("CUSTOMER는 주문 요청 5분 이내에 본인 주문을 취소할 수 있다")
     void cancelOrder_customer_success() {
         User customer = customer();
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
-        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Category category = category();
         Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 28, false);
-        Payment payment = payment(CUSTOMER_ID, PaymentStatus.SUCCESS);
+        Payment payment = payment(PaymentStatus.SUCCESS);
 
         OrderCancelRequest request = new OrderCancelRequest();
         request.setCancelReason("고객 변심");
@@ -702,7 +729,10 @@ class OrderServiceTest {
     @DisplayName("OWNER가 수락한 이후에는 CUSTOMER가 취소할 수 없다")
     void cancelOrder_customer_afterAccepted_fail() {
         User customer = customer();
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
 
         OrderCancelRequest request = new OrderCancelRequest();
 
@@ -710,7 +740,7 @@ class OrderServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.cancelOrder(CUSTOMER_LOGIN_ID, ORDER_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("취소할 수 없는 상태");
     }
 
@@ -718,7 +748,10 @@ class OrderServiceTest {
     @DisplayName("주문 후 5분이 지나면 CUSTOMER가 취소할 수 없다")
     void cancelOrder_customer_expired_fail() {
         User customer = customer();
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000,
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000,
                 LocalDateTime.now().minusMinutes(10));
 
         OrderCancelRequest request = new OrderCancelRequest();
@@ -727,15 +760,18 @@ class OrderServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.cancelOrder(CUSTOMER_LOGIN_ID, ORDER_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("5분");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("취소할 수 없는 상태");
     }
 
     @Test
     @DisplayName("CUSTOMER는 본인 것이 아닌 주문을 취소할 수 없다")
     void cancelOrder_customer_notOwn_fail() {
         User customer = customer();
-        Order othersOrder = order(OTHER_OWNER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(otherOwner(), ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order othersOrder = order(otherOwner(), store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderCancelRequest request = new OrderCancelRequest();
 
@@ -743,18 +779,20 @@ class OrderServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(othersOrder));
 
         assertThatThrownBy(() -> orderService.cancelOrder(CUSTOMER_LOGIN_ID, ORDER_ID, request))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("본인의 주문만");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("주문에 접근할 권한");
     }
 
     @Test
     @DisplayName("MASTER는 배송완료/취소/거절 상태가 아니면 주문을 취소할 수 있다")
     void cancelOrder_master_success() {
         User master = master();
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
-        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
+        User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
+        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 28, false);
 
         OrderCancelRequest request = new OrderCancelRequest();
@@ -774,10 +812,12 @@ class OrderServiceTest {
     @Test
     @DisplayName("cancelByPayment는 ORDER_REQUESTED 상태 주문을 취소하고 재고를 복구한다")
     void cancelByPayment_success() {
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
-        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
+        User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 28, false);
 
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
@@ -793,12 +833,16 @@ class OrderServiceTest {
     @Test
     @DisplayName("cancelByPayment는 ORDER_REQUESTED가 아니면 실패한다")
     void cancelByPayment_notRequested_fail() {
-        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
+        User customer = customer();
+        Category category = category();
+        Store store = store(owner(), category);
+        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
 
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.cancelByPayment(ORDER_ID, CUSTOMER_LOGIN_ID))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("취소할 수 없는 상태");
     }
 }

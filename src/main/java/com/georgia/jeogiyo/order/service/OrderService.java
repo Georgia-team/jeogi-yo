@@ -1,7 +1,10 @@
 package com.georgia.jeogiyo.order.service;
-import com.georgia.jeogiyo.global.response.PageResponse;
+
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
@@ -9,13 +12,14 @@ import com.georgia.jeogiyo.order.dto.response.*;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
-import com.georgia.jeogiyo.order.dto.response.OrderCancelResponse;
-import java.time.LocalDateTime;
 import com.georgia.jeogiyo.orderitem.entity.OrderItem;
 import com.georgia.jeogiyo.orderitem.repository.OrderItemRepository;
+import com.georgia.jeogiyo.payment.entity.Payment;
+import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 import com.georgia.jeogiyo.payment.repository.PaymentRepository;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
+import com.georgia.jeogiyo.store.entity.QStore;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
@@ -23,23 +27,19 @@ import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.georgia.jeogiyo.store.entity.QStore;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 
-
-import java.util.*;
 import jakarta.persistence.EntityManager;
-
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class OrderService {
@@ -60,8 +60,9 @@ public class OrderService {
             OrderStatus.DELIVERY_PICKED_UP, Set.of(OrderStatus.DELIVERED)
     );
 
-    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository,ProductRepository productRepository,OrderItemRepository orderItemRepository, StoreRepository storeRepository,UserRepository userRepository,JPAQueryFactory queryFactory,EntityManager entityManager,PaymentRepository paymentRepository) {
-
+    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository, ProductRepository productRepository,
+                        OrderItemRepository orderItemRepository, StoreRepository storeRepository, UserRepository userRepository,
+                        JPAQueryFactory queryFactory, EntityManager entityManager, PaymentRepository paymentRepository) {
         this.orderRepository = orderRepository;
         this.addressRepository = addressRepository;
         this.productRepository = productRepository;
@@ -72,50 +73,49 @@ public class OrderService {
         this.entityManager = entityManager;
         this.paymentRepository = paymentRepository;
     }
-    public Order getOrder(UUID orderId){
-        Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId).orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다"));
-        return order;
 
+    public Order getOrder(UUID orderId) {
+        return orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ORDER));
     }
+
     @Transactional
     public OrderCreateResponse createOrder(String loginId, OrderCreateRequest orderCreateRequest) {
 
         User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-        UUID userId = user.getUserId();
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 
         if (user.getRole() != Role.CUSTOMER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CUSTOMER만 주문을 생성할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN);
         }
 
-        Store store = storeRepository.findById(orderCreateRequest.getStoreId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
+        Store store = storeRepository.findByStoreIdAndIsDeletedFalse(orderCreateRequest.getStoreId())
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_STORE));
 
         if (store.isDeleted()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다.");
+            throw new BusinessException(GlobalErrorCode.NOT_FOUND_STORE);
         }
         if (store.getStoreStatus() != StoreStatus.OPEN) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "영업 중이 아닌 가게입니다.");
+            throw new BusinessException(GlobalErrorCode.STORE_NOT_OPEN);
         }
 
         Address address = addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, orderCreateRequest.getAddressId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "배송지를 찾을 수 없습니다."));
-
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.FORBIDDEN_ADDRESS));
 
         if (!isServiceableArea(address.getRoadAddress())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "서비스 가능 지역이 아닙니다.");
+            throw new BusinessException(GlobalErrorCode.OUT_OF_SERVICE_AREA);
         }
 
         Integer totalPrice = 0;
         for (OrderCreateRequest.OrderItemRequest item : orderCreateRequest.getItems()) {
             Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PRODUCT));
 
             if (!product.getStore().getStoreId().equals(store.getStoreId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "요청한 가게에 속하지 않은 상품입니다.");
+                throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
             }
             if (!product.isOrderable()) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "주문할 수 없는 상품입니다.");
+                throw new BusinessException(GlobalErrorCode.INSUFFICIENT_STOCK);
             }
             product.decreaseStock(item.getQuantity());
 
@@ -123,14 +123,14 @@ public class OrderService {
             totalPrice += itemTotalPrice;
         }
 
-        Order order = new Order(userId, orderCreateRequest.getStoreId(), orderCreateRequest.getAddressId(),
+        Order order = new Order(user, store, address,
                 address.getRoadAddress(), address.getDetailAddress(), address.getZipcode(),
                 totalPrice, OrderStatus.ORDER_REQUESTED);
         Order savedOrder = orderRepository.save(order);
 
         for (OrderCreateRequest.OrderItemRequest item : orderCreateRequest.getItems()) {
             Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PRODUCT));
             Integer itemTotalPrice = product.getPrice() * item.getQuantity();
 
             OrderItem orderItem = new OrderItem(savedOrder.getOrderId(), item.getProductId(), item.getQuantity(),
@@ -140,7 +140,7 @@ public class OrderService {
 
         OrderCreateResponse response = new OrderCreateResponse();
         response.setOrderId(savedOrder.getOrderId());
-        response.setStoreId(savedOrder.getStoreId());
+        response.setStoreId(savedOrder.getStore().getStoreId());
         response.setAddress(savedOrder.getRoadAddress() + " " + savedOrder.getDetailAddress());
         response.setOrderStatus(savedOrder.getOrderStatus().name());
         response.setTotalPrice(savedOrder.getTotalPrice());
@@ -150,17 +150,16 @@ public class OrderService {
     }
 
     private boolean isServiceableArea(String roadAddress) {
-
         return roadAddress != null && roadAddress.contains("광화문");
     }
 
     public OrderDetailResponse getOrderDetail(String loginId, UUID orderId) {
 
         User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ORDER));
 
         validateOrderAccess(user, order);
 
@@ -168,8 +167,8 @@ public class OrderService {
 
         List<OrderDetailResponse.OrderItemResponse> itemResponses = new ArrayList<>();
         for (OrderItem item : orderItems) {
-            Product product = productRepository.findById(item.getProductId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다."));
+            Product product = productRepository.findByProductIdAndIsDeletedFalse(item.getProductId())
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PRODUCT));
 
             OrderDetailResponse.OrderItemResponse itemResponse = new OrderDetailResponse.OrderItemResponse();
             itemResponse.setProductId(item.getProductId());
@@ -182,8 +181,8 @@ public class OrderService {
 
         OrderDetailResponse response = new OrderDetailResponse();
         response.setOrderId(order.getOrderId());
-        response.setStoreId(order.getStoreId());
-        response.setAddressId(order.getAddressId());
+        response.setStoreId(order.getStore().getStoreId());
+        response.setAddressId(order.getAddress().getAddressId());
         response.setOrderStatus(order.getOrderStatus().name());
         response.setTotalPrice(order.getTotalPrice());
         response.setCreatedAt(order.getCreatedAt());
@@ -197,26 +196,26 @@ public class OrderService {
             return;
         }
         if (user.getRole() == Role.CUSTOMER) {
-            if (!order.getUserId().equals(user.getUserId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 주문만 조회할 수 있습니다.");
+            if (!order.getUser().getUserId().equals(user.getUserId())) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
             }
             return;
         }
         if (user.isOwner()) {
-            Store store = storeRepository.findById(order.getStoreId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
+            Store store = storeRepository.findByStoreIdAndIsDeletedFalse(order.getStore().getStoreId())
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_STORE));
             if (!store.getOwner().getUserId().equals(user.getUserId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 가게의 주문만 조회할 수 있습니다.");
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
             }
             return;
         }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다.");
+        throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
     }
 
     public PageResponse<OrderSearchResponse> searchOrders(String loginId, OrderStatus orderStatus, Pageable pageable) {
 
         User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 
         List<UUID> storeIds = null;
         if (user.getRole() == Role.OWNER) {
@@ -231,11 +230,11 @@ public class OrderService {
         Page<Order> orderPage = orderRepository.searchOrders(orderStatus, user.getRole(), user.getUserId(), storeIds, pageable);
 
         return PageResponse.from(orderPage, order -> {
-            Store store = storeRepository.findById(order.getStoreId()).orElse(null);
+            Store store = storeRepository.findByStoreIdAndIsDeletedFalse(order.getStore().getStoreId()).orElse(null);
 
             OrderSearchResponse item = new OrderSearchResponse();
             item.setOrderId(order.getOrderId());
-            item.setStoreId(order.getStoreId());
+            item.setStoreId(order.getStore().getStoreId());
             item.setStoreName(store != null ? store.getStoreName() : null);
             item.setOrderStatus(order.getOrderStatus().name());
             item.setTotalPrice(order.getTotalPrice());
@@ -247,52 +246,52 @@ public class OrderService {
     public PageResponse<OrderStoreSearchResponse> searchOrdersByStore(String loginId, UUID storeId, OrderStatus orderStatus, Pageable pageable) {
 
         User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
+        Store store = storeRepository.findByStoreIdAndIsDeletedFalse(storeId)
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_STORE));
 
         if (user.getRole() == Role.OWNER) {
             if (!store.getOwner().getUserId().equals(user.getUserId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 가게의 주문만 조회할 수 있습니다.");
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
             }
         } else if (user.getRole() != Role.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN);
         }
 
         Page<Order> orderPage = orderRepository.searchOrdersByStore(storeId, orderStatus, pageable);
 
         return PageResponse.from(orderPage, order -> {
-            User customer = userRepository.findById(order.getUserId()).orElse(null);
+            User customer = userRepository.findByUserIdAndIsDeletedFalse(order.getUser().getUserId()).orElse(null);
 
             OrderStoreSearchResponse item = new OrderStoreSearchResponse();
             item.setOrderId(order.getOrderId());
-            item.setCustomerName(customer != null ? customer.getNickname() : null);
+            item.setCustomerName(customer != null ? customer.getNickname() : "탈퇴한 회원");
             item.setOrderStatus(order.getOrderStatus().name());
             item.setTotalPrice(order.getTotalPrice());
             item.setCreatedAt(order.getCreatedAt());
             return item;
         });
-
     }
+
     @Transactional
     public OrderStatusUpdateResponse updateOrderStatus(String loginId, UUID orderId, OrderStatusUpdateRequest request) {
 
         User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 
         if (user.getRole() != Role.OWNER && user.getRole() != Role.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "변경 권한이 없습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN);
         }
 
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ORDER));
 
         if (user.getRole() == Role.OWNER) {
-            Store store = storeRepository.findByStoreIdAndIsDeletedFalse(order.getStoreId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "가게를 찾을 수 없습니다."));
+            Store store = storeRepository.findByStoreIdAndIsDeletedFalse(order.getStore().getStoreId())
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_STORE));
             if (!store.getOwner().getUserId().equals(user.getUserId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인 가게의 주문만 변경할 수 있습니다.");
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
             }
         }
 
@@ -301,7 +300,15 @@ public class OrderService {
 
         Set<OrderStatus> allowedNext = ALLOWED_TRANSITIONS.get(currentStatus);
         if (allowedNext == null || !allowedNext.contains(nextStatus)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "허용되지 않은 상태 변경입니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_ORDER_STATUS_TRANSITION);
+        }
+
+        if (nextStatus == OrderStatus.ORDER_ACCEPTED) {
+            Payment payment = paymentRepository.findByOrder_OrderIdAndIsDeletedFalse(orderId)
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.PAYMENT_NOT_SUCCESS));
+            if (payment.getPaymentStatus() != PaymentStatus.SUCCESS) {
+                throw new BusinessException(GlobalErrorCode.PAYMENT_NOT_SUCCESS);
+            }
         }
 
         order.changeStatus(nextStatus);
@@ -319,30 +326,30 @@ public class OrderService {
     public OrderCancelResponse cancelOrder(String loginId, UUID orderId, OrderCancelRequest request) {
 
         User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_USER));
 
         if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "취소 권한이 없습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN);
         }
 
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ORDER));
 
         if (user.getRole() == Role.CUSTOMER) {
-            if (!order.getUserId().equals(user.getUserId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 주문만 취소할 수 있습니다.");
+            if (!order.getUser().getUserId().equals(user.getUserId())) {
+                throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
             }
             if (order.getOrderStatus() != OrderStatus.ORDER_REQUESTED) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "취소할 수 없는 상태의 주문입니다.");
+                throw new BusinessException(GlobalErrorCode.ORDER_CANCEL_NOT_ALLOWED);
             }
             if (order.getCreatedAt().plusMinutes(5).isBefore(LocalDateTime.now())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "주문 후 5분이 지나 취소할 수 없습니다.");
+                throw new BusinessException(GlobalErrorCode.ORDER_CANCEL_NOT_ALLOWED);
             }
         } else {
             if (order.getOrderStatus() == OrderStatus.DELIVERED
                     || order.getOrderStatus() == OrderStatus.CANCELLED
                     || order.getOrderStatus() == OrderStatus.ORDER_REJECTED) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "취소할 수 없는 상태의 주문입니다.");
+                throw new BusinessException(GlobalErrorCode.ORDER_CANCEL_NOT_ALLOWED);
             }
         }
 
@@ -376,10 +383,10 @@ public class OrderService {
     public void cancelByPayment(UUID orderId, String loginId) {
 
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ORDER));
 
         if (order.getOrderStatus() != OrderStatus.ORDER_REQUESTED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "취소할 수 없는 상태의 주문입니다.");
+            throw new BusinessException(GlobalErrorCode.ORDER_CANCEL_NOT_ALLOWED);
         }
 
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
@@ -392,5 +399,4 @@ public class OrderService {
 
         order.changeStatus(OrderStatus.CANCELLED);
     }
-
 }
