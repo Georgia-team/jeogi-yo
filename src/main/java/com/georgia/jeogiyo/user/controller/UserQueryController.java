@@ -18,14 +18,17 @@ import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinderService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @Tag(name = "User", description = "회원 Query API")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserQueryController {
@@ -40,7 +43,7 @@ public class UserQueryController {
 	})
 	@GetMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public ResponseEntity<CommonResponse<UserInfoResponse>> getMe(@AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<CommonResponse<UserInfoResponse>> getMe(@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		
 		User user = userFinderService.getUserByLoginId(userDetails.getUsername());
@@ -59,7 +62,7 @@ public class UserQueryController {
 	@GetMapping("")
 	@PreAuthorize("hasAnyRole('MASTER') and #userDetails.username == principal.username")
 	public ResponseEntity<CommonResponse<PageResponse<UserInfoResponse>>> masterGetUserList(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@Valid @ModelAttribute UserSearchRequest userSearchRequest
 	) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
