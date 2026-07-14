@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.user.dto.response;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.georgia.jeogiyo.user.entity.Role;
@@ -24,8 +23,6 @@ public class UserSignupResponse {
 	
 	private final Role role;
 	
-	private final LocalDateTime createdAt;
-	
 	private final boolean isDeleted;
 	
 	public static UserSignupResponse of(User user) {
@@ -35,7 +32,6 @@ public class UserSignupResponse {
 				user.getLoginId(),
 				user.getNickname(),
 				user.getRole(),
-				user.getCreatedAt(),
 				user.isDeleted()
 		);
 	}

@@ -90,11 +90,16 @@ public class UserApiTest {
 				.content(objectMapper.writeValueAsString(userSignupRequest))
 		)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$.email").value(userSignupRequest.getEmail()))
-		.andExpect(jsonPath("$.loginId").value(userSignupRequest.getLoginId()))
-		.andExpect(jsonPath("$.nickname").value(userSignupRequest.getNickname()))
-		.andExpect(jsonPath("$.role").value(Role.CUSTOMER.name()))
-		.andExpect(jsonPath("$.deleted").value(false))
+		.andExpect(jsonPath("$.success").value(true))
+		.andExpect(jsonPath("$.message").value("회원가입 성공"))
+		.andExpect(jsonPath("$.data").isNotEmpty())
+		
+		.andExpect(jsonPath("$.data.userId").isNotEmpty())
+		.andExpect(jsonPath("$.data.email").value(userSignupRequest.getEmail()))
+		.andExpect(jsonPath("$.data.loginId").value(userSignupRequest.getLoginId()))
+		.andExpect(jsonPath("$.data.nickname").value(userSignupRequest.getNickname()))
+		.andExpect(jsonPath("$.data.role").value(Role.CUSTOMER.name()))
+		.andExpect(jsonPath("$.data.deleted").value(false))
 		;
 	}
 	
@@ -115,13 +120,18 @@ public class UserApiTest {
 		.perform(post(url)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(userSignupRequest))
-				)
+		)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$.email").value(userSignupRequest.getEmail()))
-		.andExpect(jsonPath("$.loginId").value(userSignupRequest.getLoginId()))
-		.andExpect(jsonPath("$.nickname").value(userSignupRequest.getNickname()))
-		.andExpect(jsonPath("$.role").value(Role.OWNER.name()))
-		.andExpect(jsonPath("$.deleted").value(false))
+		.andExpect(jsonPath("$.success").value(true))
+		.andExpect(jsonPath("$.message").value("회원가입 성공"))
+		.andExpect(jsonPath("$.data").isNotEmpty())
+		
+		.andExpect(jsonPath("$.data.userId").isNotEmpty())
+		.andExpect(jsonPath("$.data.email").value(userSignupRequest.getEmail()))
+		.andExpect(jsonPath("$.data.loginId").value(userSignupRequest.getLoginId()))
+		.andExpect(jsonPath("$.data.nickname").value(userSignupRequest.getNickname()))
+		.andExpect(jsonPath("$.data.role").value(Role.OWNER.name()))
+		.andExpect(jsonPath("$.data.deleted").value(false))
 		;
 	}
 	
@@ -181,12 +191,15 @@ public class UserApiTest {
 				.content(objectMapper.writeValueAsString(userUpdateRequest))
 		)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$.userId").value(user.getUserId().toString()))
-		.andExpect(jsonPath("$.loginId").value(user.getLoginId()))
-		.andExpect(jsonPath("$.nickname").value(user.getNickname()))
-		.andExpect(jsonPath("$.phone").value(userUpdateRequest.getPhone()))
-		.andExpect(jsonPath("$.email").value(userUpdateRequest.getEmail()))
-		.andExpect(jsonPath("$.role").value(user.getRole().toString()))
+		.andExpect(jsonPath("$.success").value(true))
+		.andExpect(jsonPath("$.message").value("회원 수정 성공"))
+		
+		.andExpect(jsonPath("$.data.userId").value(user.getUserId().toString()))
+		.andExpect(jsonPath("$.data.loginId").value(user.getLoginId()))
+		.andExpect(jsonPath("$.data.nickname").value(user.getNickname()))
+		.andExpect(jsonPath("$.data.phone").value(userUpdateRequest.getPhone()))
+		.andExpect(jsonPath("$.data.email").value(userUpdateRequest.getEmail()))
+		.andExpect(jsonPath("$.data.role").value(user.getRole().toString()))
 		;
 	}
 	
@@ -223,7 +236,10 @@ public class UserApiTest {
 				.content(objectMapper.writeValueAsString(userDeleteRequest))
 		)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$.userId").value(user.getUserId().toString()))
+		.andExpect(jsonPath("$.success").value(true))
+		.andExpect(jsonPath("$.message").value("회원 탈퇴 성공"))
+		
+		.andExpect(jsonPath("$.data.userId").value(user.getUserId().toString()))
 		;
 	}
 }

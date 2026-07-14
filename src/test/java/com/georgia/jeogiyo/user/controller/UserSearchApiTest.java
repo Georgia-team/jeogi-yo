@@ -19,9 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
@@ -42,10 +39,6 @@ public class UserSearchApiTest {
 
 	@Autowired
 	private MockMvc mockMvc;
-	
-	private final ObjectMapper objectMapper = new ObjectMapper()
-			.registerModule(new JavaTimeModule())
-			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 	
 	@Autowired
 	private EntityManager em;
@@ -99,12 +92,15 @@ public class UserSearchApiTest {
 				.contentType(MediaType.APPLICATION_JSON)
 		)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$.userId").value(user.getUserId().toString()))
-		.andExpect(jsonPath("$.loginId").value(user.getLoginId()))
-		.andExpect(jsonPath("$.nickname").value(user.getNickname()))
-		.andExpect(jsonPath("$.phone").value(user.getPhone()))
-		.andExpect(jsonPath("$.email").value(user.getEmail()))
-		.andExpect(jsonPath("$.role").value(user.getRole().name()))
+		.andExpect(jsonPath("$.success").value(true))
+		.andExpect(jsonPath("$.message").value("내 정보 조회 성공"))
+		
+		.andExpect(jsonPath("$.data.userId").value(user.getUserId().toString()))
+		.andExpect(jsonPath("$.data.loginId").value(user.getLoginId()))
+		.andExpect(jsonPath("$.data.nickname").value(user.getNickname()))
+		.andExpect(jsonPath("$.data.phone").value(user.getPhone()))
+		.andExpect(jsonPath("$.data.email").value(user.getEmail()))
+		.andExpect(jsonPath("$.data.role").value(user.getRole().name()))
 		;
 	}
 	
@@ -170,11 +166,16 @@ public class UserSearchApiTest {
 				.params(params)
 		)
 		.andExpect(status().isOk())
-		.andExpect(jsonPath("$.content", hasSize(10)))
-		.andExpect(jsonPath("$.page").value(0))
-		.andExpect(jsonPath("$.size").value(10))
-		.andExpect(jsonPath("$.totalElements").value(testUserListNameTest.size()))
-		.andExpect(jsonPath("$.totalPages").value(2))
+		// CommonResponse
+		.andExpect(jsonPath("$.success").value(true))
+		.andExpect(jsonPath("$.message").value("유저 목록 조회 성공"))
+		
+		// PageResponse
+		.andExpect(jsonPath("$.data.content", hasSize(10)))
+		.andExpect(jsonPath("$.data.page").value(0))
+		.andExpect(jsonPath("$.data.size").value(10))
+		.andExpect(jsonPath("$.data.totalElements").value(testUserListNameTest.size()))
+		.andExpect(jsonPath("$.data.totalPages").value(2))
 		;
 	}
 	

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
@@ -37,14 +38,18 @@ public class UserQueryController {
 		@ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
 	})
 	@GetMapping("/me")
-	public ResponseEntity<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
+	public CommonResponse<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		
 		User user = userFinderService.getUserByLoginId(userDetails.getUsername());
 		
 		UserInfoResponse response = UserInfoResponse.of(user);
 		
-		return ResponseEntity.ok(response);
+		return new CommonResponse<UserInfoResponse>(
+				true,
+				"내 정보 조회 성공",
+				response
+		);
 	}
 	
 	@Operation(summary = "유저 목록 조회", description = "마스터 권한용 유저 목록 조회")
@@ -54,7 +59,7 @@ public class UserQueryController {
 		@ApiResponse(responseCode = "403", description = "권한 없음")
 	})
 	@GetMapping("")
-	public ResponseEntity<PageResponse<UserInfoResponse>> masterGetUserList(
+	public CommonResponse<PageResponse<UserInfoResponse>> masterGetUserList(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @ModelAttribute UserSearchRequest userSearchRequest
 	) {
@@ -65,7 +70,11 @@ public class UserQueryController {
 		
 		PageResponse<UserInfoResponse> response = PageResponse.from(userPagenation, x -> x);
 		
-		return ResponseEntity.ok(response);
+		return new CommonResponse<PageResponse<UserInfoResponse>>(
+				true,
+				"유저 목록 조회 성공",
+				response
+		);
 	}
 	
 }

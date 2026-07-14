@@ -84,7 +84,6 @@ public class UserCommandTest {
 		
 		assertThat(response.getUserId()).isNotNull();
 		
-		assertThat(response.getCreatedAt()).isNotNull();
 		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
 		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
 		assertThat(response.getRole()).isEqualTo(Role.OWNER);
@@ -114,7 +113,6 @@ public class UserCommandTest {
 //		});
 		
 		
-		assertThat(response.getCreatedAt()).isNotNull();
 		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
 		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
 		assertThat(response.getRole()).isEqualTo(Role.CUSTOMER);

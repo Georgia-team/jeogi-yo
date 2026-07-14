@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.dto.response.UserDeleteResponse;
@@ -38,7 +39,7 @@ public class UserCommandController {
 		@ApiResponse(responseCode = "409", description = "이메일 중복, 닉네임 중복")
 	})
 	@PatchMapping("/me")
-	public ResponseEntity<UserInfoResponse> updateMe(
+	public CommonResponse<UserInfoResponse> updateMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
@@ -49,7 +50,11 @@ public class UserCommandController {
 		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
 		// TODO: 공통 응답 객체 추가시 수정
-		return ResponseEntity.ok(response);
+		return new CommonResponse<UserInfoResponse>(
+				true,
+				"회원 수정 성공",
+				response
+		);
 	}
 	
 	@Operation(summary = "회원 삭제", description = "회원 탈퇴합니다.")
@@ -59,7 +64,7 @@ public class UserCommandController {
 		@ApiResponse(responseCode = "409", description = "이미 탈퇴한 회원")
 	})
 	@DeleteMapping("/me")
-	public ResponseEntity<UserDeleteResponse> deleteMe(
+	public CommonResponse<UserDeleteResponse> deleteMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserDeleteRequest userDelete
 	) {
@@ -67,7 +72,11 @@ public class UserCommandController {
 		
 		UserDeleteResponse response = userCommandService.delete(loginId, userDelete);
 		
-		return ResponseEntity.ok(response);
+		return new CommonResponse<UserDeleteResponse>(
+				true,
+				"회원 탈퇴 성공",
+				response
+		);
 	}
 	
 }
