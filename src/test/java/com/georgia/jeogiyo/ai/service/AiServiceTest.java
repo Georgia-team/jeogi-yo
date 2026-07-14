@@ -3,11 +3,11 @@ package com.georgia.jeogiyo.ai.service;
 import com.georgia.jeogiyo.ai.dto.request.AiDescriptionRequest;
 import com.georgia.jeogiyo.ai.dto.response.AiDescriptionResponse;
 import com.georgia.jeogiyo.ai.dto.response.AiHistoryResponse;
-import com.georgia.jeogiyo.ai.dto.response.AiHistorySearchResponse;
 import com.georgia.jeogiyo.ai.entity.AiHistory;
 import com.georgia.jeogiyo.ai.entity.AiStatus;
 import com.georgia.jeogiyo.ai.repository.AiHistoryRepository;
 import com.georgia.jeogiyo.category.entity.Category;
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
@@ -32,10 +32,7 @@ import java.util.Optional;
 import static com.georgia.jeogiyo.support.DomainTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -210,7 +207,7 @@ class AiServiceTest {
                 .willReturn(new PageImpl<>(List.of()));
 
         // when: page=-1, size=20처럼 정책 밖의 요청이 들어온다.
-        AiHistorySearchResponse response = aiService.searchAiHistories(
+        PageResponse<AiHistoryResponse> response = aiService.searchAiHistories(
                 AiStatus.SUCCESS,
                 PRODUCT_ID,
                 null,

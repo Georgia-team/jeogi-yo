@@ -6,27 +6,27 @@ import com.georgia.jeogiyo.ai.service.AiGeminiService;
 import com.georgia.jeogiyo.ai.service.AiHistoryRecorder;
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.product.dto.request.ProductCreateRequest;
 import com.georgia.jeogiyo.product.dto.request.ProductUpdateRequest;
 import com.georgia.jeogiyo.product.dto.response.ProductResponse;
-import com.georgia.jeogiyo.product.dto.response.ProductSearchPageResponse;
 import com.georgia.jeogiyo.product.dto.response.ProductSearchResponse;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
-import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.entity.Role;
+import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.UUID;
 
 @Slf4j
@@ -143,7 +143,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductSearchPageResponse searchProducts(
+    public PageResponse<ProductSearchResponse> searchProducts(
             UUID storeId,
             UUID categoryId,
             String keyword,
@@ -162,7 +162,7 @@ public class ProductServiceImpl implements ProductService {
                     .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
         }
 
-        Pageable pageable = createPageable(page, size, sort);
+        Pageable pageable = PageUtil.toPageable(page, size, sort);
 
         Page<Product> productPage = productRepository.searchProducts(
                 storeId,
@@ -173,15 +173,7 @@ public class ProductServiceImpl implements ProductService {
                 pageable
         );
 
-        return ProductSearchPageResponse.builder()
-                .content(productPage.getContent().stream()
-                        .map(this::toSearchResponse)
-                        .toList())
-                .page(productPage.getNumber())
-                .size(productPage.getSize())
-                .totalElements(productPage.getTotalElements())
-                .totalPages(productPage.getTotalPages())
-                .build();
+        return PageResponse.from(productPage, this::toSearchResponse);
     }
 
     @Override
@@ -248,19 +240,6 @@ public class ProductServiceImpl implements ProductService {
         if (!isMaster && !isOwnerOfStore) {
             throw new IllegalArgumentException("숨김 처리된 상품은 조회할 수 없습니다.");
         }
-    }
-
-    private Pageable createPageable(int page, int size, String sort) {
-        int validatedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
-        Sort.Direction direction = "asc".equalsIgnoreCase(sort)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
-
-        return PageRequest.of(
-                Math.max(page, 0),
-                validatedSize,
-                Sort.by(direction, "createdAt")
-        );
     }
 
     private ProductResponse toResponse(Product product) {

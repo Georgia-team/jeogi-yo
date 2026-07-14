@@ -1,10 +1,11 @@
 package com.georgia.jeogiyo.store.service;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreUpdateRequest;
 import com.georgia.jeogiyo.store.dto.response.StoreResponse;
-import com.georgia.jeogiyo.store.dto.response.StoreSearchPageResponse;
+import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 
 import java.util.UUID;
 
@@ -14,7 +15,7 @@ public interface StoreService {
 
     StoreResponse getStore(UUID storeId);
 
-    StoreSearchPageResponse searchStores(
+    PageResponse<StoreSearchResponse> searchStores(
             UUID categoryId,
             String keyword,
             int page,

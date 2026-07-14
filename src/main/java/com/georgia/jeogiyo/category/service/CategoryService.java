@@ -32,7 +32,7 @@ public class CategoryService {
 
     // 카테고리 생성 Service
     @Transactional // Service 단계에서 트랙잭션이 이루어져야함. 비즈니스 측면에서 재고(DB)와 이력(log)와의 차이가 없어야 함.
-    public CategoryCreateResponse createCategory(CategoryCreateRequest requestDto, String loginId) {
+    public CategoryCreateResponse createCategory(CategoryCreateRequest requestDto) {
         String categoryName = requestDto.getCategoryName().trim(); // didWhr rhdqor wprj
 
         if (categoryRepository.existsByCategoryName(categoryName)) {
@@ -126,7 +126,7 @@ public class CategoryService {
 
     // 카테고리 수정 API
     @Transactional
-    public CategoryUpdateResponse updateCategory(UUID categoryId, CategoryUpdateRequest requestDto, String loginId) {
+    public CategoryUpdateResponse updateCategory(UUID categoryId, CategoryUpdateRequest requestDto) {
         String categoryName = requestDto.getCategoryName().trim();
 
         // 1. 수정할 카테고리 조회
@@ -151,7 +151,7 @@ public class CategoryService {
         }
 
         // 3. Category 엔티티의 update() 메서드 호출
-        category.update(categoryName, loginId);
+        category.update(categoryName);
 
         // 4. 수정된 엔티티를 응답 DTO로 변환
         return CategoryUpdateResponse.of(category);

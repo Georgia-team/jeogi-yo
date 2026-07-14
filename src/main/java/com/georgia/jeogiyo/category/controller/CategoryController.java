@@ -1,17 +1,14 @@
 package com.georgia.jeogiyo.category.controller;
 
-/*
- * 요청과 응답 처리 *
- *
- *
- */
-
 import com.georgia.jeogiyo.category.dto.request.CategoryCreateRequest;
 import com.georgia.jeogiyo.category.dto.request.CategoryUpdateRequest;
 import com.georgia.jeogiyo.category.dto.response.*;
 import com.georgia.jeogiyo.category.service.CategoryService;
+import com.georgia.jeogiyo.global.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,15 +20,15 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    // TODO: 권한 관련 처리
+    @PreAuthorize("hasAuthority('ROLE_MASTER')")
     @PostMapping
     public CategoryCreateResponse createCategory(
-            @Valid @RequestBody CategoryCreateRequest requestDto,
-            @RequestHeader("loginId") String loginId
+            @Valid @RequestBody CategoryCreateRequest requestDto
     ) {
-        return categoryService.createCategory(requestDto, loginId);
+        return categoryService.createCategory(requestDto);
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping("/{categoryId}")
     public CategoryReadResponse readCategory(
             @PathVariable UUID categoryId
@@ -39,6 +36,7 @@ public class CategoryController {
         return categoryService.readResponse(categoryId);
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping
     public CategorySearchResponse searchCategories(
             @RequestParam(required = false) String keyword, // 키워드 없으면 전체 카테고리 조회
@@ -49,21 +47,23 @@ public class CategoryController {
         return categoryService.searchCategories(keyword, page, size, sort);
     }
 
-    // TODO: 권한 관련 처리
+    @PreAuthorize("hasAuthority('ROLE_MASTER')")
     @PatchMapping("/{categoryId}")
     public CategoryUpdateResponse updateCategory(
             @PathVariable UUID categoryId,
-            @Valid @RequestBody CategoryUpdateRequest requestDto,
-            @RequestHeader("loginId") String loginId
+            @Valid @RequestBody CategoryUpdateRequest requestDto
     ) {
-        return categoryService.updateCategory(categoryId, requestDto, loginId);
+        return categoryService.updateCategory(categoryId, requestDto);
     }
 
+    @PreAuthorize("hasAuthority('ROLE_MASTER')")
     @DeleteMapping("/{categoryId}")
     public CategoryDeleteResponse deleteCategory(
             @PathVariable UUID categoryId,
-            @RequestHeader("loginId") String loginId
+            @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
+        String loginId = userDetails.getUsername();
+
         return categoryService.deleteCategory(categoryId, loginId);
     }
 

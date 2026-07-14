@@ -2,11 +2,12 @@ package com.georgia.jeogiyo.store.service;
 
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreUpdateRequest;
 import com.georgia.jeogiyo.store.dto.response.StoreResponse;
-import com.georgia.jeogiyo.store.dto.response.StoreSearchPageResponse;
 import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
@@ -17,9 +18,7 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,7 +69,7 @@ public class StoreServiceImpl implements StoreService {
 
     @Override
     @Transactional(readOnly = true)
-    public StoreSearchPageResponse searchStores(
+    public PageResponse<StoreSearchResponse> searchStores(
             UUID categoryId,
             String keyword,
             int page,
@@ -82,18 +81,10 @@ public class StoreServiceImpl implements StoreService {
                     .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
         }
 
-        Pageable pageable = createPageable(page, size, sort);
+        Pageable pageable = PageUtil.toPageable(page, size, sort);
         Page<Store> storePage = storeRepository.searchStores(categoryId, keyword, pageable);
 
-        return StoreSearchPageResponse.builder()
-                .content(storePage.getContent().stream()
-                        .map(this::toSearchResponse)
-                        .toList())
-                .page(storePage.getNumber())
-                .size(storePage.getSize())
-                .totalElements(storePage.getTotalElements())
-                .totalPages(storePage.getTotalPages())
-                .build();
+        return PageResponse.from(storePage, this::toSearchResponse);
     }
 
     @Override
@@ -174,19 +165,6 @@ public class StoreServiceImpl implements StoreService {
         if (!isMaster && !isOwnerOfStore) {
             throw new IllegalArgumentException("본인 가게만 처리할 수 있습니다.");
         }
-    }
-
-    private Pageable createPageable(int page, int size, String sort) {
-        int validatedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
-        Sort.Direction direction = "asc".equalsIgnoreCase(sort)
-                ? Sort.Direction.ASC
-                : Sort.Direction.DESC;
-
-        return PageRequest.of(
-                Math.max(page, 0),
-                validatedSize,
-                Sort.by(direction, "createdAt")
-        );
     }
 
     private StoreResponse toResponse(Store store) {

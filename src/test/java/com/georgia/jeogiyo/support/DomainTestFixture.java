@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * store/product/ai 서비스 단위 테스트에서 공통으로 쓰는 fixture 입니다.
+ * store/product/ai/payment 서비스 단위 테스트에서 공통으로 쓰는 fixture 입니다.
  *
  * 현재 요청 DTO와 일부 엔티티는 테스트용 생성자나 setter가 충분하지 않기 때문에
  * ReflectionTestUtils로 필요한 필드만 채웁니다. 실제 운영 코드의 캡슐화는 그대로 두고,
@@ -44,10 +44,12 @@ public final class DomainTestFixture {
     public static final UUID OTHER_OWNER_ID = UUID.fromString("11111111-1111-1111-1111-111111111114");
     public static final UUID CUSTOMER_ID = UUID.fromString("11111111-1111-1111-1111-111111111112");
     public static final UUID MASTER_ID = UUID.fromString("11111111-1111-1111-1111-111111111113");
+    public static final UUID OTHER_CUSTOMER_ID = UUID.fromString("11111111-1111-1111-1111-111111111115");
 
     public static final String OWNER_LOGIN_ID = "owner01";
     public static final String OTHER_OWNER_LOGIN_ID = "owner02";
     public static final String CUSTOMER_LOGIN_ID = "cust01";
+    public static final String OTHER_CUSTOMER_LOGIN_ID = "cust02";
     public static final String MASTER_LOGIN_ID = "master01";
 
     public static final UUID CATEGORY_ID = UUID.fromString("22222222-2222-2222-2222-222222222221");
@@ -87,6 +89,10 @@ public final class DomainTestFixture {
 
     public static User customer() {
         return user(CUSTOMER_ID, CUSTOMER_LOGIN_ID, Role.CUSTOMER);
+    }
+
+    public static User otherCustomer() {
+        return user(OTHER_CUSTOMER_ID, OTHER_CUSTOMER_LOGIN_ID, Role.CUSTOMER);
     }
 
     public static User master() {
@@ -254,9 +260,17 @@ public final class DomainTestFixture {
     }
 
     public static Payment payment(UUID userId, PaymentStatus paymentStatus) {
+        User user = userId.equals(CUSTOMER_ID)
+                ? customer()
+                : userId.equals(OTHER_CUSTOMER_ID)
+                  ? otherCustomer()
+                  : user(userId, "paymentUser", Role.CUSTOMER);
+
+        Order order = order(user.getUserId(), OrderStatus.ORDER_REQUESTED);
+
         Payment payment = new Payment(
-                ORDER_ID,
-                userId,
+                order,
+                user,
                 PaymentMethod.CARD,
                 18000
         );

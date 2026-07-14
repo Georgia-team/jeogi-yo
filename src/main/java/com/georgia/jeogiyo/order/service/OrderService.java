@@ -388,7 +388,7 @@ public class OrderService {
             }
         }
 
-        paymentRepository.findByOrderIdAndIsDeletedFalse(orderId).ifPresent(payment -> {
+        paymentRepository.findByOrder_OrderIdAndIsDeletedFalse(orderId).ifPresent(payment -> {
             if (payment.getPaymentStatus() == com.georgia.jeogiyo.payment.entity.PaymentStatus.SUCCESS) {
                 payment.cancel(request.getCancelReason());
             }
