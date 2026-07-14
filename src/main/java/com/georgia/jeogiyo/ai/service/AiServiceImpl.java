@@ -18,6 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.UUID;
 
@@ -41,10 +43,10 @@ public class AiServiceImpl implements AiService {
         User user = userFinder.getOwnerUserByLoginId(loginId);
 
         Product product = productRepository.findByProductIdAndIsDeletedFalse(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PRODUCT));
 
         if (product.getStore().isDeleted()) {
-            throw new IllegalArgumentException("삭제된 가게의 상품은 AI 설명을 생성할 수 없습니다.");
+            throw new BusinessException(GlobalErrorCode.ALREADY_DELETED_STORE);
         }
 
         // 현재 loginId로 User를 찾고, 상품의 가게 owner와 비교
@@ -114,7 +116,7 @@ public class AiServiceImpl implements AiService {
 
         userFinder.getMasterUserByLoginId(loginId); // MASTER 검증
         AiHistory aiHistory = aiHistoryRepository.findActiveById(aiHistoryId)
-                .orElseThrow(() -> new IllegalArgumentException("AI 이력을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_AI_HISTORY));
 
         return toHistoryResponse(aiHistory);
     }
@@ -143,7 +145,7 @@ public class AiServiceImpl implements AiService {
 
     private void validateOwner(User user, Product product) {
         if (!product.getStore().getOwner().getUserId().equals(user.getUserId())) {
-            throw new IllegalArgumentException("해당 상품의 가게 OWNER만 AI 설명을 생성할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PRODUCT);
         }
     }
 
