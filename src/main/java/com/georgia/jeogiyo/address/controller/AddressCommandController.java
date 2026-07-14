@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.address.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,14 +20,17 @@ import com.georgia.jeogiyo.address.service.AddressService;
 import com.georgia.jeogiyo.global.response.CommonResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @Tag(name = "Address", description = "주소 Command API")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/address")
 public class AddressCommandController {
@@ -43,15 +45,15 @@ public class AddressCommandController {
 	})
 	@PostMapping("")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public ResponseEntity<CommonResponse<AddressCreateResponse>> addressCreate(
-			@AuthenticationPrincipal UserDetails userDetails,
+	public CommonResponse<AddressCreateResponse> addressCreate(
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressCreateRequest addressCreate) {
 		
 		String loginId = userDetails.getUsername();
 		
 		AddressCreateResponse response = addressService.addressCreate(loginId, addressCreate);
 		
-		return ResponseEntity.ok(CommonResponse.success("주소 등록 성공", response));
+		return CommonResponse.success("주소 등록 성공", response);
 	}
 	
 	@Operation(summary = "주소 수정", description = "유저 본인이 등록한 주소를 수정합니다.")
@@ -63,8 +65,8 @@ public class AddressCommandController {
 	})
 	@PatchMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public ResponseEntity<CommonResponse<AddressUpdateResponse>> addressUpdate(
-			@AuthenticationPrincipal UserDetails userDetails,
+	public CommonResponse<AddressUpdateResponse> addressUpdate(
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressUpdateRequest addressUpdate,
 			@PathVariable String addressId) {
 		
@@ -72,7 +74,7 @@ public class AddressCommandController {
 		
 		AddressUpdateResponse response = addressService.addressUpdate(loginId, addressId, addressUpdate);
 		
-		return ResponseEntity.ok(CommonResponse.success("주소 수정 성공", response));
+		return CommonResponse.success("주소 수정 성공", response);
 	}
 	
 	@Operation(summary = "주소 삭제", description = "유저 본인이 등록한 주소를 삭제합니다.")
@@ -85,15 +87,15 @@ public class AddressCommandController {
 	})
 	@DeleteMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public ResponseEntity<CommonResponse<AddressDeleteResponse>> addressDelete(
-			@AuthenticationPrincipal UserDetails userDetails,
+	public CommonResponse<AddressDeleteResponse> addressDelete(
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
 		
 		String loginId = userDetails.getUsername();
 		
 		AddressDeleteResponse response = addressService.addressDelete(loginId, addressId);
 		
-		return ResponseEntity.ok(CommonResponse.success("주소 삭제 성공", response));
+		return CommonResponse.success("주소 삭제 성공", response);
 	}
 	
 }

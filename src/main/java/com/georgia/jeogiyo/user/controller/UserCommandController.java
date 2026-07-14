@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.user.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,13 +17,16 @@ import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @Tag(name = "User", description = "회원 Command API")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserCommandController {
@@ -41,15 +43,15 @@ public class UserCommandController {
 	})
 	@PatchMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public ResponseEntity<CommonResponse<UserInfoResponse>> updateMe(
-			@AuthenticationPrincipal UserDetails userDetails,
+	public CommonResponse<UserInfoResponse> updateMe(
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
 		String loginId = userDetails.getUsername();
 		
 		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
-		return ResponseEntity.ok(CommonResponse.success("회원 수정 성공", response));
+		return CommonResponse.success("회원 수정 성공", response);
 	}
 	
 	@Operation(summary = "회원 삭제", description = "회원 탈퇴합니다.")
@@ -60,15 +62,15 @@ public class UserCommandController {
 	})
 	@DeleteMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public ResponseEntity<CommonResponse<UserDeleteResponse>> deleteMe(
-			@AuthenticationPrincipal UserDetails userDetails,
+	public CommonResponse<UserDeleteResponse> deleteMe(
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserDeleteRequest userDelete
 	) {
 		String loginId = userDetails.getUsername();
 		
 		UserDeleteResponse response = userCommandService.delete(loginId, userDelete);
 		
-		return ResponseEntity.ok(CommonResponse.success("회원 탈퇴 성공", response));
+		return CommonResponse.success("회원 탈퇴 성공", response);
 	}
 	
 }

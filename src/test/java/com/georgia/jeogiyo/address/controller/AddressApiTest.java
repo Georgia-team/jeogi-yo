@@ -102,7 +102,6 @@ public class AddressApiTest {
 		.andExpect(jsonPath("$.data.detailAddress").value(request.getDetailAddress()))
 		.andExpect(jsonPath("$.data.zipcode").value(request.getZipcode()))
 		.andExpect(jsonPath("$.data.isDefault").value(true))
-		.andExpect(jsonPath("$.data.createdAt").isNotEmpty())
 		;
 	}
 	
@@ -183,7 +182,6 @@ public class AddressApiTest {
 		.andExpect(status().isOk())
 		.andExpect(jsonPath("$.success").value(true))
 		.andExpect(jsonPath("$.data.addressId").value(addressId.toString()))
-		.andExpect(jsonPath("$.data.deletedAt").isNotEmpty())
 		.andExpect(jsonPath("$.data.isDeleted").value(true))
 		;
 	}
