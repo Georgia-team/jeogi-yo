@@ -165,7 +165,7 @@ class OrderServiceTest {
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
-        given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
+        given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
         given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
             Order order = invocation.getArgument(0);
@@ -227,20 +227,19 @@ class OrderServiceTest {
     @DisplayName("본인 소유가 아닌 배송지로는 주문할 수 없다")
     void createOrder_addressNotOwned_fail() {
         User customer = customer();
-        User otherOwner = otherOwner();
         Category category = category();
         Store store = store(owner(), category);
         store.changeStatus(StoreStatus.OPEN);
-        Address othersAddress = address(otherOwner, ADDRESS_ID, "서울시 종로구 광화문로 1");
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
-        given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(othersAddress));
+        given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID)))
+                .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("본인의 배송지가 아닙니다");
+                .hasMessageContaining("배송지를 찾을 수 없습니다");
     }
 
     @Test
@@ -255,7 +254,7 @@ class OrderServiceTest {
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
-        given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(farAddress));
+        given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(farAddress));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -276,7 +275,7 @@ class OrderServiceTest {
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
-        given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
+        given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(productFromOtherStore));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
@@ -297,7 +296,7 @@ class OrderServiceTest {
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
-        given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
+        given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(hiddenProduct));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
@@ -318,7 +317,7 @@ class OrderServiceTest {
 
         given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
-        given(addressRepository.findById(ADDRESS_ID)).willReturn(Optional.of(address));
+        given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(lowStockProduct));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
