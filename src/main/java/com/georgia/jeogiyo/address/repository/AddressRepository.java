@@ -21,4 +21,10 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
 	Optional<Address> findFirstByUserAndIsDefaultOrderByCreatedAtDesc(User user, boolean isDefault);
 	
 	Page<Address> findByUser(User user, Pageable pageable);
+
+	Optional<Address> findByUserAndAddressIdAndIsDeletedFalse(User user, UUID addressId);
+
+	Optional<Address> findByUserAndIsDefaultTrueAndIsDeletedFalse(User user);
+
+	Optional<Address> findFirstByUserAndIsDefaultFalseAndIsDeletedFalseOrderByCreatedAtDesc(User user);
 }
