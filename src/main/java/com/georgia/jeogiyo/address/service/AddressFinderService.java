@@ -38,7 +38,7 @@ public class AddressFinderService implements AddressFinder {
 
 	@Override
 	public Optional<Address> findFirstByUserOrderByCreatedAtDesc(User user) {
-		return addressRepository.findFirstByUserAndIsDefaultTrueAndIsDeletedFalseOrderByCreatedAtDesc(user);
+		return addressRepository.findFirstByUserAndIsDefaultFalseAndIsDeletedFalseOrderByCreatedAtDesc(user);
 	}
 
 	@Override
