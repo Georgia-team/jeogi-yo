@@ -1,6 +1,6 @@
 package com.georgia.jeogiyo.address.controller;
 
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -41,6 +41,7 @@ public class AddressCommandController {
 		@ApiResponse(responseCode = "403", description = "권한 없음")
 	})
 	@PostMapping("")
+	@Secured({"ROLE_CUSTOMER", "ROLE_MASTER", "ROLE_OWNER"})
 	public CommonResponse<AddressCreateResponse> addressCreate(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressCreateRequest addressCreate) {
@@ -60,6 +61,7 @@ public class AddressCommandController {
 		@ApiResponse(responseCode = "404", description = "주소를 찾을 수 없음")
 	})
 	@PatchMapping("/{addressId}")
+	@Secured({"ROLE_CUSTOMER", "ROLE_MASTER", "ROLE_OWNER"})
 	public CommonResponse<AddressUpdateResponse> addressUpdate(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressUpdateRequest addressUpdate,
@@ -81,6 +83,7 @@ public class AddressCommandController {
 		@ApiResponse(responseCode = "409", description = "마지막 배송지는 삭제할 수 없음")
 	})
 	@DeleteMapping("/{addressId}")
+	@Secured({"ROLE_CUSTOMER", "ROLE_MASTER", "ROLE_OWNER"})
 	public CommonResponse<AddressDeleteResponse> addressDelete(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
