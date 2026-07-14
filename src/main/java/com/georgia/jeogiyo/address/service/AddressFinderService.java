@@ -27,25 +27,25 @@ public class AddressFinderService implements AddressFinder {
 	
 	@Override
 	public Address findByUserAndAddressId(User user, UUID addressId) {
-		return addressRepository.findByUserAndAddressId(user, addressId)
+		return addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, addressId)
 				.orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
 	}
 
 	@Override
 	public Optional<Address> findByUserAndDefault(User user) {
-		return addressRepository.findByUserAndIsDefault(user, true);
+		return addressRepository.findByUserAndIsDefaultTrueAndIsDeletedFalse(user);
 	}
 
 	@Override
 	public Optional<Address> findFirstByUserOrderByCreatedAtDesc(User user) {
-		return addressRepository.findFirstByUserAndIsDefaultOrderByCreatedAtDesc(user, false);
+		return addressRepository.findFirstByUserAndIsDefaultTrueAndIsDeletedFalseOrderByCreatedAtDesc(user);
 	}
 
 	@Override
 	public Address findByUserAndAddressId(UUID userId, UUID addressId) {
 		User user = userFinder.getUserById(userId);
 		
-		return addressRepository.findByUserAndAddressId(user, addressId)
+		return addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, addressId)
 				.orElseThrow(() -> new IllegalArgumentException("회원님의 배송지 정보를 불러올 수 없습니다."));
 	}
 	
