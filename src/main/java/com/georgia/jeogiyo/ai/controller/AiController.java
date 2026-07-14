@@ -17,7 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -42,10 +43,11 @@ public class AiController {
     public ResponseEntity<CommonResponse<AiDescriptionResponse>> createAiDescription(
             @Parameter(description = "상품 ID", example = "44444444-4444-4444-4444-444444444441")
             @PathVariable UUID productId,
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody AiDescriptionRequest request
     ) {
-        AiDescriptionResponse response = aiService.createAiDescription(productId, authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        AiDescriptionResponse response = aiService.createAiDescription(productId, loginId, request);
         return ResponseEntity.ok(CommonResponse.success("AI 상품 설명 생성 성공", response));
     }
 
@@ -60,9 +62,10 @@ public class AiController {
     public ResponseEntity<CommonResponse<AiHistoryResponse>> getAiHistory(
             @Parameter(description = "AI 이력 ID", example = "55555555-5555-5555-5555-555555555551")
             @PathVariable UUID aiHistoryId,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
             ) {
-        AiHistoryResponse response = aiService.getAiHistory(aiHistoryId, authentication.getName());
+        String loginId = userDetails.getUsername();
+        AiHistoryResponse response = aiService.getAiHistory(aiHistoryId, loginId);
         return ResponseEntity.ok(CommonResponse.success("AI 이력 조회 성공", response));
     }
 
@@ -86,8 +89,9 @@ public class AiController {
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "정렬 방향", example = "desc")
             @RequestParam(defaultValue = "desc") String sort,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
+        String loginId = userDetails.getUsername();
         PageResponse<AiHistoryResponse> response = aiService.searchAiHistories(
                 aiStatus,
                 productId,
@@ -95,7 +99,7 @@ public class AiController {
                 page,
                 size,
                 sort,
-                authentication.getName()
+                loginId
         );
         return ResponseEntity.ok(CommonResponse.success("AI 이력 목록 조회 성공", response));
     }
