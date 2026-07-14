@@ -1,8 +1,11 @@
 package com.georgia.jeogiyo.global.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.georgia.jeogiyo.global.jwt.JwtAuthenticationFilter;
 import com.georgia.jeogiyo.global.jwt.JwtAuthorizationFilter;
 import com.georgia.jeogiyo.global.jwt.JwtUtil;
+import com.georgia.jeogiyo.global.response.CommonResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -74,6 +77,17 @@ public class SecurityConfig {
         // 필터 순서
         http.addFilterBefore(jwtAuthorizationFilter(), JwtAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
+        // 인증 실패(토큰 없음) 시 공통 응답 포맷으로 401 반환
+        http.exceptionHandling(exceptionHandling->
+                exceptionHandling.authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write(
+                            new ObjectMapper().writeValueAsString(CommonResponse.fail("인증이 필요합니다."))
+                    );
+                })
+        );
 
         return http.build();
     }
