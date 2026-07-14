@@ -29,6 +29,9 @@ import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.georgia.jeogiyo.payment.entity.Payment;
+import com.georgia.jeogiyo.payment.entity.PaymentMethod;
+import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -105,6 +108,12 @@ class OrderServiceTest {
         ReflectionTestUtils.setField(address, "addressId", addressId);
         return address;
     }
+    private Payment payment(UUID userId, PaymentStatus status) {
+        Order order = order(userId, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+        User user = customer();
+        return new Payment(order, user, PaymentMethod.CARD, 24000);
+    }
+
 
     private Product product(Store store, Category category, int price, int stock, boolean hidden) {
         Product product = new Product(store, category, "테스트 상품", "설명", price, stock, hidden);
