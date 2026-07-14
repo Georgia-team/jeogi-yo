@@ -5,6 +5,7 @@ import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
+import com.georgia.jeogiyo.order.service.OrderService;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCancelResponse;
@@ -38,6 +39,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final UserFinder userFinder;
     private final EntityManager entityManager;
+    private final OrderService orderService;
 
     @Override
     public PaymentCreateResponse createPayment(UUID orderId, String loginId, PaymentCreateRequest request) {
@@ -119,7 +121,7 @@ public class PaymentServiceImpl implements PaymentService {
         validateCancelableOrder(order);
 
         payment.cancel(request.getCancelReason());
-        order.cancel();
+        orderService.cancelByPayment(order.getOrderId(), loginId);
         entityManager.flush();
 
         log.info("Payment canceled. paymentId={}, orderId={}, canceledBy={}",
