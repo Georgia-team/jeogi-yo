@@ -1,6 +1,7 @@
 package com.georgia.jeogiyo.user.controller;
 
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -39,18 +40,15 @@ public class UserCommandController {
 		@ApiResponse(responseCode = "409", description = "이메일 중복, 닉네임 중복")
 	})
 	@PatchMapping("/me")
-	@Secured({"ROLE_CUSTOMER", "ROLE_OWNER", "ROLE_MASTER"})
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<UserInfoResponse> updateMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
 		String loginId = userDetails.getUsername();
 		
-		System.out.println("UPDATE_ME_LOGIN_ID: " + loginId);
-		
 		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
-		// TODO: 공통 응답 객체 추가시 수정
 		return CommonResponse.success("회원 수정 성공", response);
 	}
 	
@@ -61,7 +59,7 @@ public class UserCommandController {
 		@ApiResponse(responseCode = "409", description = "이미 탈퇴한 회원")
 	})
 	@DeleteMapping("/me")
-	@Secured({"ROLE_CUSTOMER", "ROLE_OWNER", "ROLE_MASTER"})
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<UserDeleteResponse> deleteMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserDeleteRequest userDelete
