@@ -17,6 +17,8 @@ import com.georgia.jeogiyo.payment.entity.PaymentStatus;
 import com.georgia.jeogiyo.payment.repository.PaymentRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.georgia.jeogiyo.user.entity.User;
+import com.georgia.jeogiyo.user.exception.UserDomainException;
+import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.*;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -99,8 +103,8 @@ class PaymentServiceTest {
         given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
 
         assertThatThrownBy(() -> paymentService.createPayment(ORDER_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("CUSTOMER만 결제할 수 있습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN_PAYMENT.getMessage());
 
         verifyNoInteractions(orderRepository, paymentRepository);
     }
@@ -116,8 +120,8 @@ class PaymentServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(otherCustomerOrder));
 
         assertThatThrownBy(() -> paymentService.createPayment(ORDER_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("본인 주문만 결제할 수 있습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN_ORDER.getMessage());
 
         then(paymentRepository).should(never()).save(any(Payment.class));
     }
@@ -134,8 +138,8 @@ class PaymentServiceTest {
         given(paymentRepository.existsByOrder_OrderId(ORDER_ID)).willReturn(true);
 
         assertThatThrownBy(() -> paymentService.createPayment(ORDER_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("이미 결제 이력이 존재하는 주문입니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.DUPLICATE_PAYMENT.getMessage());
 
         then(paymentRepository).should(never()).save(any(Payment.class));
     }
@@ -151,8 +155,8 @@ class PaymentServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(acceptedOrder));
 
         assertThatThrownBy(() -> paymentService.createPayment(ORDER_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("결제 가능한 주문 상태가 아닙니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.INVALID_ORDER_STATUS_TRANSITION.getMessage());
     }
 
     @Test
@@ -181,8 +185,8 @@ class PaymentServiceTest {
         given(paymentRepository.findByPaymentIdAndIsDeletedFalse(PAYMENT_ID)).willReturn(Optional.of(otherCustomerPayment));
 
         assertThatThrownBy(() -> paymentService.getPayment(PAYMENT_ID, CUSTOMER_LOGIN_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("본인 결제만 처리할 수 있습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN_PAYMENT.getMessage());
     }
 
     @Test
@@ -303,8 +307,8 @@ class PaymentServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> paymentService.cancelPayment(PAYMENT_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("결제 성공 상태에서만 취소할 수 있습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.PAYMENT_CANCEL_NOT_ALLOWED.getMessage());
 
         verify(entityManager, never()).flush();
     }
@@ -322,8 +326,8 @@ class PaymentServiceTest {
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> paymentService.cancelPayment(PAYMENT_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("현재 주문 상태에서는 결제를 취소할 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.PAYMENT_CANCEL_NOT_ALLOWED.getMessage());
 
         verify(entityManager, never()).flush();
     }
@@ -354,8 +358,8 @@ class PaymentServiceTest {
         given(paymentRepository.findByPaymentIdAndIsDeletedFalse(PAYMENT_ID)).willReturn(Optional.of(payment));
 
         assertThatThrownBy(() -> paymentService.deletePayment(PAYMENT_ID, MASTER_LOGIN_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("취소 상태의 결제만 삭제할 수 있습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.PAYMENT_DELETE_NOT_ALLOWED.getMessage());
 
         assertThat(payment.isDeleted()).isFalse();
     }
@@ -364,11 +368,11 @@ class PaymentServiceTest {
     @DisplayName("MASTER가 아니면 결제를 삭제할 수 없다")
     void deletePayment_nonMaster_fail() {
         given(userFinder.getMasterUserByLoginId(CUSTOMER_LOGIN_ID))
-                .willThrow(new IllegalArgumentException("MASTER만 결제 이력을 삭제할 수 있습니다."));
+                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
 
         assertThatThrownBy(() -> paymentService.deletePayment(PAYMENT_ID, CUSTOMER_LOGIN_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("MASTER만 결제 이력을 삭제할 수 있습니다.");
+                .isInstanceOf(UserDomainException.class)
+                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
 
         verifyNoInteractions(paymentRepository);
     }
@@ -381,8 +385,8 @@ class PaymentServiceTest {
         given(userFinder.getUserByLoginId(OWNER_LOGIN_ID)).willReturn(owner);
 
         assertThatThrownBy(() -> paymentService.searchPayments(null, 0, 10, "desc", OWNER_LOGIN_ID))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("결제 처리 권한이 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN_PAYMENT.getMessage());
 
         verifyNoInteractions(paymentRepository);
     }

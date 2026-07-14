@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -54,15 +56,15 @@ public class Payment extends BaseEntity {
     // PG 연동이 추가되면 READY, FAIL 흐름을 이 생성 정책과 함께 재검토해야 한다.
     public Payment(Order order, User user, PaymentMethod paymentMethod, Integer amount) {
         if (order == null) {
-            throw new IllegalArgumentException("주문 정보는 필수입니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
 
         if (user == null) {
-            throw new IllegalArgumentException("결제 사용자 정보는 필수입니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
 
-        if (amount == null || amount < 0) {
-            throw new IllegalArgumentException("결제 금액은 0 이상이어야 합니다.");
+        if (amount == null || amount <= 0) {
+            throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
 
         this.order = order;
@@ -77,7 +79,7 @@ public class Payment extends BaseEntity {
     // 주문 상태가 취소 가능한지는 PaymentService에서 먼저 검증한다.
     public void cancel(String cancelReason) {
         if (this.paymentStatus != PaymentStatus.SUCCESS) {
-            throw new IllegalArgumentException("결제 성공 상태에서만 취소할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.PAYMENT_CANCEL_NOT_ALLOWED);
         }
 
         this.paymentStatus = PaymentStatus.CANCEL;
