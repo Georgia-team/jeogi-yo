@@ -48,6 +48,14 @@ public class Order extends BaseEntity {
         this.orderStatus = orderStatus;
     }
 
+    public void cancel() {
+        if (this.orderStatus != OrderStatus.ORDER_REQUESTED) {
+            throw new IllegalArgumentException("주문 요청 상태에서만 취소할 수 있습니다.");
+        }
+
+        this.orderStatus = OrderStatus.CANCELLED;
+    }
+
     public Order(UUID userId, UUID storeId, UUID addressId, String roadAddress,
                  String detailAddress, String zipcode, Integer totalPrice, OrderStatus orderStatus) {
         this.userId = userId;
@@ -59,5 +67,6 @@ public class Order extends BaseEntity {
         this.totalPrice = totalPrice;
         this.orderStatus = orderStatus;
 }
+
 
 }
