@@ -21,7 +21,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -48,10 +49,11 @@ public class PaymentController {
     public ResponseEntity<CommonResponse<PaymentCreateResponse>> createPayment(
             @Parameter(description = "주문 ID", example = "66666666-6666-6666-6666-666666666661")
             @PathVariable UUID orderId,
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody PaymentCreateRequest request
     ) {
-        PaymentCreateResponse response = paymentService.createPayment(orderId, authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        PaymentCreateResponse response = paymentService.createPayment(orderId, loginId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CommonResponse.success("결제 생성 성공", response));
@@ -69,9 +71,10 @@ public class PaymentController {
     public ResponseEntity<CommonResponse<PaymentResponse>> getPayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
             @PathVariable UUID paymentId,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
-        PaymentResponse response = paymentService.getPayment(paymentId, authentication.getName());
+        String loginId = userDetails.getUsername();
+        PaymentResponse response = paymentService.getPayment(paymentId, loginId);
         return ResponseEntity.ok(CommonResponse.success("결제 상세 조회 성공", response));
     }
 
@@ -92,10 +95,11 @@ public class PaymentController {
             @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "정렬 방향. asc 또는 desc", example = "desc")
             @RequestParam(defaultValue = "desc") String sort,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
+        String loginId = userDetails.getUsername();
         PageResponse<PaymentSearchResponse> response =
-                paymentService.searchPayments(paymentStatus, page, size, sort, authentication.getName());
+                paymentService.searchPayments(paymentStatus, page, size, sort, loginId);
 
         return ResponseEntity.ok(CommonResponse.success("결제 목록 조회 성공", response));
     }
@@ -113,10 +117,11 @@ public class PaymentController {
     public ResponseEntity<CommonResponse<PaymentCancelResponse>> cancelPayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
             @PathVariable UUID paymentId,
-            @Parameter(hidden = true) Authentication authentication,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody PaymentCancelRequest request
     ) {
-        PaymentCancelResponse response = paymentService.cancelPayment(paymentId, authentication.getName(), request);
+        String loginId = userDetails.getUsername();
+        PaymentCancelResponse response = paymentService.cancelPayment(paymentId, loginId, request);
         return ResponseEntity.ok(CommonResponse.success("결제 취소 성공", response));
     }
 
@@ -133,9 +138,10 @@ public class PaymentController {
     public ResponseEntity<CommonResponse<Void>> deletePayment(
             @Parameter(description = "결제 ID", example = "77777777-7777-7777-7777-777777777771")
             @PathVariable UUID paymentId,
-            @Parameter(hidden = true) Authentication authentication
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     ) {
-        paymentService.deletePayment(paymentId, authentication.getName());
+        String loginId = userDetails.getUsername();
+        paymentService.deletePayment(paymentId, loginId);
         return ResponseEntity.ok(CommonResponse.<Void>success("결제 이력 삭제 성공", null));
     }
 }
