@@ -26,6 +26,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.UUID;
 
@@ -52,18 +54,18 @@ public class ProductServiceImpl implements ProductService {
         User user = userFinder.getOwnerUserByLoginId(loginId);
 
         Store store = storeRepository.findByStoreIdAndIsDeletedFalse(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_STORE));
 
         if (!store.getOwner().getUserId().equals(user.getUserId())) {
-            throw new IllegalArgumentException("본인 가게의 상품만 등록할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PRODUCT);
         }
 
         Category category = categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_CATEGORY));
 
         if (!Boolean.TRUE.equals(request.getUseAiDescription())
                 && (request.getDescription() == null || request.getDescription().isBlank())) {
-            throw new IllegalArgumentException("AI 설명 생성을 사용하지 않으면 상품 설명은 필수입니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
 
         String description = request.getDescription();
@@ -71,7 +73,7 @@ public class ProductServiceImpl implements ProductService {
 
         if (Boolean.TRUE.equals(request.getUseAiDescription())) {
             if (request.getAiPrompt() == null || request.getAiPrompt().isBlank()) {
-                throw new IllegalArgumentException("AI 프롬프트는 필수입니다.");
+                throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
             }
 
             requestText = request.getAiPrompt() + "\n답변을 최대한 간결하게 50자 이하로";
@@ -87,7 +89,8 @@ public class ProductServiceImpl implements ProductService {
                         e.getMessage()
                 );
 
-                throw new IllegalStateException("AI 상품 설명 생성에 실패했습니다.", e);
+                log.error("AI product description generation failed. loginId={}, storeId={}", loginId, storeId, e);
+                throw new BusinessException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
             }
         }
 
@@ -126,7 +129,7 @@ public class ProductServiceImpl implements ProductService {
                 && product.getStore().getOwner().getUserId().equals(user.getUserId());
 
         if (!isMaster && !isOwnerOfStore) {
-            throw new IllegalArgumentException("본인 가게의 상품만 처리할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PRODUCT);
         }
     }
 
@@ -155,11 +158,11 @@ public class ProductServiceImpl implements ProductService {
         User user = userFinder.getUserByLoginId(loginId);
 
         storeRepository.findByStoreIdAndIsDeletedFalse(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_STORE));
 
         if (categoryId != null) {
             categoryRepository.findByCategoryIdAndIsDeletedFalse(categoryId)
-                    .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_CATEGORY));
         }
 
         Pageable pageable = PageUtil.toPageable(page, size, sort);
@@ -184,7 +187,7 @@ public class ProductServiceImpl implements ProductService {
 
         Category category = request.getCategoryId() != null
                 ? categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."))
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_CATEGORY))
                 : null;
 
         product.update(
@@ -218,11 +221,11 @@ public class ProductServiceImpl implements ProductService {
     private Product findProduct(UUID productId) {
 
         Product product = productRepository.findByProductIdAndIsDeletedFalse(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PRODUCT));
 
         // 상품 자체가 isDeleted=false여도, 부모 가게가 isDeleted=true면 상품 수정/삭제/AI 생성 방지
         if (product.getStore().isDeleted()) {
-            throw new IllegalArgumentException("삭제된 가게의 상품은 처리할 수 없습니다.");
+            throw new BusinessException(GlobalErrorCode.ALREADY_DELETED_STORE);
         }
 
         return product;
@@ -238,7 +241,7 @@ public class ProductServiceImpl implements ProductService {
                 && product.getStore().getOwner().getUserId().equals(user.getUserId());
 
         if (!isMaster && !isOwnerOfStore) {
-            throw new IllegalArgumentException("숨김 처리된 상품은 조회할 수 없습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PRODUCT);
         }
     }
 

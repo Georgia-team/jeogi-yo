@@ -22,6 +22,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +45,7 @@ public class StoreServiceImpl implements StoreService {
         User owner = userFinder.getOwnerUserByLoginId(loginId);
 
         Category category = categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_CATEGORY));
 
         Store store = new Store(
                 owner,
@@ -80,7 +82,7 @@ public class StoreServiceImpl implements StoreService {
     ) {
         if (categoryId != null) {
             categoryRepository.findByCategoryIdAndIsDeletedFalse(categoryId)
-                    .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_CATEGORY));
         }
 
         Pageable pageable = PageUtil.toPageable(page, size, sort);
@@ -98,7 +100,7 @@ public class StoreServiceImpl implements StoreService {
 
         Category category = request.getCategoryId() != null
                 ? categoryRepository.findByCategoryIdAndIsDeletedFalse(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("카테고리를 찾을 수 없습니다."))
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_CATEGORY))
                 : null;
 
         store.update(
@@ -161,7 +163,7 @@ public class StoreServiceImpl implements StoreService {
 
     private Store findStore(UUID storeId) {
         return storeRepository.findByStoreIdAndIsDeletedFalse(storeId)
-                .orElseThrow(() -> new IllegalArgumentException("가게를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_STORE));
     }
 
     private void validateOwnerOrMaster(User user, Store store) {
@@ -170,7 +172,7 @@ public class StoreServiceImpl implements StoreService {
                 && store.getOwner().getUserId().equals(user.getUserId());
 
         if (!isMaster && !isOwnerOfStore) {
-            throw new IllegalArgumentException("본인 가게만 처리할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_STORE);
         }
     }
 
