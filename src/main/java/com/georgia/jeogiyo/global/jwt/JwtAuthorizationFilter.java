@@ -1,5 +1,7 @@
 package com.georgia.jeogiyo.global.jwt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.security.UserDetailsServiceImpl;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -50,17 +52,26 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
                     setAuthentication(info.getSubject());
                 } catch (Exception e) {
                     log.error("Authentication Error: {}", e.getMessage());
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    writeUnauthorized(response, "인증에 실패했습니다.");
                     return; // 인증 객체 생성 실패 -> 즉시 종료 (401)
                 }
             } else {
                 log.error("Token Error");
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                writeUnauthorized(response, "유효하지 않은 토큰입니다.");
                 return; // 토큰이 유효하지 않음 -> 즉시 종료 (401)
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    // JSON 응답
+    private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write(
+                new ObjectMapper().writeValueAsString(CommonResponse.fail(message))
+        );
     }
 
     // 인증 처리

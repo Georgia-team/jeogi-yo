@@ -4,6 +4,7 @@ import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
+import com.georgia.jeogiyo.order.service.OrderService;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCancelResponse;
@@ -48,7 +49,7 @@ class PaymentServiceTest {
     @Mock private OrderRepository orderRepository;
     @Mock private UserFinder userFinder;
     @Mock private EntityManager entityManager;
-
+    @Mock private OrderService orderService;
     private PaymentServiceImpl paymentService;
 
     @BeforeEach
@@ -57,7 +58,8 @@ class PaymentServiceTest {
                 paymentRepository,
                 orderRepository,
                 userFinder,
-                entityManager
+                entityManager,
+                orderService
         );
     }
 
@@ -252,23 +254,39 @@ class PaymentServiceTest {
     }
 
     @Test
-    @DisplayName("SUCCESS 결제는 취소할 수 있다")
+    @DisplayName("CUSTOMER는 본인 결제를 취소할 수 있다")
     void cancelPayment_success() {
+        // given: CUSTOMER 본인의 성공 결제와 취소 가능한 주문이 준비되어 있다.
         User customer = DomainTestFixture.customer();
         Payment payment = DomainTestFixture.payment(CUSTOMER_ID, PaymentStatus.SUCCESS);
-        Order order = DomainTestFixture.order(CUSTOMER_ID, OrderStatus.ORDER_REQUESTED);
         PaymentCancelRequest request = DomainTestFixture.paymentCancelRequest("고객 요청으로 인한 주문 취소");
+        Order order = DomainTestFixture.order(CUSTOMER_ID, OrderStatus.ORDER_REQUESTED);
 
         given(userFinder.getUserByLoginId(CUSTOMER_LOGIN_ID)).willReturn(customer);
         given(paymentRepository.findByPaymentIdAndIsDeletedFalse(PAYMENT_ID)).willReturn(Optional.of(payment));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
+        // PaymentService는 주문 취소와 재고 복구를 OrderService에 위임한다.
+        // OrderService는 mock이므로, 주문 상태 변경 효과만 테스트 안에서 재현한다.
+        willAnswer(invocation -> {
+            order.cancel();
+            return null;
+        }).given(orderService).cancelByPayment(ORDER_ID, CUSTOMER_LOGIN_ID);
+
+        // when: CUSTOMER가 결제 취소를 요청한다.
         PaymentCancelResponse response = paymentService.cancelPayment(PAYMENT_ID, CUSTOMER_LOGIN_ID, request);
 
+        // then: 결제는 CANCEL 상태가 되고, 주문 취소 처리는 OrderService로 위임된다.
         assertThat(response.getPaymentId()).isEqualTo(PAYMENT_ID);
         assertThat(response.getPaymentStatus()).isEqualTo(PaymentStatus.CANCEL);
         assertThat(response.getCancelReason()).isEqualTo("고객 요청으로 인한 주문 취소");
-        assertThat(response.getCanceledAt()).isNotNull();
+
+        assertThat(payment.getPaymentStatus()).isEqualTo(PaymentStatus.CANCEL);
+        assertThat(payment.getCanceledAt()).isNotNull();
+        assertThat(payment.getCancelReason()).isEqualTo("고객 요청으로 인한 주문 취소");
+        assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.CANCELLED);
+
+        then(orderService).should().cancelByPayment(ORDER_ID, CUSTOMER_LOGIN_ID);
         verify(entityManager).flush();
     }
 

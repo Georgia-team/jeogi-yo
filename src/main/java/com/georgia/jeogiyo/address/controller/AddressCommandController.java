@@ -1,6 +1,6 @@
 package com.georgia.jeogiyo.address.controller;
 
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +17,7 @@ import com.georgia.jeogiyo.address.dto.response.AddressCreateResponse;
 import com.georgia.jeogiyo.address.dto.response.AddressDeleteResponse;
 import com.georgia.jeogiyo.address.dto.response.AddressUpdateResponse;
 import com.georgia.jeogiyo.address.service.AddressService;
+import com.georgia.jeogiyo.global.response.CommonResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,7 +41,8 @@ public class AddressCommandController {
 		@ApiResponse(responseCode = "403", description = "권한 없음")
 	})
 	@PostMapping("")
-	public ResponseEntity<AddressCreateResponse> addressCreate(
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
+	public CommonResponse<AddressCreateResponse> addressCreate(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressCreateRequest addressCreate) {
 		
@@ -48,7 +50,7 @@ public class AddressCommandController {
 		
 		AddressCreateResponse response = addressService.addressCreate(loginId, addressCreate);
 		
-		return ResponseEntity.ok(response);
+		return CommonResponse.success("주소 등록 성공", response);
 	}
 	
 	@Operation(summary = "주소 수정", description = "유저 본인이 등록한 주소를 수정합니다.")
@@ -59,7 +61,8 @@ public class AddressCommandController {
 		@ApiResponse(responseCode = "404", description = "주소를 찾을 수 없음")
 	})
 	@PatchMapping("/{addressId}")
-	public ResponseEntity<AddressUpdateResponse> addressUpdate(
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
+	public CommonResponse<AddressUpdateResponse> addressUpdate(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressUpdateRequest addressUpdate,
 			@PathVariable String addressId) {
@@ -68,7 +71,7 @@ public class AddressCommandController {
 		
 		AddressUpdateResponse response = addressService.addressUpdate(loginId, addressId, addressUpdate);
 		
-		return ResponseEntity.ok(response);
+		return CommonResponse.success("주소 수정 성공", response);
 	}
 	
 	@Operation(summary = "주소 삭제", description = "유저 본인이 등록한 주소를 삭제합니다.")
@@ -80,7 +83,8 @@ public class AddressCommandController {
 		@ApiResponse(responseCode = "409", description = "마지막 배송지는 삭제할 수 없음")
 	})
 	@DeleteMapping("/{addressId}")
-	public ResponseEntity<AddressDeleteResponse> addressDelete(
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
+	public CommonResponse<AddressDeleteResponse> addressDelete(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
 		
@@ -88,7 +92,7 @@ public class AddressCommandController {
 		
 		AddressDeleteResponse response = addressService.addressDelete(loginId, addressId);
 		
-		return ResponseEntity.ok(response);
+		return CommonResponse.success("주소 삭제 성공", response);
 	}
 	
 }

@@ -2,6 +2,8 @@ package com.georgia.jeogiyo.user.controller;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
@@ -37,14 +40,15 @@ public class UserQueryController {
 		@ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
 	})
 	@GetMapping("/me")
-	public ResponseEntity<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
+	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
+	public CommonResponse<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		
 		User user = userFinderService.getUserByLoginId(userDetails.getUsername());
 		
 		UserInfoResponse response = UserInfoResponse.of(user);
 		
-		return ResponseEntity.ok(response);
+		return CommonResponse.success("내 정보 조회 성공", response);
 	}
 	
 	@Operation(summary = "유저 목록 조회", description = "마스터 권한용 유저 목록 조회")
@@ -54,7 +58,8 @@ public class UserQueryController {
 		@ApiResponse(responseCode = "403", description = "권한 없음")
 	})
 	@GetMapping("")
-	public ResponseEntity<PageResponse<UserInfoResponse>> masterGetUserList(
+	@PreAuthorize("hasAnyRole('MASTER') and #userDetails.username == principal.username")
+	public CommonResponse<PageResponse<UserInfoResponse>> masterGetUserList(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@Valid @ModelAttribute UserSearchRequest userSearchRequest
 	) {
@@ -65,7 +70,7 @@ public class UserQueryController {
 		
 		PageResponse<UserInfoResponse> response = PageResponse.from(userPagenation, x -> x);
 		
-		return ResponseEntity.ok(response);
+		return CommonResponse.success("유저 목록 조회 성공", response);
 	}
 	
 }

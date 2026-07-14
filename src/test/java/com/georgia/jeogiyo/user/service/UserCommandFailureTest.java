@@ -1,8 +1,7 @@
 package com.georgia.jeogiyo.user.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +11,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.category.entity.Category;
+import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.store.entity.Store;
+import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
+import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.entity.Role;
@@ -38,6 +43,12 @@ public class UserCommandFailureTest {
 	
 	@Autowired
 	private UserFinder userFinder;
+
+	@Autowired
+	private CategoryRepository categoryRepository;
+
+	@Autowired
+	private StoreRepository storeRepository;
 	
 	@Autowired
 	private EntityManager em;
@@ -46,13 +57,9 @@ public class UserCommandFailureTest {
 	
 	private User user;
 	
-	private UUID userId;
-	
 	@BeforeEach
 	void setUp() {
 		user = userRepository.save(User.customerCreate(userSignupRequest, passwordEncoder));
-		
-		userId = user.getUserId();
 	}
 	
 	@Test
@@ -104,6 +111,34 @@ public class UserCommandFailureTest {
 	}
 	
 	@Test
+	@DisplayName("service-fail: 회원가입 실패 테스트: MASTER 권한 가입 요청")
+	void failSignupTest_MasterRole() {
+		UserSignupRequest masterSignupRequest = new UserSignupRequest(
+				"master01",
+				"Password01@",
+				"masterNickname",
+				"02-000-0001",
+				"master@email.com"
+		);
+
+		assertThatThrownBy(() -> userCommandService.signup(masterSignupRequest, Role.MASTER))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+	}
+
+	@Test
+	@DisplayName("service-fail: 로그인 실패 테스트: 비밀번호 불일치")
+	void failLoginTest_Password() {
+		UserLoginRequest failLoginRequest = new UserLoginRequest(
+				user.getLoginId(),
+				"WrongPassword01@"
+		);
+
+		assertThatThrownBy(() -> userCommandService.login(failLoginRequest))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_FOUND_USER.getMessage());
+	}
+	@Test
 	@DisplayName("service-fail: 회원 수정 테스트 실패 케이스: 중복 닉네임")
 	void failUpdateTest_Nickname() {
 		UserUpdateRequest failUpdateRequestNickname = new UserUpdateRequest(
@@ -141,6 +176,86 @@ public class UserCommandFailureTest {
 	}
 	
 	
+
+	@Test
+	@DisplayName("service-fail: 회원 탈퇴 실패 테스트: 인증 정보 불일치")
+	void failDeleteTest_CredentialMismatch() {
+		UserDeleteRequest failDeleteRequest = new UserDeleteRequest(
+				user.getEmail(),
+				"WrongPassword01@"
+		);
+
+		assertThatThrownBy(() -> userCommandService.delete(user.getLoginId(), failDeleteRequest))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DELETE_FAILURE.getMessage());
+
+		em.flush();
+		em.clear();
+
+		User updated = userFinder.getUserByLoginId(user.getLoginId());
+
+		assertThat(updated.isDeleted()).isFalse();
+		assertThat(updated.getDeletedAt()).isNull();
+		assertThat(updated.getDeletedBy()).isNull();
+	}
+
+	@Test
+	@DisplayName("service-fail: 권한 조회 실패 테스트: CUSTOMER를 MASTER로 조회")
+	void failGetMasterUserByLoginIdTest_Customer() {
+		assertThatThrownBy(() -> userFinder.getMasterUserByLoginId(user.getLoginId()))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+	}
+
+	@Test
+	@DisplayName("service-fail: 권한 조회 실패 테스트: CUSTOMER를 OWNER로 조회")
+	void failGetOwnerUserByLoginIdTest_Customer() {
+		assertThatThrownBy(() -> userFinder.getOwnerUserByLoginId(user.getLoginId()))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+	}
+	@Test
+	@DisplayName("service-fail: 활성화된 가게가 있는 OWNER 유저 탈퇴 실패 케이스")
+	void failDeleteOwnerUserWithActiveStoreTest() {
+		user.changeRole(Role.OWNER);
+
+		Category category = categoryRepository.save(new Category("OWNER 탈퇴 실패 카테고리"));
+		storeRepository.save(new Store(
+				user,
+				category,
+				"OWNER 탈퇴 실패 가게",
+				"서울시 테스트구 테스트로 10",
+				"02-1234-5678"
+		));
+
+		String loginId = user.getLoginId();
+		String email = user.getEmail();
+		String password = userSignupRequest.getPassword();
+
+		em.flush();
+		em.clear();
+
+		User owner = userFinder.getUserByLoginId(loginId);
+
+		assertThat(owner.getRole()).isEqualTo(Role.OWNER);
+		assertThat(storeRepository.existsByOwner_UserIdAndIsDeletedFalse(owner.getUserId())).isTrue();
+
+		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(email, password);
+
+		assertThatThrownBy(() -> userCommandService.delete(loginId, userDeleteRequest))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DELETE_FAILURE_OPEN_STORES.getMessage());
+
+		em.flush();
+		em.clear();
+
+		User updated = userFinder.getUserByLoginId(loginId);
+
+		assertThat(updated.isDeleted()).isFalse();
+		assertThat(updated.getDeletedAt()).isNull();
+		assertThat(updated.getDeletedBy()).isNull();
+	}
+
 	// TODO: 회원가입 실패 테스트 케이스
 	
 }

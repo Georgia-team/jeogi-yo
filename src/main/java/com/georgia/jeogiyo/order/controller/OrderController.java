@@ -36,7 +36,7 @@ public class OrderController {
     ) {
         OrderCreateResponse response = orderService.createOrder(userDetails.getUsername(), request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new CommonResponse<>(true, "주문이 생성되었습니다.", response));
+                .body(CommonResponse.success("주문이 생성되었습니다.", response));
     }
 
     @GetMapping("/orders/{orderId}")
@@ -45,7 +45,7 @@ public class OrderController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         OrderDetailResponse response = orderService.getOrderDetail(userDetails.getUsername(), orderId);
-        return ResponseEntity.ok(new CommonResponse<>(true, "주문 정보를 조회했습니다.", response));
+        return ResponseEntity.ok(CommonResponse.success( "주문 정보를 조회했습니다.", response));
     }
 
     @GetMapping("/orders")
@@ -58,7 +58,7 @@ public class OrderController {
     ) {
         Pageable pageable = PageUtil.toPageable(page, size, sort);
         PageResponse<OrderSearchResponse> response = orderService.searchOrders(userDetails.getUsername(), orderStatus, pageable);
-        return ResponseEntity.ok(new CommonResponse<>(true, "주문 목록을 조회했습니다.", response));
+        return ResponseEntity.ok(CommonResponse.success( "주문 목록을 조회했습니다.", response));
     }
 
     @GetMapping("/stores/{storeId}/orders")
@@ -73,7 +73,7 @@ public class OrderController {
     ) {
         Pageable pageable = PageUtil.toPageable(page, size, sort);
         PageResponse<OrderStoreSearchResponse> response = orderService.searchOrdersByStore(userDetails.getUsername(), storeId, orderStatus, pageable);
-        return ResponseEntity.ok(new CommonResponse<>(true, "가게 주문 목록을 조회했습니다.", response));
+        return ResponseEntity.ok(CommonResponse.success( "가게 주문 목록을 조회했습니다.", response));
     }
 
     @PatchMapping("/orders/{orderId}/orderstatus")
@@ -84,7 +84,7 @@ public class OrderController {
             @Valid @RequestBody OrderStatusUpdateRequest request
     ) {
         OrderStatusUpdateResponse response = orderService.updateOrderStatus(userDetails.getUsername(), orderId, request);
-        return ResponseEntity.ok(new CommonResponse<>(true, "주문 상태가 변경되었습니다.", response));
+        return ResponseEntity.ok(CommonResponse.success( "주문 상태가 변경되었습니다.", response));
     }
 
     @PatchMapping("/orders/{orderId}/cancel")
@@ -95,6 +95,6 @@ public class OrderController {
             @RequestBody OrderCancelRequest request
     ) {
         OrderCancelResponse response = orderService.cancelOrder(userDetails.getUsername(), orderId, request);
-        return ResponseEntity.ok(new CommonResponse<>(true, "주문이 취소되었습니다.", response));
+        return ResponseEntity.ok(CommonResponse.success("주문이 취소되었습니다.", response));
     }
 }

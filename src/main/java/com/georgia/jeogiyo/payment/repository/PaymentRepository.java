@@ -12,6 +12,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID>, Payment
 
     Optional<Payment> findByPaymentId(UUID paymentId);
 
+    // OrderService에서 주문 취소 시 결제도 같이 취소한다
     Optional<Payment> findByOrder_OrderIdAndIsDeletedFalse(UUID orderId);
 
     boolean existsByOrder_OrderId(UUID orderId);

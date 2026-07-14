@@ -1,11 +1,11 @@
 package com.georgia.jeogiyo.user.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
@@ -33,10 +33,10 @@ public class UserAuthController {
 		@ApiResponse(responseCode = "409", description = "이메일 중복, 닉네임 중복")
 	})
 	@PostMapping("/signup")
-	public ResponseEntity<UserSignupResponse> signupCustomer(@Valid @RequestBody UserSignupRequest userSignup) {
+	public CommonResponse<UserSignupResponse> signupCustomer(@Valid @RequestBody UserSignupRequest userSignup) {
 		UserSignupResponse signupResponse = userCommandService.signup(userSignup, Role.CUSTOMER);
 		
-		return ResponseEntity.ok(signupResponse);
+		return CommonResponse.success("회원가입 성공", signupResponse);
 	}
 	
 	@Operation(summary = "사장 회원가입", description = "OWNER 권한으로 회원가입 합니다.")
@@ -46,10 +46,10 @@ public class UserAuthController {
 		@ApiResponse(responseCode = "409", description = "이메일 중복, 닉네임 중복")
 	})
 	@PostMapping("/signup/owner")
-	public ResponseEntity<UserSignupResponse> signupOwner(@Valid @RequestBody UserSignupRequest ownerSignup) {
+	public CommonResponse<UserSignupResponse> signupOwner(@Valid @RequestBody UserSignupRequest ownerSignup) {
 		UserSignupResponse signupResponse = userCommandService.signup(ownerSignup, Role.OWNER);
 		
-		return ResponseEntity.ok(signupResponse);
+		return CommonResponse.success("회원가입 성공", signupResponse);
 	}
 	
 	/*

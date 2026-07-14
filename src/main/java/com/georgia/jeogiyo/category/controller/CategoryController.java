@@ -4,6 +4,7 @@ import com.georgia.jeogiyo.category.dto.request.CategoryCreateRequest;
 import com.georgia.jeogiyo.category.dto.request.CategoryUpdateRequest;
 import com.georgia.jeogiyo.category.dto.response.*;
 import com.georgia.jeogiyo.category.service.CategoryService;
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.security.UserDetailsImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class CategoryController {
 
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping
-    public CategorySearchResponse searchCategories(
+    public PageResponse<CategorySearchItemResponse> searchCategories(
             @RequestParam(required = false) String keyword, // 키워드 없으면 전체 카테고리 조회
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

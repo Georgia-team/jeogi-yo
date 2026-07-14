@@ -11,6 +11,7 @@ import java.util.UUID;
 */
 public interface ProductRepository extends JpaRepository<Product, UUID>, ProductRepositoryCustom {
     Optional<Product> findByProductIdAndIsDeletedFalse(UUID productId);
+    boolean existsByCategory_CategoryIdAndIsDeletedFalse(UUID categoryId);
 }
 
 

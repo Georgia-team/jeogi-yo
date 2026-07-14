@@ -5,6 +5,7 @@ import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
+import com.georgia.jeogiyo.order.service.OrderService;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCancelRequest;
 import com.georgia.jeogiyo.payment.dto.request.PaymentCreateRequest;
 import com.georgia.jeogiyo.payment.dto.response.PaymentCancelResponse;
@@ -38,6 +39,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final UserFinder userFinder;
     private final EntityManager entityManager;
+    private final OrderService orderService;
 
     @Override
     public PaymentCreateResponse createPayment(UUID orderId, String loginId, PaymentCreateRequest request) {
@@ -115,15 +117,15 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = findPaymentById(paymentId);
         validateReadable(user, payment);
 
-        // 주문 상태 변경은 OrderStatus 정책 확정 후 Order 도메인과 연동한다.
-        // 현재는 결제 상태만 CANCEL로 변경한다.
         Order order = findOrderById(payment.getOrderId());
         validateCancelableOrder(order);
 
         payment.cancel(request.getCancelReason());
+        orderService.cancelByPayment(order.getOrderId(), loginId);
         entityManager.flush();
 
-        log.info("Payment canceled. paymentId={}, canceledBy={}", payment.getPaymentId(), loginId);
+        log.info("Payment canceled. paymentId={}, orderId={}, canceledBy={}",
+                payment.getPaymentId(), order.getOrderId(), loginId);
 
         return PaymentCancelResponse.builder()
                 .paymentId(payment.getPaymentId())

@@ -3,9 +3,11 @@ package com.georgia.jeogiyo.user.repository;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
+import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.user.dto.request.UserSearchRequest;
 import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.entity.QUser;
@@ -56,7 +58,9 @@ public class UserQueryDslRepository {
                 user.isDeleted.eq(false)
         );
 		
-		return PageableExecutionUtils.getPage(search, userSearch.toPageable("createdAt"), countQuery :: fetchOne);
+		Pageable toPagelabe = PageUtil.toPageable(userSearch.getPage(), userSearch.getSize(), userSearch.getSort());
+		
+		return PageableExecutionUtils.getPage(search, toPagelabe, countQuery :: fetchOne);
 	}
 	
 	private BooleanExpression roleEq(UserSearchRequest userSearch) {

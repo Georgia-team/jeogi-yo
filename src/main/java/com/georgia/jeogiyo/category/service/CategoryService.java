@@ -14,12 +14,12 @@ import com.georgia.jeogiyo.category.dto.request.CategoryUpdateRequest;
 import com.georgia.jeogiyo.category.dto.response.*;
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
-import java.util.Optional;
+
+import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.PageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,46 +63,26 @@ public class CategoryService {
 
     // 카테고리 목록 및 검색 API
     @Transactional(readOnly = true)
-    public CategorySearchResponse searchCategories(String keyword, int page, int size, String sort) {
-        // 1. page 검증
-        if (page < 0) {
-            throw new IllegalArgumentException(
-                    "페이지 번호는 0 이상이어야 합니다."
-            );
-        }
-
-        // 2. size 검증
-        if (size != 10 && size != 30 && size != 50) {
-            size = 10;
-        }
-
-        // 3. 정렬 방향 설정
-        Sort.Direction direction;
-
-        if ("asc".equalsIgnoreCase(sort)) {
-            direction = Sort.Direction.ASC;
-        } else {
-            direction = Sort.Direction.DESC;
-        }
-
-        // createdAt 기준으로 정렬
-        Pageable pageable = PageRequest.of(
+    public PageResponse<CategorySearchItemResponse> searchCategories(String keyword, int page, int size, String sort) {
+        // 1. 공통 페이징 정책 적용
+        Pageable pageable = PageUtil.toPageable(
                 page,
                 size,
-                Sort.by(direction, "createdAt")
+                sort
         );
 
-        // 4. 검색어 공백 제거
+        // 2. 검색어 앞뒤 공백 제거
         String trimmedKeyword =
                 keyword == null ? null : keyword.trim();
 
         Page<Category> categoryPage;
 
-        // 5. keyword가 없으면 전체 조회
+        // 3. 검색어가 없으면 전체 조회
         if (trimmedKeyword == null || trimmedKeyword.isBlank()) {
             categoryPage =
                     categoryRepository.findAllByIsDeletedFalse(pageable);
         } else {
+            // 4. 검색어가 있으면 카테고리 이름 검색
             categoryPage =
                     categoryRepository
                             .findAllByIsDeletedFalseAndCategoryNameContainingIgnoreCase(
@@ -111,16 +91,10 @@ public class CategoryService {
                             );
         }
 
-        // 6. Entity 목록을 응답 DTO 목록으로 변환
-        return new CategorySearchResponse(
-                categoryPage.getContent()
-                        .stream()
-                        .map(CategorySearchItemResponse::of)
-                        .toList(),
-                categoryPage.getNumber(),
-                categoryPage.getSize(),
-                categoryPage.getTotalElements(),
-                categoryPage.getTotalPages()
+        // 5. Page<Category>를 응답 DTO로 변환
+        return PageResponse.from(
+                categoryPage,
+                CategorySearchItemResponse::of
         );
     }
 

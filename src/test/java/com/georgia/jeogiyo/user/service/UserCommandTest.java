@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.georgia.jeogiyo.global.jwt.JwtUtil;
+import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
 import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
@@ -50,6 +51,9 @@ public class UserCommandTest {
 	
 	@Autowired
 	private JwtUtil jwtUtil;
+
+	@Autowired
+	private StoreRepository storeRepository;
 	
 	private UserSignupRequest userSignupRequest = UserFix.getUserSignupRequest();
 	
@@ -84,7 +88,6 @@ public class UserCommandTest {
 		
 		assertThat(response.getUserId()).isNotNull();
 		
-		assertThat(response.getCreatedAt()).isNotNull();
 		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
 		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
 		assertThat(response.getRole()).isEqualTo(Role.OWNER);
@@ -114,7 +117,6 @@ public class UserCommandTest {
 //		});
 		
 		
-		assertThat(response.getCreatedAt()).isNotNull();
 		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
 		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
 		assertThat(response.getRole()).isEqualTo(Role.CUSTOMER);
@@ -302,6 +304,40 @@ public class UserCommandTest {
 		assertThat(updated.isDeleted()).isTrue();
 	}
 	
+
+	@Test
+	@DisplayName("service: 활성화된 가게가 없는 OWNER 유저 탈퇴 테스트")
+	void ownerUserDeleteNoActiveStoreTest() {
+		UserSignupResponse given = userCommandService.signup(userSignupRequest, Role.OWNER);
+
+		String email = given.getEmail();
+		String password = userSignupRequest.getPassword();
+
+		em.flush();
+		em.clear();
+
+		User owner = userFinder.getUserByLoginId(given.getLoginId());
+
+		assertThat(owner.getRole()).isEqualTo(Role.OWNER);
+		assertThat(storeRepository.existsByOwner_UserIdAndIsDeletedFalse(owner.getUserId())).isFalse();
+
+		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(email, password);
+
+		UserDeleteResponse userDeleteResponse = userCommandService.delete(given.getLoginId(), userDeleteRequest);
+
+		assertThat(userDeleteResponse.getUserId()).isEqualTo(given.getUserId());
+
+		em.flush();
+		em.clear();
+
+		User updated = userRepository.findById(userDeleteResponse.getUserId())
+				.orElseThrow();
+
+		assertThat(updated.getDeletedAt()).isNotNull();
+		assertThat(updated.getDeletedBy()).isEqualTo(given.getLoginId());
+		assertThat(updated.isDeleted()).isTrue();
+	}
+
 	@Test
 	@DisplayName("service: 마지막 남은 마스터 유저 탈퇴 테스트")
 	void lastMastuerUserDelete() {

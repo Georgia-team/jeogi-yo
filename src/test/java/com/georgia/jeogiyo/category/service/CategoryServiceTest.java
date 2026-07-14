@@ -38,7 +38,7 @@ class CategoryServiceTest {
     @Test
     @DisplayName("service: 카테고리 생성(Create) 테스트")
     void createCategoryTest() {
-        CategoryCreateRequest request = new CategoryCreateRequest("한식");
+        CategoryCreateRequest request = new CategoryCreateRequest("감자튀김1");
 
         CategoryCreateResponse response = categoryService.createCategory(request);
 
@@ -55,9 +55,9 @@ class CategoryServiceTest {
         System.out.println("createdAt = " + savedCategory.getCreatedAt());
 
         assertThat(response.getCategoryId()).isNotNull();
-        assertThat(response.getCategoryName()).isEqualTo("한식");
+        assertThat(response.getCategoryName()).isEqualTo("감자튀김1");
 
-        assertThat(savedCategory.getCategoryName()).isEqualTo("한식");
+        assertThat(savedCategory.getCategoryName()).isEqualTo("감자튀김1");
         assertThat(savedCategory.isDeleted()).isFalse();
         assertThat(savedCategory.getCreatedAt()).isNotNull();
     }
@@ -65,26 +65,26 @@ class CategoryServiceTest {
     @Test
     @DisplayName("service: 카테고리 이름 앞뒤 공백 제거 테스트")
     void createCategoryTrimTest() {
-        CategoryCreateRequest request = new CategoryCreateRequest("  피자  ");
+        CategoryCreateRequest request = new CategoryCreateRequest("  파스타1  ");
 
         CategoryCreateResponse response =
                 categoryService.createCategory(request);
 
         System.out.println("trim() 동작 후의 categoryName = \"" + response.getCategoryName() + "\"");
 
-        assertThat(response.getCategoryName()).isEqualTo("피자");
+        assertThat(response.getCategoryName()).isEqualTo("파스타1");
     }
 
     @Test
     @DisplayName("service: 중복 카테고리 생성 실패 테스트")
     void createDuplicateCategoryTest() {
         // given: 같은 이름의 카테고리를 먼저 생성한다.
-        categoryService.createCategory(new CategoryCreateRequest("피자"));
+        categoryService.createCategory(new CategoryCreateRequest("파스타1"));
 
         // when: 동일한 이름으로 다시 생성하면 예외가 발생한다.
         Throwable throwable = catchThrowable(
                 () -> categoryService.createCategory(
-                        new CategoryCreateRequest("피자")
+                        new CategoryCreateRequest("파스타1")
                 )
         );
 
@@ -105,7 +105,7 @@ class CategoryServiceTest {
     void readCategoryTest() {
         CategoryCreateResponse created =
                 categoryService.createCategory(
-                        new CategoryCreateRequest("치킨")
+                        new CategoryCreateRequest("닭강정1")
                 );
 
         CategoryReadResponse response = categoryService.readResponse(created.getCategoryId());
@@ -116,7 +116,7 @@ class CategoryServiceTest {
         // 근데 사실상 카테고리 read가 의미가 있나 싶다.
         System.out.println("Read 결과: " + response.getCategoryId());
         assertThat(response.getCategoryName())
-                .isEqualTo("치킨");
+                .isEqualTo("닭강정1");
     }
 
     @Test
@@ -136,14 +136,14 @@ class CategoryServiceTest {
     void updateCategoryTest() {
         CategoryCreateResponse created =
                 categoryService.createCategory(
-                        new CategoryCreateRequest("치킨")
+                        new CategoryCreateRequest("닭강정1")
                 );
 
         UUID categoryId = created.getCategoryId();
 
         categoryService.updateCategory(
                 categoryId,
-                new CategoryUpdateRequest("피자")
+                new CategoryUpdateRequest("파스타1")
         );
 
         String categoryName_temp = created.getCategoryName();
@@ -166,7 +166,7 @@ class CategoryServiceTest {
         System.out.println("updatedAt = " + updatedCategory.getUpdatedAt());
 
         assertThat(updatedCategory.getCategoryName())
-                .isEqualTo("피자");
+                .isEqualTo("파스타1");
 
         assertThat(updatedCategory.getUpdatedAt())
                 .isNotNull();
@@ -177,17 +177,17 @@ class CategoryServiceTest {
     void updateDuplicateCategoryTest() {
         CategoryCreateResponse first =
                 categoryService.createCategory(
-                        new CategoryCreateRequest("피자")
+                        new CategoryCreateRequest("파스타1")
                 );
 
         categoryService.createCategory(
-                new CategoryCreateRequest("회")
+                new CategoryCreateRequest("회2")
         );
 
         assertThatThrownBy(
                 () -> categoryService.updateCategory(
                         first.getCategoryId(),
-                        new CategoryUpdateRequest("회")
+                        new CategoryUpdateRequest("회2")
                 )
         )
                 .isInstanceOf(IllegalArgumentException.class)
@@ -199,7 +199,7 @@ class CategoryServiceTest {
     void deleteCategoryTest() {
         CategoryCreateResponse created =
                 categoryService.createCategory(
-                        new CategoryCreateRequest("피자피자")
+                        new CategoryCreateRequest("파스타1파스타1")
                 );
 
         UUID categoryId = created.getCategoryId();
@@ -230,7 +230,7 @@ class CategoryServiceTest {
     void deleteCategoryAgainTest() {
         CategoryCreateResponse created =
                 categoryService.createCategory(
-                        new CategoryCreateRequest("피자")
+                        new CategoryCreateRequest("파스타1")
                 );
 
         UUID categoryId = created.getCategoryId();
@@ -267,20 +267,20 @@ class CategoryServiceTest {
     @DisplayName("service: 여러 카테고리가 DB에 저장되는지 테스트")
     void saveMultipleCategoriesTest() throws InterruptedException {
         categoryService.createCategory(
-                new CategoryCreateRequest("피자")
+                new CategoryCreateRequest("파스타1")
         );
         Thread.sleep(1000);
         categoryService.createCategory(
-                new CategoryCreateRequest("치킨")
+                new CategoryCreateRequest("닭강정1")
         );
         Thread.sleep(2000);
         categoryService.createCategory(
-                new CategoryCreateRequest("햄버거")
+                new CategoryCreateRequest("햄버거2")
         );
         Thread.sleep(3000);
         CategoryCreateResponse created =
                 categoryService.createCategory(
-                        new CategoryCreateRequest("회")
+                        new CategoryCreateRequest("회2")
                 );
         categoryService.deleteCategory(created.getCategoryId(), loginId);
 
@@ -302,6 +302,6 @@ class CategoryServiceTest {
 
         assertThat(categories)
                 .extracting(Category::getCategoryName)
-                .contains("피자", "치킨", "햄버거", "회");
+                .contains("파스타1", "닭강정1", "햄버거2", "회2");
     }
 }

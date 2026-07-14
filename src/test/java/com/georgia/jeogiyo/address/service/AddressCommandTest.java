@@ -61,7 +61,7 @@ public class AddressCommandTest {
 		String loginId = user.getLoginId();
 		
 		AddressCreateRequest request = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101동 1001호",
 				"06234",
 				true
@@ -90,7 +90,7 @@ public class AddressCommandTest {
 		String loginId = user.getLoginId();
 		
 		AddressCreateRequest request = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101동 1001호",
 				"06234",
 				true
@@ -102,7 +102,7 @@ public class AddressCommandTest {
 		em.clear();
 		
 		AddressUpdateRequest updateRequest = new AddressUpdateRequest(
-				"서울특별시 강남구 테헤란로 234",
+				"서울특별시 종로구 종로 1길 234",
 				"102동 1002호",
 				"06234",
 				true
@@ -137,7 +137,7 @@ public class AddressCommandTest {
 		String loginId = user.getLoginId();
 		
 		AddressCreateRequest addressRequest1 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101동 1001호",
 				"06234",
 				true
@@ -149,7 +149,7 @@ public class AddressCommandTest {
 		em.clear();
 		
 		AddressCreateRequest addressRequest2 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 234",
+				"서울특별시 종로구 종로 1길 123",
 				"102동 1002호",
 				"06234",
 				true
@@ -173,7 +173,7 @@ public class AddressCommandTest {
 		String loginId = user.getLoginId();
 		
 		AddressCreateRequest addressCreateReq1 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101동 1001호",
 				"06234",
 				true
@@ -182,7 +182,7 @@ public class AddressCommandTest {
 		UUID address1ID = addressService.addressCreate(loginId, addressCreateReq1).getAddressId();
 		
 		AddressCreateRequest addressCreateReq2 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 234",
+				"서울특별시 종로구 종로 1길 123",
 				"102동 1002호",
 				"06234",
 				true
@@ -191,7 +191,7 @@ public class AddressCommandTest {
 		UUID address2ID = addressService.addressCreate(loginId, addressCreateReq2).getAddressId();
 		
 		AddressCreateRequest addressCreateReq3 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 234",
+				"서울특별시 종로구 종로 1길 123",
 				"102동 1002호",
 				"06234",
 				true
@@ -239,7 +239,7 @@ public class AddressCommandTest {
 		String loginId = user.getLoginId();
 		
 		AddressCreateRequest addressCreateReq1 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 123",
+				"서울특별시 종로구 종로 1길 123",
 				"101동 1001호",
 				"06234",
 				true
@@ -248,7 +248,7 @@ public class AddressCommandTest {
 		UUID address1ID = addressService.addressCreate(loginId, addressCreateReq1).getAddressId();
 		
 		AddressCreateRequest addressCreateReq2 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 234",
+				"서울특별시 종로구 종로 1길 123",
 				"102동 1002호",
 				"06234",
 				true
@@ -257,7 +257,7 @@ public class AddressCommandTest {
 		UUID address2ID = addressService.addressCreate(loginId, addressCreateReq2).getAddressId();
 		
 		AddressCreateRequest addressCreateReq3 = new AddressCreateRequest(
-				"서울특별시 강남구 테헤란로 234",
+				"서울특별시 종로구 종로 1길 123",
 				"102동 1002호",
 				"06234",
 				true
