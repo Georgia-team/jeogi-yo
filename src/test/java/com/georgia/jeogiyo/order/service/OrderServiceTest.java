@@ -155,7 +155,7 @@ class OrderServiceTest {
         Product product = product(store, category, 12000, 30, false);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
@@ -178,7 +178,7 @@ class OrderServiceTest {
     @DisplayName("존재하지 않는 사용자면 예외가 발생한다")
     void createOrder_userNotFound_fail() {
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -191,7 +191,7 @@ class OrderServiceTest {
         User customer = customer();
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
@@ -207,7 +207,7 @@ class OrderServiceTest {
         Store store = store(owner(), category);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
 
         assertThatThrownBy(() -> orderService.createOrder(CUSTOMER_LOGIN_ID, request))
@@ -224,7 +224,7 @@ class OrderServiceTest {
         store.changeStatus(StoreStatus.OPEN);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID)))
                 .willReturn(Optional.empty());
@@ -244,7 +244,7 @@ class OrderServiceTest {
         Address farAddress = address(customer, ADDRESS_ID, "부산시 해운대구 어딘가로 1");
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(farAddress));
 
@@ -265,7 +265,7 @@ class OrderServiceTest {
         Product productFromOtherStore = product(otherStore, category, 12000, 30, false);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(productFromOtherStore));
@@ -286,7 +286,7 @@ class OrderServiceTest {
         Product hiddenProduct = product(store, category, 12000, 30, true);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(hiddenProduct));
@@ -307,7 +307,7 @@ class OrderServiceTest {
         Product lowStockProduct = product(store, category, 12000, 3, false);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 5);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(addressRepository.findByUserAndAddressIdAndIsDeletedFalse(any(User.class), eq(ADDRESS_ID))).willReturn(Optional.of(address));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(lowStockProduct));
@@ -329,7 +329,7 @@ class OrderServiceTest {
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
         given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(product));
@@ -347,7 +347,7 @@ class OrderServiceTest {
         User customer = customer();
         Order othersOrder = order(OTHER_OWNER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(othersOrder));
 
         assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
@@ -365,7 +365,7 @@ class OrderServiceTest {
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
 
-        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
@@ -385,7 +385,7 @@ class OrderServiceTest {
         Store otherStore = otherOwnerStore(otherOwner, category);
         Order order = order(CUSTOMER_ID, OTHER_OWNER_STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
-        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(storeRepository.findById(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
 
@@ -404,7 +404,7 @@ class OrderServiceTest {
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
 
-        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
         given(productRepository.findById(PRODUCT_ID)).willReturn(Optional.of(product));
@@ -418,7 +418,7 @@ class OrderServiceTest {
     @DisplayName("존재하지 않는 주문은 조회할 수 없다")
     void getOrderDetail_orderNotFound_fail() {
         User customer = customer();
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
@@ -429,7 +429,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("존재하지 않는 사용자는 주문을 조회할 수 없다")
     void getOrderDetail_userNotFound_fail() {
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrderDetail(CUSTOMER_LOGIN_ID, ORDER_ID))
                 .isInstanceOf(ResponseStatusException.class)
@@ -447,7 +447,7 @@ class OrderServiceTest {
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
@@ -467,7 +467,7 @@ class OrderServiceTest {
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
-        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(orderRepository.searchOrders(isNull(), eq(Role.MASTER), eq(MASTER_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
@@ -483,7 +483,7 @@ class OrderServiceTest {
         User customer = customer();
         Pageable pageable = PageUtil.toPageable(0, 20, "desc");
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of()));
 
@@ -498,7 +498,7 @@ class OrderServiceTest {
     @DisplayName("존재하지 않는 사용자는 목록을 조회할 수 없다")
     void searchOrders_userNotFound_fail() {
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.searchOrders(CUSTOMER_LOGIN_ID, null, pageable))
                 .isInstanceOf(ResponseStatusException.class)
@@ -516,7 +516,7 @@ class OrderServiceTest {
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
-        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(orderRepository.searchOrdersByStore(eq(STORE_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
@@ -536,7 +536,7 @@ class OrderServiceTest {
         Store otherStore = otherOwnerStore(otherOwner, category);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
-        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(storeRepository.findById(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
 
         assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, OTHER_OWNER_STORE_ID, null, pageable))
@@ -549,7 +549,7 @@ class OrderServiceTest {
     void searchOrdersByStore_storeNotFound_fail() {
         User owner = owner();
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
-        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.searchOrdersByStore(OWNER_LOGIN_ID, STORE_ID, null, pageable))
@@ -566,7 +566,7 @@ class OrderServiceTest {
         Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
-        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
         given(orderRepository.searchOrdersByStore(eq(STORE_ID), isNull(), any(Pageable.class)))
                 .willReturn(new PageImpl<>(List.of(order)));
@@ -590,7 +590,7 @@ class OrderServiceTest {
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.ORDER_ACCEPTED);
 
-        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
 
@@ -608,7 +608,7 @@ class OrderServiceTest {
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.ORDER_REJECTED);
 
-        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         OrderStatusUpdateResponse response = orderService.updateOrderStatus(MASTER_LOGIN_ID, ORDER_ID, request);
@@ -625,7 +625,7 @@ class OrderServiceTest {
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.DELIVERED);
 
-        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(MASTER_LOGIN_ID, ORDER_ID, request))
@@ -645,7 +645,7 @@ class OrderServiceTest {
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.ORDER_ACCEPTED);
 
-        given(userRepository.findByLoginId(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(storeRepository.findByStoreIdAndIsDeletedFalse(OTHER_OWNER_STORE_ID)).willReturn(Optional.of(otherStore));
 
@@ -661,7 +661,7 @@ class OrderServiceTest {
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
         request.setOrderStatus(OrderStatus.ORDER_ACCEPTED);
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
 
         assertThatThrownBy(() -> orderService.updateOrderStatus(CUSTOMER_LOGIN_ID, ORDER_ID, request))
                 .isInstanceOf(ResponseStatusException.class)
@@ -684,7 +684,7 @@ class OrderServiceTest {
         OrderCancelRequest request = new OrderCancelRequest();
         request.setCancelReason("고객 변심");
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));
@@ -706,7 +706,7 @@ class OrderServiceTest {
 
         OrderCancelRequest request = new OrderCancelRequest();
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.cancelOrder(CUSTOMER_LOGIN_ID, ORDER_ID, request))
@@ -723,7 +723,7 @@ class OrderServiceTest {
 
         OrderCancelRequest request = new OrderCancelRequest();
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.cancelOrder(CUSTOMER_LOGIN_ID, ORDER_ID, request))
@@ -739,7 +739,7 @@ class OrderServiceTest {
 
         OrderCancelRequest request = new OrderCancelRequest();
 
-        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(othersOrder));
 
         assertThatThrownBy(() -> orderService.cancelOrder(CUSTOMER_LOGIN_ID, ORDER_ID, request))
@@ -759,7 +759,7 @@ class OrderServiceTest {
 
         OrderCancelRequest request = new OrderCancelRequest();
 
-        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(userRepository.findByLoginIdAndIsDeletedFalse(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
         given(orderItemRepository.findByOrderId(ORDER_ID)).willReturn(List.of(orderItem));
         given(productRepository.findByProductIdAndIsDeletedFalse(PRODUCT_ID)).willReturn(Optional.of(product));

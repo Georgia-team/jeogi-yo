@@ -80,7 +80,7 @@ public class OrderService {
     @Transactional
     public OrderCreateResponse createOrder(String loginId, OrderCreateRequest orderCreateRequest) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
         UUID userId = user.getUserId();
 
@@ -156,7 +156,7 @@ public class OrderService {
 
     public OrderDetailResponse getOrderDetail(String loginId, UUID orderId) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
@@ -215,7 +215,7 @@ public class OrderService {
 
     public PageResponse<OrderSearchResponse> searchOrders(String loginId, OrderStatus orderStatus, Pageable pageable) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         List<UUID> storeIds = null;
@@ -246,7 +246,7 @@ public class OrderService {
 
     public PageResponse<OrderStoreSearchResponse> searchOrdersByStore(String loginId, UUID storeId, OrderStatus orderStatus, Pageable pageable) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         Store store = storeRepository.findById(storeId)
@@ -278,7 +278,7 @@ public class OrderService {
     @Transactional
     public OrderStatusUpdateResponse updateOrderStatus(String loginId, UUID orderId, OrderStatusUpdateRequest request) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         if (user.getRole() != Role.OWNER && user.getRole() != Role.MASTER) {
@@ -318,7 +318,7 @@ public class OrderService {
     @Transactional
     public OrderCancelResponse cancelOrder(String loginId, UUID orderId, OrderCancelRequest request) {
 
-        User user = userRepository.findByLoginId(loginId)
+        User user = userRepository.findByLoginIdAndIsDeletedFalse(loginId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.MASTER) {
