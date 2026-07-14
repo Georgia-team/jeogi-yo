@@ -33,6 +33,6 @@ public class PageUtil {
     }
 
     private static int validateSize(int size) {
-        return (size == 0 || size == 30 || size == 50) ? size : DEFAULT_SIZE;
+        return (size == 10 || size == 30 || size == 50) ? size : DEFAULT_SIZE;
     }
 }
