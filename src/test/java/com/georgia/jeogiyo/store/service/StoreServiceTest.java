@@ -275,4 +275,36 @@ class StoreServiceTest {
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
         assertThat(response.getPage()).isZero();
     }
+
+    @Test
+    @DisplayName("OWNER 탈퇴 검증은 OPEN/CLOSED 상태의 가게만 활성 가게로 본다")
+    void existsActiveStoreByOwnerId_openOrClosed_true() {
+        given(storeRepository.existsByOwner_UserIdAndStoreStatusInAndIsDeletedFalse(
+                OWNER_ID,
+                List.of(StoreStatus.OPEN, StoreStatus.CLOSED)
+        )).willReturn(true);
+
+        boolean result = storeService.existsActiveStoreByOwnerId(OWNER_ID);
+
+        assertThat(result).isTrue();
+
+        then(storeRepository).should()
+                .existsByOwner_UserIdAndStoreStatusInAndIsDeletedFalse(
+                        OWNER_ID,
+                        List.of(StoreStatus.OPEN, StoreStatus.CLOSED)
+                );
+    }
+
+    @Test
+    @DisplayName("OWNER 탈퇴 검증에서 OUT_OF_BUSINESS 상태의 가게는 활성 가게로 보지 않는다")
+    void existsActiveStoreByOwnerId_outOfBusiness_false() {
+        given(storeRepository.existsByOwner_UserIdAndStoreStatusInAndIsDeletedFalse(
+                OWNER_ID,
+                List.of(StoreStatus.OPEN, StoreStatus.CLOSED)
+        )).willReturn(false);
+
+        boolean result = storeService.existsActiveStoreByOwnerId(OWNER_ID);
+
+        assertThat(result).isFalse();
+    }
 }
