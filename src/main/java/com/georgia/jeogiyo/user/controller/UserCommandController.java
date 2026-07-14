@@ -1,6 +1,6 @@
 package com.georgia.jeogiyo.user.controller;
 
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -39,6 +39,7 @@ public class UserCommandController {
 		@ApiResponse(responseCode = "409", description = "이메일 중복, 닉네임 중복")
 	})
 	@PatchMapping("/me")
+	@Secured({"ROLE_CUSTOMER", "ROLE_OWNER", "ROLE_MASTER"})
 	public CommonResponse<UserInfoResponse> updateMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
@@ -60,6 +61,7 @@ public class UserCommandController {
 		@ApiResponse(responseCode = "409", description = "이미 탈퇴한 회원")
 	})
 	@DeleteMapping("/me")
+	@Secured({"ROLE_CUSTOMER", "ROLE_OWNER", "ROLE_MASTER"})
 	public CommonResponse<UserDeleteResponse> deleteMe(
 			@AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserDeleteRequest userDelete
