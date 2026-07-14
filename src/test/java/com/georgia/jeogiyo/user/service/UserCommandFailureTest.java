@@ -16,6 +16,7 @@ import com.georgia.jeogiyo.category.repository.CategoryRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
+import com.georgia.jeogiyo.user.dto.request.UserLoginRequest;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.dto.request.UserUpdateRequest;
 import com.georgia.jeogiyo.user.entity.Role;
@@ -110,6 +111,34 @@ public class UserCommandFailureTest {
 	}
 	
 	@Test
+	@DisplayName("service-fail: 회원가입 실패 테스트: MASTER 권한 가입 요청")
+	void failSignupTest_MasterRole() {
+		UserSignupRequest masterSignupRequest = new UserSignupRequest(
+				"master01",
+				"Password01@",
+				"masterNickname",
+				"02-000-0001",
+				"master@email.com"
+		);
+
+		assertThatThrownBy(() -> userCommandService.signup(masterSignupRequest, Role.MASTER))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+	}
+
+	@Test
+	@DisplayName("service-fail: 로그인 실패 테스트: 비밀번호 불일치")
+	void failLoginTest_Password() {
+		UserLoginRequest failLoginRequest = new UserLoginRequest(
+				user.getLoginId(),
+				"WrongPassword01@"
+		);
+
+		assertThatThrownBy(() -> userCommandService.login(failLoginRequest))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_FOUND_USER.getMessage());
+	}
+	@Test
 	@DisplayName("service-fail: 회원 수정 테스트 실패 케이스: 중복 닉네임")
 	void failUpdateTest_Nickname() {
 		UserUpdateRequest failUpdateRequestNickname = new UserUpdateRequest(
@@ -148,6 +177,43 @@ public class UserCommandFailureTest {
 	
 	
 
+	@Test
+	@DisplayName("service-fail: 회원 탈퇴 실패 테스트: 인증 정보 불일치")
+	void failDeleteTest_CredentialMismatch() {
+		UserDeleteRequest failDeleteRequest = new UserDeleteRequest(
+				user.getEmail(),
+				"WrongPassword01@"
+		);
+
+		assertThatThrownBy(() -> userCommandService.delete(user.getLoginId(), failDeleteRequest))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.DELETE_FAILURE.getMessage());
+
+		em.flush();
+		em.clear();
+
+		User updated = userFinder.getUserByLoginId(user.getLoginId());
+
+		assertThat(updated.isDeleted()).isFalse();
+		assertThat(updated.getDeletedAt()).isNull();
+		assertThat(updated.getDeletedBy()).isNull();
+	}
+
+	@Test
+	@DisplayName("service-fail: 권한 조회 실패 테스트: CUSTOMER를 MASTER로 조회")
+	void failGetMasterUserByLoginIdTest_Customer() {
+		assertThatThrownBy(() -> userFinder.getMasterUserByLoginId(user.getLoginId()))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+	}
+
+	@Test
+	@DisplayName("service-fail: 권한 조회 실패 테스트: CUSTOMER를 OWNER로 조회")
+	void failGetOwnerUserByLoginIdTest_Customer() {
+		assertThatThrownBy(() -> userFinder.getOwnerUserByLoginId(user.getLoginId()))
+		.isInstanceOf(UserDomainException.class)
+		.hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+	}
 	@Test
 	@DisplayName("service-fail: 활성화된 가게가 있는 OWNER 유저 탈퇴 실패 케이스")
 	void failDeleteOwnerUserWithActiveStoreTest() {

@@ -22,6 +22,8 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
 	
 	Page<Address> findByUser(User user, Pageable pageable);
 
+	Page<Address> findByUserAndIsDeletedFalse(User user, Pageable pageable);
+
 	Optional<Address> findByUserAndAddressIdAndIsDeletedFalse(User user, UUID addressId);
 
 	Optional<Address> findByUserAndIsDefaultTrueAndIsDeletedFalse(User user);
