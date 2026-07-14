@@ -17,10 +17,13 @@ import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
+import static org.mockito.ArgumentMatchers.eq;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +33,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
+import com.georgia.jeogiyo.store.entity.QStore;
+import com.georgia.jeogiyo.order.entity.OrderStatus;
+import com.georgia.jeogiyo.order.dto.response.OrderSearchResponse;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
+import static org.mockito.ArgumentMatchers.isNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,6 +71,8 @@ class OrderServiceTest {
     @Mock private OrderItemRepository orderItemRepository;
     @Mock private StoreRepository storeRepository;
     @Mock private UserRepository userRepository;
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private JPAQueryFactory queryFactory;
 
     private OrderService orderService;
 
@@ -66,7 +80,7 @@ class OrderServiceTest {
     void setUp() {
         orderService = new OrderService(
                 orderRepository, addressRepository, productRepository,
-                orderItemRepository, storeRepository, userRepository
+                orderItemRepository, storeRepository, userRepository,queryFactory
         );
     }
 
@@ -408,4 +422,83 @@ class OrderServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("사용자를 찾을 수 없습니다");
     }
+    @Test
+    @DisplayName("CUSTOMER는 본인 주문 목록을 조회할 수 있다")
+    void searchOrders_customer_success() {
+        User customer = customer();
+        Category category = category();
+        Store store = store(owner(), category);
+        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(orderRepository.searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(order)));
+        given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
+
+        OrderSearchResponse response = orderService.searchOrders(CUSTOMER_LOGIN_ID, null, 0, 10, "desc");
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().get(0).getOrderId()).isEqualTo(ORDER_ID);
+        assertThat(response.getContent().get(0).getStoreName()).isEqualTo("테스트 가게");
+    }
+
+    @Test
+    @DisplayName("MASTER는 전체 주문 목록을 조회할 수 있다")
+    void searchOrders_master_success() {
+        User master = master();
+        Category category = category();
+        Store store = store(owner(), category);
+        Order order = order(CUSTOMER_ID, STORE_ID, ADDRESS_ID, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
+
+        given(userRepository.findByLoginId(MASTER_LOGIN_ID)).willReturn(Optional.of(master));
+        given(orderRepository.searchOrders(isNull(), eq(Role.MASTER), eq(MASTER_ID), isNull(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of(order)));
+        given(storeRepository.findById(STORE_ID)).willReturn(Optional.of(store));
+
+        OrderSearchResponse response = orderService.searchOrders(MASTER_LOGIN_ID, null, 0, 10, "desc");
+
+        assertThat(response.getContent()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("orderStatus 필터를 지정하면 그대로 Repository에 전달된다")
+    void searchOrders_withStatusFilter() {
+        User customer = customer();
+
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(orderRepository.searchOrders(eq(OrderStatus.DELIVERED), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of()));
+
+        OrderSearchResponse response = orderService.searchOrders(CUSTOMER_LOGIN_ID, OrderStatus.DELIVERED, 0, 10, "desc");
+
+        assertThat(response.getContent()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("size가 10/30/50이 아니면 기본값 10으로 보정된다")
+    void searchOrders_invalidSize_normalized() {
+        User customer = customer();
+
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
+        given(orderRepository.searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), any(Pageable.class)))
+                .willReturn(new PageImpl<>(List.of()));
+
+        orderService.searchOrders(CUSTOMER_LOGIN_ID, null, 0, 20, "desc");
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        then(orderRepository).should().searchOrders(isNull(), eq(Role.CUSTOMER), eq(CUSTOMER_ID), isNull(), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자는 목록을 조회할 수 없다")
+    void searchOrders_userNotFound_fail() {
+        given(userRepository.findByLoginId(CUSTOMER_LOGIN_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.searchOrders(CUSTOMER_LOGIN_ID, null, 0, 10, "desc"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("사용자를 찾을 수 없습니다");
+    }
+
+
 }

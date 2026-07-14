@@ -18,7 +18,14 @@ import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
-
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.georgia.jeogiyo.store.entity.QStore;
+import com.georgia.jeogiyo.order.dto.response.OrderSearchResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.util.ArrayList;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,8 +43,9 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
+    private final JPAQueryFactory queryFactory;
 
-    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository,ProductRepository productRepository,OrderItemRepository orderItemRepository, StoreRepository storeRepository,UserRepository userRepository) {
+    public OrderService(OrderRepository orderRepository, AddressRepository addressRepository,ProductRepository productRepository,OrderItemRepository orderItemRepository, StoreRepository storeRepository,UserRepository userRepository,JPAQueryFactory queryFactory) {
 
         this.orderRepository = orderRepository;
         this.addressRepository = addressRepository;
@@ -45,6 +53,7 @@ public class OrderService {
         this.orderItemRepository = orderItemRepository;
         this.storeRepository = storeRepository;
         this.userRepository = userRepository;
+        this.queryFactory = queryFactory;
     }
     public Order getOrder(UUID orderId){
         Order order = orderRepository.findByOrderIdAndIsDeletedFalse(orderId).orElseThrow(() -> new RuntimeException("주문을 찾을 수 없습니다"));
@@ -187,6 +196,54 @@ public class OrderService {
             return;
         }
         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다.");
+    }
+
+    public OrderSearchResponse searchOrders(String loginId, OrderStatus orderStatus, int page, int size, String sort) {
+
+        User user = userRepository.findByLoginId(loginId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        int normalizedSize = (size == 10 || size == 30 || size == 50) ? size : 10;
+        int normalizedPage = Math.max(page, 0);
+        Sort sortOption = "asc".equalsIgnoreCase(sort)
+                ? Sort.by("createdAt").ascending()
+                : Sort.by("createdAt").descending();
+        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize, sortOption);
+
+        List<UUID> storeIds = null;
+        if (user.getRole() == Role.OWNER) {
+            storeIds = queryFactory
+                    .select(QStore.store.storeId)
+                    .from(QStore.store)
+                    .where(QStore.store.owner.userId.eq(user.getUserId())
+                            .and(QStore.store.isDeleted.isFalse()))
+                    .fetch();
+        }
+
+        Page<Order> orderPage = orderRepository.searchOrders(orderStatus, user.getRole(), user.getUserId(), storeIds, pageable);
+
+        List<OrderSearchResponse.OrderListItem> items = new ArrayList<>();
+        for (Order order : orderPage.getContent()) {
+            Store store = storeRepository.findById(order.getStoreId()).orElse(null);
+
+            OrderSearchResponse.OrderListItem item = new OrderSearchResponse.OrderListItem();
+            item.setOrderId(order.getOrderId());
+            item.setStoreId(order.getStoreId());
+            item.setStoreName(store != null ? store.getStoreName() : null);
+            item.setOrderStatus(order.getOrderStatus().name());
+            item.setTotalPrice(order.getTotalPrice());
+            item.setCreatedAt(order.getCreatedAt());
+            items.add(item);
+        }
+
+        OrderSearchResponse response = new OrderSearchResponse();
+        response.setContent(items);
+        response.setPage(orderPage.getNumber());
+        response.setSize(orderPage.getSize());
+        response.setTotalElements(orderPage.getTotalElements());
+        response.setTotalPages(orderPage.getTotalPages());
+
+        return response;
     }
 
 }
