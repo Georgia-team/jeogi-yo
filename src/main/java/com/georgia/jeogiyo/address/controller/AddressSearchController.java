@@ -46,11 +46,7 @@ public class AddressSearchController {
 		
 		AddressInfoResponse response = addressFinder.getAddressInfoOne(loginId, addressId);
 		
-		return new CommonResponse<AddressInfoResponse>(
-				true,
-				"주소 조회 성공",
-				response
-		);
+		return CommonResponse.success("주소 조회 성공", response);
 	}
 	
 	@Operation(summary = "주소 목록 조회", description = "주소 목록을 조회합니다.")
@@ -70,11 +66,7 @@ public class AddressSearchController {
 		
 		PageResponse<AddressInfoResponse> response = PageResponse.from(addressPages, x -> x);
 		
-		return new CommonResponse<PageResponse<AddressInfoResponse>>(
-				true,
-				"주소 목록 조회 성공",
-				response
-		);
+		return CommonResponse.success("주소 목록 조회 성공", response);
 	}
 	
 }

@@ -60,7 +60,7 @@ public class AddressFinderService implements AddressFinder {
 	public Page<AddressInfoResponse> getAddressInfoAll(String loginId, Pageable pageable) {
 		User user = userFinder.getUserByLoginId(loginId);
 		
-		Page<Address> address = addressRepository.findByUser(user, pageable);
+		Page<Address> address = addressRepository.findByUserAndIsDeletedFalse(user, pageable);
 		
 		return address.map(AddressInfoResponse::of);
 	}

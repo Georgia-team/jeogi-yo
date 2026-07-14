@@ -45,11 +45,7 @@ public class UserQueryController {
 		
 		UserInfoResponse response = UserInfoResponse.of(user);
 		
-		return new CommonResponse<UserInfoResponse>(
-				true,
-				"내 정보 조회 성공",
-				response
-		);
+		return CommonResponse.success("내 정보 조회 성공", response);
 	}
 	
 	@Operation(summary = "유저 목록 조회", description = "마스터 권한용 유저 목록 조회")
@@ -70,11 +66,7 @@ public class UserQueryController {
 		
 		PageResponse<UserInfoResponse> response = PageResponse.from(userPagenation, x -> x);
 		
-		return new CommonResponse<PageResponse<UserInfoResponse>>(
-				true,
-				"유저 목록 조회 성공",
-				response
-		);
+		return CommonResponse.success("유저 목록 조회 성공", response);
 	}
 	
 }

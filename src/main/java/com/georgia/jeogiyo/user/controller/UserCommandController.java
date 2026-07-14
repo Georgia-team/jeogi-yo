@@ -50,11 +50,7 @@ public class UserCommandController {
 		UserInfoResponse response = userCommandService.update(loginId, userUpdateRequest);
 		
 		// TODO: 공통 응답 객체 추가시 수정
-		return new CommonResponse<UserInfoResponse>(
-				true,
-				"회원 수정 성공",
-				response
-		);
+		return CommonResponse.success("회원 수정 성공", response);
 	}
 	
 	@Operation(summary = "회원 삭제", description = "회원 탈퇴합니다.")
@@ -72,11 +68,7 @@ public class UserCommandController {
 		
 		UserDeleteResponse response = userCommandService.delete(loginId, userDelete);
 		
-		return new CommonResponse<UserDeleteResponse>(
-				true,
-				"회원 탈퇴 성공",
-				response
-		);
+		return CommonResponse.success("회원 탈퇴 성공", response);
 	}
 	
 }
