@@ -98,12 +98,10 @@ public class OrderService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "영업 중이 아닌 가게입니다.");
         }
 
-        Address address = addressRepository.findById(orderCreateRequest.getAddressId())
+        Address address = addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, orderCreateRequest.getAddressId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "배송지를 찾을 수 없습니다."));
 
-        if (!address.getUser().getUserId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인의 배송지가 아닙니다.");
-        }
+
         if (!isServiceableArea(address.getRoadAddress())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "서비스 가능 지역이 아닙니다.");
         }
