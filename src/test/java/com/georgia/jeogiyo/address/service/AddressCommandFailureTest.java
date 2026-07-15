@@ -71,7 +71,7 @@ public class AddressCommandFailureTest {
 
 		assertThatThrownBy(() -> addressService.addressDelete(loginId, addressId.toString()))
 		.isInstanceOf(BusinessException.class)
-		.hasMessage(GlobalErrorCode.ALREADY_DELETED_ADDRESS.getMessage());
+		.hasMessage(GlobalErrorCode.ALREADY_DELETED_LAST_ADDRESS.getMessage());
 
 		em.flush();
 		em.clear();

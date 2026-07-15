@@ -1,6 +1,5 @@
 package com.georgia.jeogiyo.address.dto.response;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.georgia.jeogiyo.address.entity.Address;
@@ -25,8 +24,6 @@ public class AddressUpdateResponse {
 	
 	private final Boolean isDefault;
 	
-	private final LocalDateTime updatedAt;
-	
 	public static AddressUpdateResponse of(Address address) {
 		if(address.getAddressId() == null) {
 			throw new BusinessException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
@@ -37,8 +34,7 @@ public class AddressUpdateResponse {
 				address.getRoadAddress(),
 				address.getDetailAddress(),
 				address.getZipcode(),
-				address.isDefault(),
-				address.getUpdatedAt()
+				address.isDefault()
 		);
 	}
 }
