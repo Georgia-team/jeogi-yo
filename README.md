@@ -27,13 +27,13 @@
 
 ## 팀원 소개
 
-| 이름       | 담당 파트 |
-|----------|---|
-| 차은지 (팀장) | 가게(Store) + 상품(Product) + AI 연동 + 주문/결제 지원 |
-| 진혜림      | 공통 (Spring Security, JWT, BaseEntity, 공통 예외 처리) |
-| 서주성      | 회원(User) + 배송지(Address) |
-| 권순혁      | 주문(Order) + 주문상품(OrderItem) + 결제(Payment) |
-| 서준영      | 카테고리(Category) + 리뷰(Review) |
+| 이름       | 담당 파트                                             |
+|----------|---------------------------------------------------|
+| 차은지 (팀장) | 가게(Store) + 상품(Product) + AI 연동 + 결제(Payment)     |
+| 진혜림      | 공통 (Spring Security, JWT, BaseEntity, CommonResponse, 공통 예외 처리) |
+| 서주성      | 회원(User) + 배송지(Address)                           |
+| 권순혁      | 주문(Order) + 주문상품(OrderItem)                       |
+| 서준영      | 카테고리(Category) + 리뷰(Review)                       |
 
 ---
 
@@ -109,19 +109,9 @@ git clone https://github.com/Georgia-team/jeogi-yo.git
 cd jeogi-yo
 ```
 
-**2. PostgreSQL 데이터베이스 준비**
+**2. 환경 변수 설정**
 
-로컬에 설치된 PostgreSQL에 접속해 데이터베이스를 생성합니다.
-
-```sql
-CREATE DATABASE delivery_db;
-```
-
-* PostgreSQL의 별도의 username, password가 필요합니다.
-
-**3. 환경 변수 설정**
-
-프로젝트 루트에 `.env` 파일을 생성합니다. (`spring.config.import`로 자동 로드됩니다) `SECURITY_JWT_SECRET`과 `GEMINI_API_KEY`를 실제 값으로 채우는 방법은 바로 아래 4번, 5번 단계를 참고하세요.
+프로젝트 경로에 `.env` 파일을 생성합니다. (`spring.config.import`로 자동 로드됩니다) `DB_USERNAME`/`DB_PASSWORD`, `GEMINI_API_KEY`, `SECURITY_JWT_SECRET`을 실제 값으로 채우는 방법은 바로 아래 2-1 ~ 2-3 단계를 참고하세요.
 
 ```env
 DB_USERNAME=postgres
@@ -130,7 +120,17 @@ SECURITY_JWT_SECRET=위에서-생성한-Base64-문자열
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
-**4. GEMINI_API_KEY 발급받기**
+**2-1. PostgreSQL 데이터베이스 준비**
+
+로컬에 설치된 PostgreSQL에 접속해 데이터베이스를 생성합니다.
+
+```sql
+CREATE DATABASE delivery_db;
+```
+* PostgreSQL의 별도의 username, password가 필요합니다.
+> [PostgreSQL 연동 가이드](https://app.notion.com/p/team-georgia-pjt-dtl/PostgreSQL-395a26d65cda8040b426ce6e5b57a4d5)를 참고하실 수 있습니다.
+
+**2-2. GEMINI_API_KEY 발급받기**
 
 1. [Google AI Studio API 키 페이지](https://aistudio.google.com/apikey)에 접속해 Google 계정으로 로그인합니다.
 2. **API 키 만들기(Create API key)** 버튼을 클릭합니다.
@@ -138,7 +138,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 > [Gemini API 키 가이드](https://ai.google.dev/gemini-api/docs/api-key?hl=ko)를 참고하실 수 있습니다.
 
-**5. SECURITY_JWT_SECRET 생성하기**
+**2-3. SECURITY_JWT_SECRET 생성하기**
 
 `JwtUtil`은 `SECURITY_JWT_SECRET` 값을 Base64로 디코딩해 HS256 서명 키로 사용합니다(`Keys.hmacShaKeyFor`). HS256은 최소 256비트(32바이트) 이상의 키가 필요하므로, 임의의 문자열이 아니라 **충분한 길이의 무작위 바이트를 Base64로 인코딩한 값**을 사용해야 합니다. 아래 중 편한 방법으로 생성하세요.
 
@@ -162,7 +162,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 출력된 Base64 문자열을 그대로 복사해 위 `.env`의 `SECURITY_JWT_SECRET` 값으로 사용합니다. (64바이트 기준 예시일 뿐이며, 32바이트 이상이면 가능합니다.)
 
-**6. 애플리케이션 실행**
+**3. 애플리케이션 실행**
 
 ```bash
 ./gradlew bootRun
@@ -443,7 +443,7 @@ sequenceDiagram
 | Language | Java 17 |
 | Database | PostgreSQL 17.10 |
 | ORM | Spring Data JPA / Hibernate, QueryDSL |
-| Security | Spring Security + JWT (jjwt) |
+| Security | Spring Security + JWT |
 | API 문서 | springdoc-openapi (Swagger UI) |
 | API 테스트 | Postman |
 | AI | Google AI Studio — Gemini API (2.5 Flash-Lite) |
@@ -472,7 +472,7 @@ sequenceDiagram
 
 - 페이징: `page` 기본 0, `size`는 10/30/50만 허용(그 외 값은 10), 기본 정렬은 `created_at desc`
 - 삭제는 전부 Soft Delete이며, 삭제 시 서버가 `is_deleted`, `deleted_at`, `deleted_by`를 직접 관리 (요청 바디로 받지 않음)
-- HTTP 상태 코드: `200`(조회/수정) · `201`(생성) · `204`(삭제) · `400`(검증 실패) · `401`(인증 필요) · `403`(권한 없음) · `404`(리소스 없음) · `409`(중복/규칙 위반) · `500`(서버 오류)
+- HTTP 상태 코드: `200`(조회/수정) · `201`(생성) · `400`(검증 실패) · `401`(인증 필요) · `403`(권한 없음) · `404`(리소스 없음) · `409`(중복/규칙 위반) · `500`(서버 오류)
 
 ### 도메인별 엔드포인트 개요
 
