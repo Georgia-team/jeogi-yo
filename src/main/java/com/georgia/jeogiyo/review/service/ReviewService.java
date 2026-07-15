@@ -52,7 +52,7 @@ public class ReviewService {
                 .orElseThrow(() -> new BusinessException(NOT_FOUND_ORDER));
 
         // 2. 해당 주문의 주문자인지 확인
-        if (!order.getUserId().equals(loginUser.getUserId())) {
+        if (!order.getUser().getUserId().equals(loginUser.getUserId())) {
             throw new BusinessException(FORBIDDEN_ORDER);
         }
 
