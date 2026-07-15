@@ -112,10 +112,10 @@ public class OrderService {
                     .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PRODUCT));
 
             if (!product.getStore().getStoreId().equals(store.getStoreId())) {
-                throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
+                throw new BusinessException(GlobalErrorCode.PRODUCT_NOT_IN_STORE);
             }
             if (!product.isOrderable()) {
-                throw new BusinessException(GlobalErrorCode.INSUFFICIENT_STOCK);
+                throw new BusinessException(GlobalErrorCode.PRODUCT_NOT_ORDERABLE);
             }
             product.decreaseStock(item.getQuantity());
 
@@ -305,9 +305,9 @@ public class OrderService {
 
         if (nextStatus == OrderStatus.ORDER_ACCEPTED) {
             Payment payment = paymentRepository.findByOrder_OrderIdAndIsDeletedFalse(orderId)
-                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PAYMENT));
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NO_PAYMENT_FOUND_FOR_ORDER));
             if (payment.getPaymentStatus() != PaymentStatus.SUCCESS) {
-                throw new BusinessException(GlobalErrorCode.NOT_FOUND_PAYMENT);
+                throw new BusinessException(GlobalErrorCode.PAYMENT_NOT_SUCCESS);
             }
         }
 
@@ -340,10 +340,10 @@ public class OrderService {
                 throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
             }
             if (order.getOrderStatus() != OrderStatus.ORDER_REQUESTED) {
-                throw new BusinessException(GlobalErrorCode.ORDER_CANCEL_NOT_ALLOWED);
+                throw new BusinessException(GlobalErrorCode.ORDER_ALREADY_ACCEPTED);
             }
             if (order.getCreatedAt().plusMinutes(5).isBefore(LocalDateTime.now())) {
-                throw new BusinessException(GlobalErrorCode.ORDER_CANCEL_NOT_ALLOWED);
+                throw new BusinessException(GlobalErrorCode.ORDER_CANCEL_TIME_EXPIRED);
             }
         } else {
             if (order.getOrderStatus() == OrderStatus.DELIVERED
