@@ -57,7 +57,9 @@ public class OrderService {
             OrderStatus.ORDER_REQUESTED, Set.of(OrderStatus.ORDER_ACCEPTED, OrderStatus.ORDER_REJECTED),
             OrderStatus.ORDER_ACCEPTED, Set.of(OrderStatus.COOKING_COMPLETED),
             OrderStatus.COOKING_COMPLETED, Set.of(OrderStatus.DELIVERY_PICKED_UP),
-            OrderStatus.DELIVERY_PICKED_UP, Set.of(OrderStatus.DELIVERED)
+            OrderStatus.DELIVERY_PICKED_UP, Set.of(OrderStatus.DELIVERED),
+            OrderStatus.DELIVERED, Set.of(OrderStatus.DELIVERY_COMPLETED),
+            OrderStatus.DELIVERY_COMPLETED, Set.of(OrderStatus.ORDER_COMPLETED)
     );
 
     public OrderService(OrderRepository orderRepository, AddressRepository addressRepository, ProductRepository productRepository,
