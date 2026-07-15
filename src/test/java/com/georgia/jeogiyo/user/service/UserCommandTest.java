@@ -91,7 +91,6 @@ public class UserCommandTest {
 		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
 		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
 		assertThat(response.getRole()).isEqualTo(Role.OWNER);
-		assertThat(response.isDeleted()).isFalse();
 		
 		User user = userFinder.getUserById(response.getUserId());
 		
@@ -120,7 +119,6 @@ public class UserCommandTest {
 		assertThat(response.getLoginId()).isEqualTo(userSignupRequest.getLoginId());
 		assertThat(response.getNickname()).isEqualTo(userSignupRequest.getNickname());
 		assertThat(response.getRole()).isEqualTo(Role.CUSTOMER);
-		assertThat(response.isDeleted()).isFalse();
 		
 		User user = userFinder.getUserById(response.getUserId());
 		

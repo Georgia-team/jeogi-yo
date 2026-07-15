@@ -27,5 +27,7 @@ public class StoreSearchResponse {
 
     private StoreStatus storeStatus;
 
+    private Long reviewCount;
+
     private Double averageRating;
 }

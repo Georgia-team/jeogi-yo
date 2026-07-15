@@ -596,49 +596,13 @@ sequenceDiagram
 
 ### 8. 트러블슈팅
 
-#### 1. 로그인 처리 위치 (Controller vs Filter) 충돌
-
-- **문제**: `UserAuthController`에 `/auth/login` 엔드포인트를 만들어두었는데, 별도로 `JwtAuthenticationFilter`(`UsernamePasswordAuthenticationFilter` 상속)도 같은 경로(`setFilterProcessesUrl("/api/v1/auth/login")`)를 가로채도록 구현되어 있어 로그인 로직이 두 곳에 중복될 뻔했습니다.
-- **원인**: Spring Security의 `UsernamePasswordAuthenticationFilter` 기반 로그인은 필터 체인 단계에서 요청을 가로채 처리하기 때문에, 같은 URL에 컨트롤러 메서드를 둬도 필터가 먼저 요청을 소비해 컨트롤러까지 도달하지 않습니다. 두 구현이 공존하면 "왜 컨트롤러 로그가 안 찍히지?"와 같은 혼란이 생깁니다.
-- **해결**: 로그인 책임을 `JwtAuthenticationFilter` 한 곳으로 확정하고, `UserAuthController`의 `login()` 메서드는 주석 처리해 회원가입(`signup`, `signup/owner`) API만 남겼습니다. 인증/인가처럼 필터 체인이 관여하는 기능은 컨트롤러가 아니라 필터 레벨에서 처리한다는 원칙을 팀 컨벤션으로 정리했습니다.
-
-#### 2. 결제 중복 생성 방지 (애플리케이션 검증 + DB 제약의 이중 방어)
-
-- **문제**: 네트워크 재시도나 더블 클릭으로 같은 주문에 결제 요청이 두 번 들어올 경우, 애플리케이션 로직만 믿으면 동시 요청 상황에서 결제가 중복 생성될 수 있습니다.
-- **원인**: `paymentRepository.existsByOrder_OrderId(orderId)` 같은 애플리케이션 레벨 검증은 요청 사이에 경합 조건(race condition)이 끼어들 여지가 있어 완벽한 방어가 되지 않습니다.
-- **해결**: `PaymentServiceImpl`에서 애플리케이션 레벨로 먼저 중복을 검사하되, DB 스키마의 `p_payment.order_id`에 `UNIQUE` 제약을 함께 걸어 "주문 1건당 결제 1건"을 이중으로 보장했습니다. 애플리케이션 검증은 사용자에게 친절한 409 응답을, DB 제약은 최후의 데이터 정합성 보루 역할을 합니다.
-
-#### 3. 주문 취소 ↔ 결제 취소 상태 동기화
-
-- **문제**: 주문만 취소되고 결제는 `SUCCESS`로 남거나, 반대로 결제만 취소되고 주문 상태는 그대로인 상태 불일치가 발생할 수 있었습니다.
-- **원인**: 주문(`Order`)과 결제(`Payment`)가 서로 다른 애그리거트로 분리되어 있어, 한쪽 상태 변경 로직만 구현하면 다른 쪽이 갱신되지 않습니다.
-- **해결**: `OrderService.cancelOrder()`에서 연결된 결제가 `SUCCESS` 상태면 `payment.cancel()`을 함께 호출하고, 반대로 `PaymentServiceImpl.cancelPayment()`에서도 `orderService.cancelByPayment()`를 호출해 주문 상태를 `CANCELLED`로 맞춥니다. 양방향 진입점 모두에서 상대 도메인의 상태를 갱신하도록 맞춰 어느 쪽에서 취소를 시작해도 정합성이 유지되도록 했습니다.
-
-#### 4. Soft Delete 데이터가 일반 조회에 노출되는 문제
-
-- **문제**: 초기에는 `findById()`만 사용하는 조회 메서드가 있어, 삭제(`is_deleted = true`) 처리된 회원·가게·상품이 일반 조회 API 응답에 그대로 나타났습니다.
-- **원인**: JPA의 기본 `findById()`는 `is_deleted` 컬럼을 알지 못하므로 Soft Delete 여부와 무관하게 데이터를 반환합니다.
-- **해결**: 모든 도메인의 일반 조회·검색·수정·삭제 로직에서 `findByXxxIdAndIsDeletedFalse()` 형태의 파생 쿼리 메서드로 통일하고, QueryDSL 검색 조건에도 `condition.and(entity.isDeleted.isFalse())`를 기본으로 포함시켜 삭제된 데이터가 섞여 나오지 않도록 했습니다.
-
-#### 5. 예외 처리 방식 혼재 (`ResponseStatusException` vs `BusinessException`)
-
-- **문제**: `OrderService`처럼 초기에 작성된 코드는 `ResponseStatusException(HttpStatus.XXX, "메시지")`를 그때그때 던지는 반면, `PaymentServiceImpl`/`AiServiceImpl`은 `BusinessException(GlobalErrorCode.XXX)`를 던지고 `GlobalExceptionHandler`가 이를 `CommonResponse` 형식으로 변환합니다.
-- **원인**: 여러 명이 다른 시점에 도메인을 구현하면서 예외 처리 컨벤션이 먼저 정착하지 못한 상태로 개발이 진행되어, 메시지 문구와 응답 포맷(에러 코드 유무 등)이 도메인마다 조금씩 달라졌습니다.
-- **해결**: 신규/리팩터링 대상 도메인부터 `BusinessException + ErrorCode(GlobalErrorCode) + GlobalExceptionHandler` 조합으로 옮기는 것을 팀 공통 방향으로 정하고, `ResponseStatusException`을 쓰는 기존 코드는 우선순위를 정해 순차적으로 `BusinessException` 기반으로 전환하고 있습니다.
-
-#### 6. AI 응답 실패가 HTTP 에러로 드러나지 않는 문제
-
-- **문제**: Gemini API 호출이 실패해도 `AiServiceImpl.createAiDescription()`이 예외를 밖으로 던지지 않고 `AiHistory.fail(...)`을 저장한 뒤 `200 OK`로 응답해, 클라이언트가 실패를 놓치기 쉬웠습니다.
-- **원인**: 상품 등록/설명 생성 흐름에서 AI 실패로 전체 트랜잭션이 롤백되면 사용자 경험이 나빠지기 때문에, AI 실패는 "요청 자체는 처리되었지만 AI 결과만 실패"로 다루기로 설계했습니다.
-- **해결**: 응답 바디의 `aiStatus` 필드(`SUCCESS`/`FAIL`)로 성공 여부를 판단하도록 API 문서(Swagger)에 명시하고, 실패 시 `errorMessage`를 함께 내려주도록 했습니다. 프런트/클라이언트 개발 가이드에도 "AI 응답은 HTTP 상태 코드가 아니라 `aiStatus`로 분기할 것"을 명시했습니다.
-
-#### 7. QueryDSL Q클래스 인식 실패
-
-- **문제**: 도메인 Entity를 추가한 직후 `QOrder`, `QStore` 같은 Q클래스를 찾지 못해 컴파일 에러가 나는 경우가 있었습니다.
-- **원인**: `build.gradle`에서 QueryDSL Q클래스 생성 경로를 `build/generated/querydsl`로 커스터마이징했는데, IDE가 해당 디렉터리를 Generated Sources Root로 다시 인식하지 못하거나 `./gradlew clean` 이후 재생성을 누락하면 Q클래스가 비어 있는 상태로 남습니다.
-- **해결**: Q클래스 인식 문제가 발생하면 `./gradlew clean compileJava`로 재생성 후 IDE에서 Gradle 프로젝트를 다시 로드하도록 팀에 안내했습니다. `sourceSets.main.java.srcDirs`에 생성 경로를 명시적으로 추가해 둔 것도 이 문제를 줄이기 위한 설정입니다.
-
-#### 8. [@Transactional 적용범위](https://app.notion.com/p/team-georgia-pjt-dtl/Transactional-39ea26d65cda80639ee4e373b002b865)
+| 트러블슈팅 | 문제 | 원인 | 해결                                                                                        |
+|---|---|---|-------------------------------------------------------------------------------------------|
+| 로그인 처리 위치 충돌 | 로그인 API가 Controller와 Security Filter 양쪽에 구현될 수 있는 상황이 발생 | `JwtAuthenticationFilter`가 `/api/v1/auth/login` 요청을 Spring Security 필터 체인에서 먼저 처리하기 때문에 Controller login 메서드까지는 요청이 전달되지 않음 | 로그인 책임을 `JwtAuthenticationFilter`로 통일하고, Controller는 회원가입 API만 담당하도록 정리                   |
+| Soft Delete 데이터 조회 문제 | 삭제 처리된 데이터가 일반 조회/검색 결과에 포함될 수 있음 | JPA 기본 `findById()`는 `is_deleted` 값을 고려하지 않음 | 일반 조회·수정·삭제는 `findBy...AndIsDeletedFalse`를 사용하고, QueryDSL 검색에는 `isDeleted=false` 조건을 기본 적용 |
+| 주문 취소와 결제 취소 상태 불일치 | 주문은 취소됐지만 결제는 성공 상태로 남거나, 결제만 취소되는 문제가 발생 가능 | 주문, 결제, 재고가 각각 다른 엔티티에서 관리되어 한쪽 상태만 변경될 수 있음 | 주문 취소와 결제 취소 로직을 `@Transactional` 안에서 함께 처리해 주문 상태·결제 상태·재고 복구가 하나의 작업 단위로 반영되도록 구현 [@Transactional 적용범위](https://app.notion.com/p/team-georgia-pjt-dtl/Transactional-39ea26d65cda80639ee4e373b002b865)       |
+| 결제 중복 생성 방지 | 같은 주문에 대해 결제가 중복 생성될 수 있음 | 단순 조회 후 저장 방식으로는 동시 요청이나 재시도 상황을 완전히 막기 어려움 | 서비스에서 중복 결제를 먼저 검증하고, DB의 `order_id UNIQUE` 제약으로 한 번 더 막음                                 |
+| 예외 처리 방식 혼재 | 도메인마다 에러 응답 형식과 상태 코드 처리가 달라짐 | `IllegalArgumentException`, `ResponseStatusException`, `BusinessException`이 함께 사용됨 | `BusinessException + GlobalErrorCode + GlobalExceptionHandler` 기준으로 공통 예외 응답 구조를 통일       |
 
 ### 9. 협업 과정에서 정리한 정책
 
@@ -669,27 +633,27 @@ sequenceDiagram
 
 | 구분 | 잘된 점 | 이유 |
 |---|---|---|
-| 기술 구현 | JWT 기반 인증과 `@PreAuthorize` 권한 제어 적용 | 로그인 사용자를 요청 파라미터가 아니라 인증 객체에서 가져오도록 바꾸면서 보안성이 좋아졌고, 역할별 API 접근 제어가 명확해졌다. |
-| 기술 구현 | Soft Delete + Auditing 구조 적용 | 실제 데이터를 삭제하지 않고 `is_deleted`, `deleted_at`, `deleted_by`로 관리해 주문, 결제, 리뷰 같은 운영 이력을 보존할 수 있었다. |
-| 기술 구현 | QueryDSL 기반 검색 구현 | 가게, 상품, 주문, 결제, 리뷰처럼 검색 조건이 여러 개인 API에서 조건을 동적으로 조합할 수 있어 검색 기능 확장성이 좋아졌다. |
-| 기술 구현 | 주문-결제 상태 연동 처리 | 주문 취소와 결제 취소가 따로 움직이면 상태 불일치가 생길 수 있어, 주문 상태와 결제 상태를 함께 맞추도록 설계했다. |
-| 기술 구현 | 공통 응답과 페이지 응답 구조 통일 | `CommonResponse`, `PageResponse`, `PageUtil`을 적용해 API 응답 형태가 도메인마다 달라지는 문제를 줄였다. |
-| 협업 방식 | 도메인별 책임을 나누고 결합 지점을 따로 점검 | User, Store, Product, Order, Payment처럼 담당 도메인은 분리하되, 회원 탈퇴, 주문-결제, 카테고리 삭제처럼 연결되는 부분은 별도 정책으로 정리했다. |
-| 협업 방식 | 정책 결정 사항을 문서화하며 진행 | OWNER 탈퇴 기준, 재결제 허용 여부, Soft Delete 조회 기준 등 애매한 부분을 문서로 정리해 팀원 간 이해 차이를 줄였다. |
-| 협업 방식 | 브랜치 병합 후 컴파일/테스트로 검증 | 각자 구현한 기능을 develop에 병합하면서 `compileJava`, 테스트를 통해 충돌이나 영향 범위를 빠르게 확인했다. |
+| 기술 구현 | JWT 인증 + `@PreAuthorize` 권한 제어 | 인증 객체에서 로그인 사용자를 추출해 보안성과 역할별 접근 제어가 명확해졌다. |
+| 기술 구현 | Soft Delete + Auditing 구조 | `is_deleted`, `deleted_at`, `deleted_by`로 관리해 주문·결제·리뷰 이력을 보존했다. |
+| 기술 구현 | QueryDSL 기반 검색 | 검색 조건이 많은 API에서 조건을 동적으로 조합해 확장성이 좋아졌다. |
+| 기술 구현 | 주문-결제 상태 연동 처리 | 취소가 한쪽만 반영되면 상태 불일치가 생겨, 두 상태를 함께 맞추도록 설계했다. |
+| 기술 구현 | 공통 응답·페이지 응답 구조 통일 | `CommonResponse`, `PageResponse`, `PageUtil`로 응답 형태 차이를 줄였다. |
+| 협업 방식 | 도메인별 책임 분리 + 결합 지점 별도 점검 | 담당 도메인은 나누되, 회원 탈퇴·주문-결제처럼 연결되는 부분은 별도 정책으로 정리했다. |
+| 협업 방식 | 정책 결정 사항 문서화 | OWNER 탈퇴, 재결제, Soft Delete 조회 기준 등을 문서화해 이해 차이를 줄였다. |
+| 협업 방식 | 병합 후 컴파일/테스트로 검증 | `compileJava`와 테스트로 충돌·영향 범위를 빠르게 확인했다. |
 
 ### 협업 간 발생한 문제와 해결 방안
 
 | 문제 | 원인 | 해결 방안 |
 |---|---|---|
-| 로그인 처리 위치가 Controller와 Filter로 나뉠 수 있었음 | Spring Security 로그인 필터가 `/api/v1/auth/login` 요청을 먼저 처리하는 구조를 팀원들이 처음에 명확히 공유하지 못함 | 로그인 책임을 `JwtAuthenticationFilter`로 통일하고, Controller는 회원가입 관련 API만 담당하도록 정리 |
-| `loginId`를 요청 파라미터로 받는 방식의 보안 문제 | 초기 개발 단계에서는 테스트 편의를 위해 `loginId`를 직접 넘겼지만, 실제 서비스에서는 다른 사용자처럼 요청할 위험이 있음 | `@AuthenticationPrincipal`로 로그인 사용자를 추출하도록 변경 |
-| 도메인마다 응답 형식이 달랐음 | 각 담당자가 기능 구현을 먼저 진행하면서 응답 DTO와 페이지 응답 구조가 제각각 생김 | `CommonResponse<T>`, `PageResponse<T>`를 적용해 응답 구조를 통일 |
-| 예외 처리 방식이 섞임 | `IllegalArgumentException`, `ResponseStatusException`, `BusinessException`이 도메인별로 혼재 | 공통 방향을 `BusinessException + GlobalErrorCode + GlobalExceptionHandler`로 정하고 순차적으로 전환 |
-| Soft Delete 데이터가 조회될 가능성 | JPA 기본 `findById()`는 `is_deleted` 여부를 고려하지 않음 | 일반 조회/수정/삭제 대상은 `findBy...AndIsDeletedFalse` 기준으로 변경 |
-| 주문과 결제 상태가 어긋날 수 있음 | 주문 취소와 결제 취소가 서로 다른 도메인에서 처리됨 | 주문 취소 시 결제 취소, 결제 취소 시 주문 취소를 연동해 상태 정합성을 맞춤 |
-| 브랜치 병합 후 테스트 실패 발생 | 여러 브랜치에서 Entity 관계, 예외 처리, 테스트 fixture가 동시에 변경됨 | 병합 순서를 정하고, 컴파일 후 실패 테스트를 담당자별로 나눠 수정 |
-| 도메인 간 정책 기준이 애매했음 | OWNER 탈퇴, 카테고리 삭제, 재결제 허용 여부처럼 한 도메인만 보고 결정하기 어려운 규칙이 있었음 | 정책 후보를 정리한 뒤 팀 논의로 기준을 확정하고 각 도메인에 반영 |
+| 로그인 처리 위치가 Controller/Filter로 나뉠 뻔함 | 로그인 필터가 `/api/v1/auth/login`을 먼저 처리하는 구조를 팀원들이 초기에 공유하지 못함 | 로그인 책임을 `JwtAuthenticationFilter`로 통일, Controller는 회원가입만 담당 |
+| `loginId`를 파라미터로 받는 보안 문제 | 테스트 편의로 `loginId`를 직접 넘겨 다른 사용자처럼 요청할 위험 존재 | `@AuthenticationPrincipal`로 로그인 사용자 추출 |
+| 도메인마다 응답 형식이 다름 | 각자 기능 구현을 먼저 진행해 응답 DTO/페이지 구조가 제각각 생김 | `CommonResponse<T>`, `PageResponse<T>`로 응답 구조 통일 |
+| 예외 처리 방식 혼재 | `IllegalArgumentException`, `ResponseStatusException`, `BusinessException`이 도메인별로 섞임 | `BusinessException + GlobalErrorCode + GlobalExceptionHandler`로 순차 전환 |
+| Soft Delete 데이터 노출 가능성 | 기본 `findById()`는 `is_deleted`를 고려하지 않음 | `findBy...AndIsDeletedFalse` 기준으로 변경 |
+| 주문·결제 상태 불일치 가능성 | 취소 로직이 서로 다른 도메인에서 처리됨 | 주문 취소 ↔ 결제 취소를 연동해 정합성 유지 |
+| 병합 후 테스트 실패 발생 | 여러 브랜치에서 Entity·예외 처리·테스트 fixture가 동시에 변경됨 | 병합 순서를 정하고 실패 테스트를 담당자별로 분담 수정 |
+| 도메인 간 정책 기준 모호 | OWNER 탈퇴, 카테고리 삭제 등 한 도메인만으로 결정하기 어려운 규칙 존재 | 정책 후보를 정리해 팀 논의로 기준 확정 후 반영 |
 
 ---
 
@@ -697,11 +661,11 @@ sequenceDiagram
 
 | 이름 | 소감 |
 |---|---|
-| 진혜림 | 프로젝트에서 공통 기능을 구현하며 Security와 JWT의 인증 흐름을 이해하고, Exception 처리를 통해 다양한 예외 상황과 클라이언트와의 협업 중요성을 배울 수 있었습니다. 또한 기존에는 GitHub Desktop을 주로 사용했지만, 이번 프로젝트에서는 Git 명령어를 중심으로 협업을 진행하면서 브랜치 관리, 병합, 충돌 해결 등 Git의 기본적인 사용법을 익힐 수 있었고, 협업을 통해 코드 구현 능력뿐만 아니라 개발 흐름에 대한 이해와 의사소통 능력까지 함께 성장할 수 있는 의미 있는 경험이었습니다. |
-| 서주성 | Git Merge를 담당하면서 Git 사용법에 더 익숙해졌고 프로젝트 개발을 진행하면서 문서화가 중요하다는 것을 느꼈습니다. 특히 API 명세서를 잘 작성해놓으니까 개발하는 속도가 빨라지고, API 명세서에 맞추어 테스트 코드도 빠르게 작성할 수 있었습니다. |
-| 차은지 | 이번 프로젝트를 진행하면서 단순히 API를 구현하는 것보다 도메인 간 정책을 맞추는 일이 더 중요하다는 것을 느꼈습니다. 인증, 권한, Soft Delete, 주문-결제 상태 연동처럼 여러 기능이 연결될수록 초반 설계와 팀 내 기준 정리가 중요했습니다. Git 병합과 테스트 과정에서 충돌도 있었지만, 함께 정책을 정리하고 개선하면서 협업 경험을 많이 쌓을 수 있었습니다. |
-| 권순혁 | 프로젝트를 통해 요구사항 분석, ERD 설계, API 명세서 작성부터 엔티티·리포지터리·서비스 구현이 되기까지 코드를 작성하여 기능이 완성되기까지의 경험을 통해, 코드를 작성하는 것 못지않게 그 앞뒤로 필요한 설계와 협의, 검증 절차가 이렇게 많다는 것을 느끼게 되었고, 이를 통해 프로젝트를 체계적으로 바라보는 시야를 가지게 되었습니다. |
-| 장준영 | 중간에 합류해서 프로젝트의 follower로 임했다. Git을 본격적으로 써본 것도, 이렇게 회의를 많이 한 것도 처음이다. 훌륭한 팀원들이 많아서 보고 배울 점이 많았다. 제공되는 Annotation과 Spring boot 내장 함수들을 이용해보면서 실무에서는 코드를 재활용하는 경우가 많다는 것도 알았다. 다시 하면 더 잘할 수 있을 것 같다. |
+| 진혜림 | 공통 기능을 구현하며 Security·JWT 인증 흐름과 Exception 처리를 이해하고, 클라이언트와의 협업 중요성을 배웠습니다. GitHub Desktop 대신 Git 명령어로 협업하며 브랜치 관리·병합·충돌 해결을 익혔고, 코드 구현뿐 아니라 개발 흐름 이해와 의사소통 능력까지 함께 성장한 의미 있는 경험이었습니다. |
+| 서주성 | Git Merge를 담당하며 Git 사용법에 익숙해졌고, 문서화의 중요성을 느꼈습니다. API 명세서를 잘 작성해두니 개발 속도가 빨라지고, 명세서에 맞춰 테스트 코드도 빠르게 작성할 수 있었습니다. |
+| 차은지 | API 구현보다 도메인 간 정책을 맞추는 일이 더 중요하다는 것을 느꼈습니다. 인증·권한·Soft Delete·주문-결제 연동처럼 기능이 연결될수록 초반 설계와 팀 기준 정리가 중요했고, 병합·테스트 과정의 충돌을 함께 정리하며 협업 경험을 쌓을 수 있었습니다. |
+| 권순혁 | 요구사항 분석, ERD 설계, API 명세서 작성부터 엔티티·리포지터리·서비스 구현까지 이어지는 경험을 통해, 코드 작성 못지않게 그 앞뒤의 설계·협의·검증 절차가 많다는 것을 느꼈고, 프로젝트를 체계적으로 바라보는 시야를 갖게 되었습니다. |
+| 장준영 | 중간에 합류해 follower로 참여했습니다. Git을 본격적으로 써본 것도, 회의를 이렇게 많이 한 것도 처음이라 배울 점이 많았습니다. Annotation과 Spring Boot 내장 함수를 활용하며 실무에서 코드를 재활용하는 경우가 많다는 것도 알았고, 다시 하면 더 잘할 수 있을 것 같습니다. |
 
 ---
 
