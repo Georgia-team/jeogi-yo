@@ -1,6 +1,9 @@
 package com.georgia.jeogiyo.order.entity;
 
+import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.global.entity.BaseEntity;
+import com.georgia.jeogiyo.store.entity.Store;
+import com.georgia.jeogiyo.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,14 +22,17 @@ public class Order extends BaseEntity {
     @Column(name = "order_id", nullable = false, updatable = false)
     private UUID orderId;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "store_id", nullable = false)
-    private UUID storeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_id", nullable = false)
+    private Store store;
 
-    @Column(name = "address_id", nullable = false)
-    private UUID addressId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id", nullable = false)
+    private Address address;
 
     @Column(name = "road_address", length = 100, nullable = false)
     private String roadAddress;
@@ -44,6 +50,18 @@ public class Order extends BaseEntity {
     @Column(name = "order_status", nullable = false)
     private OrderStatus orderStatus;
 
+    public Order(User user, Store store, Address address, String roadAddress,
+                 String detailAddress, String zipcode, Integer totalPrice, OrderStatus orderStatus) {
+        this.user = user;
+        this.store = store;
+        this.address = address;
+        this.roadAddress = roadAddress;
+        this.detailAddress = detailAddress;
+        this.zipcode = zipcode;
+        this.totalPrice = totalPrice;
+        this.orderStatus = orderStatus;
+    }
+
     public void changeStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
     }
@@ -52,21 +70,18 @@ public class Order extends BaseEntity {
         if (this.orderStatus != OrderStatus.ORDER_REQUESTED) {
             throw new IllegalArgumentException("주문 요청 상태에서만 취소할 수 있습니다.");
         }
-
         this.orderStatus = OrderStatus.CANCELLED;
     }
+    // TODO: Payment 등 다른 도메인 정리 후 삭제 예정 (2026-07-14 임시 추가)
+    public UUID getUserId() {
+        return this.user.getUserId();
+    }
 
-    public Order(UUID userId, UUID storeId, UUID addressId, String roadAddress,
-                 String detailAddress, String zipcode, Integer totalPrice, OrderStatus orderStatus) {
-        this.userId = userId;
-        this.storeId = storeId;
-        this.addressId = addressId;
-        this.roadAddress = roadAddress;
-        this.detailAddress = detailAddress;
-        this.zipcode = zipcode;
-        this.totalPrice = totalPrice;
-        this.orderStatus = orderStatus;
-}
+    public UUID getStoreId() {
+        return this.store.getStoreId();
+    }
 
-
+    public UUID getAddressId() {
+        return this.address.getAddressId();
+    }
 }
