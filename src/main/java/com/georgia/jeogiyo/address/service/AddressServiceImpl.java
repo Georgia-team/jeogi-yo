@@ -93,8 +93,7 @@ public class AddressServiceImpl implements AddressService {
 		
 		if(address.isDefault()) {
 			Address latestAddress = addressFinder.findFirstByUserOrderByCreatedAtDesc(user)
-					.orElseThrow(() -> new BusinessException(GlobalErrorCode.ALREADY_DELETED_ADDRESS));
-					//.orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "기본 배송지 하나만 있는 경우 삭제 처리가 불가합니다."));
+					.orElseThrow(() -> new BusinessException(GlobalErrorCode.ALREADY_DELETED_LAST_ADDRESS));
 			
 			latestAddress.changeDefault();
 		}
