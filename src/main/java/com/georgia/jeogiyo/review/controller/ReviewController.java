@@ -1,13 +1,10 @@
 package com.georgia.jeogiyo.review.controller;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.security.UserDetailsImpl;
 import com.georgia.jeogiyo.review.dto.request.ReviewCreateRequest;
 import com.georgia.jeogiyo.review.dto.request.ReviewUpdateRequest;
-import com.georgia.jeogiyo.review.dto.response.ReviewCreateResponse;
-import com.georgia.jeogiyo.review.dto.response.ReviewDeleteResponse;
-import com.georgia.jeogiyo.review.dto.response.ReviewReadResponse;
-import com.georgia.jeogiyo.review.dto.response.ReviewSearchResponse;
-import com.georgia.jeogiyo.review.dto.response.ReviewUpdateResponse;
+import com.georgia.jeogiyo.review.dto.response.*;
 import com.georgia.jeogiyo.review.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +48,7 @@ public class ReviewController {
     // 가게별 리뷰 검색
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping("/stores/{storeId}/reviews")
-    public ReviewSearchResponse searchReviews(
+    public PageResponse<ReviewSearchItemResponse> searchReviews(
             @PathVariable UUID storeId,
             @RequestParam(required = false) Integer rating,
             @RequestParam(defaultValue = "0") int page,

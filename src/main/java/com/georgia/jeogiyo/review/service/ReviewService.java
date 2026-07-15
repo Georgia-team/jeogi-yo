@@ -1,6 +1,8 @@
 package com.georgia.jeogiyo.review.service;
 
+import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.security.UserDetailsImpl;
+import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.order.entity.Order;
 import com.georgia.jeogiyo.order.entity.OrderStatus;
 import com.georgia.jeogiyo.order.repository.OrderRepository;
@@ -10,20 +12,16 @@ import com.georgia.jeogiyo.review.dto.response.ReviewCreateResponse;
 import com.georgia.jeogiyo.review.dto.response.ReviewDeleteResponse;
 import com.georgia.jeogiyo.review.dto.response.ReviewReadResponse;
 import com.georgia.jeogiyo.review.dto.response.ReviewSearchItemResponse;
-import com.georgia.jeogiyo.review.dto.response.ReviewSearchResponse;
 import com.georgia.jeogiyo.review.dto.response.ReviewUpdateResponse;
 import com.georgia.jeogiyo.review.entity.Review;
 import com.georgia.jeogiyo.review.repository.ReviewRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
-import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -104,9 +102,15 @@ public class ReviewService {
         return ReviewReadResponse.of(review);
     }
 
-    // 가게별 리뷰 검색 Service
+    // 가게별 리뷰 목록 검색 API
     @Transactional(readOnly = true)
-    public ReviewSearchResponse searchReviews(UUID storeId, Integer rating, int page, int size, String sort) {
+    public PageResponse<ReviewSearchItemResponse> searchReviews(
+            UUID storeId,
+            Integer rating,
+            int page,
+            int size,
+            String sort
+    ) {
         // 1. 가게 존재 여부 확인
         storeRepository
                 .findByStoreIdAndIsDeletedFalse(storeId)
@@ -114,60 +118,35 @@ public class ReviewService {
                         "존재하지 않는 가게입니다."
                 ));
 
-        // 2. 평점이 전달되었다면 범위 확인
+        // 2. 평점이 전달되었다면 1~5 범위인지 확인
         if (rating != null && (rating < 1 || rating > 5)) {
             throw new IllegalArgumentException(
                     "평점은 1점부터 5점 사이여야 합니다."
             );
         }
 
-        // 3. 정렬 방향 설정
-        Sort.Direction direction;
+        // 3. 공통 페이징 정책 적용
+        // page, size, sort 값을 검증하고 createdAt 기준 Pageable을 생성한다.
+        Pageable pageable = PageUtil.toPageable(
+                page,
+                size,
+                sort
+        );
 
-        if ("asc".equalsIgnoreCase(sort)) {
-            direction = Sort.Direction.ASC;
-        } else {
-            direction = Sort.Direction.DESC;
-        }
+        // 4. Querydsl을 사용하여 가게별 리뷰 검색
+        // rating이 null이면 전체 평점 리뷰를 조회하고,
+        // rating이 존재하면 해당 평점의 리뷰만 조회한다.
+        Page<Review> reviewPage =
+                reviewRepository.searchReviews(
+                        storeId,
+                        rating,
+                        pageable
+                );
 
-        // 4. 페이지 객체 생성
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, "createdAt"));
-
-        Page<Review> reviewPage;
-
-        // 5. rating이 없으면 가게의 전체 리뷰 조회
-        if (rating == null) {
-            reviewPage = reviewRepository
-                    .findAllByStore_StoreIdAndIsDeletedFalse(
-                            storeId,
-                            pageable
-                    );
-        } else {
-            // 6. rating이 있으면 해당 평점의 리뷰 조회
-            reviewPage = reviewRepository
-                    .findAllByStore_StoreIdAndRatingAndIsDeletedFalse(
-                            storeId,
-                            rating,
-                            pageable
-                    );
-        }
-
-        // 7. Review Entity 목록을 ItemResponse 목록으로 변환
-        List<ReviewSearchItemResponse> reviews = reviewPage
-                .getContent()
-                .stream()
-                .map(ReviewSearchItemResponse::of)
-                .toList();
-
-        // 8. 목록과 페이지 정보를 응답
-        return new ReviewSearchResponse(
-                reviews,
-                reviewPage.getNumber(),
-                reviewPage.getSize(),
-                reviewPage.getTotalElements(),
-                reviewPage.getTotalPages(),
-                reviewPage.isFirst(),
-                reviewPage.isLast()
+        // 5. Page<Review>를 공통 페이지 응답 DTO로 변환
+        return PageResponse.from(
+                reviewPage,
+                ReviewSearchItemResponse::of
         );
     }
 
