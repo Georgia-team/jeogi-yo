@@ -11,11 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.dto.request.AddressUpdateRequest;
 import com.georgia.jeogiyo.address.entity.Address;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
@@ -69,7 +70,8 @@ public class AddressCommandFailureTest {
 		em.clear();
 
 		assertThatThrownBy(() -> addressService.addressDelete(loginId, addressId.toString()))
-		.isInstanceOf(ResponseStatusException.class);
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.ALREADY_DELETED_LAST_ADDRESS.getMessage());
 
 		em.flush();
 		em.clear();
@@ -114,6 +116,7 @@ public class AddressCommandFailureTest {
 		);
 
 		assertThatThrownBy(() -> addressService.addressUpdate(otherLoginId, addressId.toString(), updateRequest))
-		.isInstanceOf(ResponseStatusException.class);
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.NOT_FOUND_ADDRESS.getMessage());
 	}
 }

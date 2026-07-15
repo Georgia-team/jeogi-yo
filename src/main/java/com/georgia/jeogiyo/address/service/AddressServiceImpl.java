@@ -15,6 +15,8 @@ import com.georgia.jeogiyo.address.dto.response.AddressDeleteResponse;
 import com.georgia.jeogiyo.address.dto.response.AddressUpdateResponse;
 import com.georgia.jeogiyo.address.entity.Address;
 import com.georgia.jeogiyo.address.repository.AddressRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinder;
 
@@ -91,7 +93,7 @@ public class AddressServiceImpl implements AddressService {
 		
 		if(address.isDefault()) {
 			Address latestAddress = addressFinder.findFirstByUserOrderByCreatedAtDesc(user)
-					.orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "기본 배송지 하나만 있는 경우 삭제 처리가 불가합니다."));
+					.orElseThrow(() -> new BusinessException(GlobalErrorCode.ALREADY_DELETED_LAST_ADDRESS));
 			
 			latestAddress.changeDefault();
 		}
@@ -106,7 +108,7 @@ public class AddressServiceImpl implements AddressService {
 		String normalizedPrefix = ROAD_ADDRESS_PREFIX.replace(" ", "");
 		
 		if (!normalizedRoadAddress.startsWith(normalizedPrefix)) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
+			throw new BusinessException(GlobalErrorCode.OUT_OF_SERVICE_AREA);
 	  }
 		
 		boolean isAllowedArea = DELIVERY_AREA_ROADS.stream()
@@ -114,8 +116,7 @@ public class AddressServiceImpl implements AddressService {
 				.anyMatch(normalizedRoadAddress::contains);
 		
 		if(!isAllowedArea) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
-			//throw new IllegalArgumentException("배송 가능 지역이 아닙니다. 광화문 인근 지역만 배송이 가능합니다.");
+			throw new BusinessException(GlobalErrorCode.OUT_OF_SERVICE_AREA);
 		}
 	}
 	

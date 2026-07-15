@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.UUID;
 
@@ -86,7 +88,7 @@ public class Store extends BaseEntity {
     // 가게 상태 변경
     public void changeStatus(StoreStatus storeStatus) {
         if (this.storeStatus == StoreStatus.OUT_OF_BUSINESS) {
-            throw new IllegalArgumentException("폐업 상태의 가게는 상태를 변경할 수 없습니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_STORE_STATUS);
         }
 
         this.storeStatus = storeStatus;

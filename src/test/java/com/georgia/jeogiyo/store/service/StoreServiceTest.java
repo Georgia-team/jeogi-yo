@@ -2,6 +2,8 @@ package com.georgia.jeogiyo.store.service;
 
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
@@ -11,10 +13,9 @@ import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.review.repository.ReviewRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
-import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,14 +43,14 @@ import static org.mockito.Mockito.*;
 /**
  * StoreServiceImpl 단위 테스트입니다.
  *
- * Postman으로 전체 API 흐름을 확인하기 전에, 서비스의 핵심 비즈니스 규칙
- * - OWNER만 등록 가능
- * - OWNER 본인 가게 또는 MASTER만 수정/상태변경/삭제 가능
- * - soft delete된 가게는 조회/수정 대상에서 제외
- * 를 검증합니다.
- *
- * TODO JWT 적용 후 loginId 파라미터 대신 인증 사용자 기준으로 테스트를 변경해야 합니다.
- * TODO 공통 예외 처리 적용 후 IllegalArgumentException 검증은 CustomException 검증으로 변경할 수 있습니다.
+ * - 가게 도메인의 핵심 규칙을 DB 없이 검증합니다.
+ * - OWNER만 가게를 등록할 수 있습니다.
+ * - OWNER 본인 가게 또는 MASTER만 수정/상태변경/삭제할 수 있습니다.
+ * - soft delete된 가게는 조회/수정 대상에서 제외되는지 검증합니다.
+ * - OWNER 탈퇴 검증에 사용하는 활성 가게 기준을 검증합니다.
+ * - 공통 예외 처리 적용에 따라 BusinessException과 GlobalErrorCode 기준으로 검증합니다.
+ * - Service 단위 테스트에서는 loginId를 직접 전달해 비즈니스 로직을 검증하고,
+ *   인증 사용자 추출 흐름은 Controller/통합 테스트에서 검증합니다.
  */
 @ExtendWith(MockitoExtension.class)
 class StoreServiceTest {
@@ -64,6 +65,9 @@ class StoreServiceTest {
     private CategoryRepository categoryRepository;
 
     @Mock
+    private ReviewRepository reviewRepository;
+
+    @Mock
     private EntityManager entityManager;
 
     private StoreServiceImpl storeService;
@@ -74,6 +78,7 @@ class StoreServiceTest {
                 storeRepository,
                 userFinder,
                 categoryRepository,
+                reviewRepository,
                 entityManager
         );
     }
@@ -114,12 +119,12 @@ class StoreServiceTest {
         StoreCreateRequest request = DomainTestFixture.storeCreateRequest(CATEGORY_ID);
 
         given(userFinder.getOwnerUserByLoginId(CUSTOMER_LOGIN_ID))
-                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
+                .willThrow(new BusinessException(GlobalErrorCode.FORBIDDEN));
 
         // when & then: OWNER 권한이 아니므로 카테고리 조회나 저장까지 가지 않고 실패한다.
         assertThatThrownBy(() -> storeService.createStore(CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(UserDomainException.class)
-                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 
         verifyNoInteractions(categoryRepository, storeRepository);
     }
@@ -136,8 +141,8 @@ class StoreServiceTest {
 
         // when & then: 잘못된 카테고리로는 가게를 저장하지 않는다.
         assertThatThrownBy(() -> storeService.createStore(OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("카테고리를 찾을 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.NOT_FOUND_CATEGORY.getMessage());
 
         then(storeRepository).should(never()).save(any(Store.class));
     }
@@ -185,8 +190,8 @@ class StoreServiceTest {
                 OWNER_LOGIN_ID,
                 request
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("본인 가게만 처리할 수 있습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN_STORE.getMessage());
 
         verify(entityManager, never()).flush();
     }
@@ -232,9 +237,8 @@ class StoreServiceTest {
 
         // when & then: 폐업 가게는 상태 변경을 다시 허용하지 않는다.
         assertThatThrownBy(() -> storeService.updateStoreStatus(STORE_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("폐업 상태의 가게는 상태를 변경할 수 없습니다.");
-
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.INVALID_STORE_STATUS.getMessage());
         verify(entityManager, never()).flush();
     }
 
@@ -250,8 +254,8 @@ class StoreServiceTest {
 
         // when & then: 삭제된 가게는 없는 가게처럼 처리한다.
         assertThatThrownBy(() -> storeService.updateStore(STORE_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("가게를 찾을 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.NOT_FOUND_STORE.getMessage());
     }
 
     @Test
@@ -306,5 +310,22 @@ class StoreServiceTest {
         boolean result = storeService.existsActiveStoreByOwnerId(OWNER_ID);
 
         assertThat(result).isFalse();
+    }
+
+    @Test
+    @DisplayName("가게 상세 조회는 리뷰 수와 평균 평점을 함께 반환한다")
+    void getStore_reviewSummary_success() {
+        User owner = DomainTestFixture.owner();
+        Category category = DomainTestFixture.category();
+        Store store = DomainTestFixture.store(owner, category);
+
+        given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
+        given(reviewRepository.countByStore_StoreIdAndIsDeletedFalse(STORE_ID)).willReturn(3L);
+        given(reviewRepository.findAverageRatingByStoreId(STORE_ID)).willReturn(4.333333);
+
+        StoreResponse response = storeService.getStore(STORE_ID);
+
+        assertThat(response.getReviewCount()).isEqualTo(3);
+        assertThat(response.getAverageRating()).isEqualTo(4.3);
     }
 }

@@ -13,10 +13,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.georgia.jeogiyo.address.dto.request.AddressCreateRequest;
 import com.georgia.jeogiyo.address.dto.response.AddressInfoResponse;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.user.dto.request.UserSignupRequest;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
@@ -140,7 +141,8 @@ public class AddressSearchTest {
 		em.clear();
 
 		assertThatThrownBy(() -> addressFinder.findByUserAndAddressId(user, address2Id))
-		.isInstanceOf(ResponseStatusException.class);
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.NOT_FOUND_ADDRESS.getMessage());
 
 		assertThat(addressFinder.findByUserAndAddressId(user, address1Id).isDefault()).isTrue();
 	}

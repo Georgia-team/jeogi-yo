@@ -10,6 +10,7 @@ import com.georgia.jeogiyo.category.dto.response.CategoryCreateResponse;
 import com.georgia.jeogiyo.category.dto.response.CategoryReadResponse;
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -96,7 +97,7 @@ class CategoryServiceTest {
 
         // then
         assertThat(throwable)
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("이미 존재하는");
     }
 
@@ -127,7 +128,7 @@ class CategoryServiceTest {
         assertThatThrownBy(
                 () -> categoryService.readResponse(categoryId)
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("존재하지 않는");
     }
 
@@ -190,7 +191,7 @@ class CategoryServiceTest {
                         new CategoryUpdateRequest("회2")
                 )
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("이미 존재하는");
     }
 
@@ -240,7 +241,7 @@ class CategoryServiceTest {
         assertThatThrownBy(
                 () -> categoryService.deleteCategory(categoryId, loginId)
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("이미 삭제된");
     }
 
@@ -259,7 +260,7 @@ class CategoryServiceTest {
         assertThatThrownBy(
                 () -> categoryService.readResponse(categoryId)
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("존재하지 않는");
     }
 

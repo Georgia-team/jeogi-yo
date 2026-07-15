@@ -1,31 +1,33 @@
 package com.georgia.jeogiyo.review.repository;
 
 import com.georgia.jeogiyo.review.entity.Review;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ReviewRepository extends JpaRepository<Review, UUID> {
+/*
+ * 1. JpaRepository가 제공하는 기본 CRUD 기능 사용
+ * 2. 간단한 조건 조회는 Spring Data JPA 메서드 이름 규칙으로 처리
+ * 3. 복잡한 리뷰 검색은 ReviewRepositoryCustom과 연결하여 Querydsl로 처리
+ */
+public interface ReviewRepository extends JpaRepository<Review, UUID>, ReviewRepositoryCustom {
 
-    // 삭제되지 않은 리뷰 상세 조회
+    // 삭제되지 않은 리뷰 조회 (reviewId가 일치하고 isDeleted가 false인 리뷰만 조회)
     Optional<Review> findByReviewIdAndIsDeletedFalse(UUID reviewId);
 
-    // 한 주문에 이미 리뷰가 작성되었는지 확인
+    // 주문에 이미 리뷰가 존재하는지 확인 (삭제되지 않은 리뷰만 존재 여부를 확인)
     boolean existsByOrder_OrderIdAndIsDeletedFalse(UUID orderId);
 
-    // 특정 가게의 전체 리뷰 조회
-    Page<Review> findAllByStore_StoreIdAndIsDeletedFalse(
-            UUID storeId,
-            Pageable pageable
-    );
+    long countByStore_StoreIdAndIsDeletedFalse(UUID storeId);
 
-    // 특정 가게의 평점별 리뷰 조회
-    Page<Review> findAllByStore_StoreIdAndRatingAndIsDeletedFalse(
-            UUID storeId,
-            Integer rating,
-            Pageable pageable
-    );
+    @Query("""
+        select coalesce(avg(r.rating), 0.0)
+        from Review r
+        where r.store.storeId = :storeId
+          and r.isDeleted = false
+        """)
+    Double findAverageRatingByStoreId(@Param("storeId") UUID storeId);
 }

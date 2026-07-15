@@ -26,6 +26,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.UUID;
 
@@ -51,12 +53,12 @@ public class PaymentServiceImpl implements PaymentService {
         validatePayableOrder(order);
 
         if (request.getPaymentMethod() != PaymentMethod.CARD) {
-            throw new IllegalArgumentException("현재 CARD 결제만 지원합니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
 
         // 주문 1건에는 결제 1건만 허용한다. DB에서도 p_payment.order_id unique로 한 번 더 막는다.
         if (paymentRepository.existsByOrder_OrderId(orderId)) {
-            throw new IllegalArgumentException("이미 결제 이력이 존재하는 주문입니다.");
+            throw new BusinessException(GlobalErrorCode.DUPLICATE_PAYMENT);
         }
 
         Payment payment = new Payment(
@@ -142,7 +144,7 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = findPaymentById(paymentId);
 
         if (payment.getPaymentStatus() != PaymentStatus.CANCEL) {
-            throw new IllegalArgumentException("취소 상태의 결제만 삭제할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.PAYMENT_DELETE_NOT_ALLOWED);
         }
 
         payment.softDelete(loginId);
@@ -152,13 +154,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     private Payment findPaymentById(UUID paymentId) {
         return paymentRepository.findByPaymentIdAndIsDeletedFalse(paymentId)
-                .orElseThrow(() -> new IllegalArgumentException("결제 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PAYMENT));
     }
 
     private Payment findPaymentForRead(UUID paymentId, User user) {
         if (user.getRole() == Role.MASTER) {
             return paymentRepository.findByPaymentId(paymentId)
-                    .orElseThrow(() -> new IllegalArgumentException("결제 정보를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PAYMENT));
         }
 
         return findPaymentById(paymentId);
@@ -166,12 +168,12 @@ public class PaymentServiceImpl implements PaymentService {
 
     private Order findOrderById(UUID orderId) {
         return orderRepository.findByOrderIdAndIsDeletedFalse(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_ORDER));
     }
 
     private void validateOrderOwner(Order order, User user) {
         if (!order.getUserId().equals(user.getUserId())) {
-            throw new IllegalArgumentException("본인 주문만 결제할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_ORDER);
         }
     }
 
@@ -179,14 +181,14 @@ public class PaymentServiceImpl implements PaymentService {
     // OrderStatus에 결제 완료/주문 취소 상태가 추가되면 조건을 재검토해야 한다.
     private void validatePayableOrder(Order order) {
         if (order.getOrderStatus() != OrderStatus.ORDER_REQUESTED) {
-            throw new IllegalArgumentException("결제 가능한 주문 상태가 아닙니다.");
+            throw new BusinessException(GlobalErrorCode.INVALID_ORDER_STATUS_TRANSITION);
         }
     }
 
     // 조리/배송이 진행된 주문의 결제 취소를 막기 위한 주문 상태 검증이다.
     private void validateCancelableOrder(Order order) {
         if (order.getOrderStatus() != OrderStatus.ORDER_REQUESTED) {
-            throw new IllegalArgumentException("현재 주문 상태에서는 결제를 취소할 수 없습니다.");
+            throw new BusinessException(GlobalErrorCode.PAYMENT_CANCEL_NOT_ALLOWED);
         }
     }
 
@@ -196,19 +198,19 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         if (user.getRole() != Role.CUSTOMER || !payment.isPaidBy(user.getUserId())) {
-            throw new IllegalArgumentException("본인 결제만 처리할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PAYMENT);
         }
     }
 
     private void validateCustomer(User user) {
         if (user.getRole() != Role.CUSTOMER) {
-            throw new IllegalArgumentException("CUSTOMER만 결제할 수 있습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PAYMENT);
         }
     }
 
     private void validateCustomerOrMaster(User user) {
         if (user.getRole() != Role.CUSTOMER && user.getRole() != Role.MASTER) {
-            throw new IllegalArgumentException("결제 처리 권한이 없습니다.");
+            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PAYMENT);
         }
     }
 

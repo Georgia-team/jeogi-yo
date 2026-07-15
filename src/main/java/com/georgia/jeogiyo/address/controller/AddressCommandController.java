@@ -20,14 +20,17 @@ import com.georgia.jeogiyo.address.service.AddressService;
 import com.georgia.jeogiyo.global.response.CommonResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @Tag(name = "Address", description = "주소 Command API")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/address")
 public class AddressCommandController {
@@ -43,7 +46,7 @@ public class AddressCommandController {
 	@PostMapping("")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<AddressCreateResponse> addressCreate(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressCreateRequest addressCreate) {
 		
 		String loginId = userDetails.getUsername();
@@ -63,7 +66,7 @@ public class AddressCommandController {
 	@PatchMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<AddressUpdateResponse> addressUpdate(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@Valid @RequestBody AddressUpdateRequest addressUpdate,
 			@PathVariable String addressId) {
 		
@@ -85,7 +88,7 @@ public class AddressCommandController {
 	@DeleteMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<AddressDeleteResponse> addressDelete(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
 		
 		String loginId = userDetails.getUsername();

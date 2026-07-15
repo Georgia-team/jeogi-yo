@@ -7,14 +7,14 @@ import com.georgia.jeogiyo.ai.entity.AiHistory;
 import com.georgia.jeogiyo.ai.entity.AiStatus;
 import com.georgia.jeogiyo.ai.repository.AiHistoryRepository;
 import com.georgia.jeogiyo.category.entity.Category;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.product.entity.Product;
 import com.georgia.jeogiyo.product.repository.ProductRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
-import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.service.UserFinder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,11 +40,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 /**
  * AiServiceImpl 단위 테스트입니다.
  *
- * 이 테스트는 실제 Gemini API를 호출하지 않습니다.
- * AiGeminiService를 mock 처리해서 API 비용/쿼터와 네트워크 상태에 영향받지 않고
- * AI 성공/실패 이력 저장, 상품 description 반영, 권한/soft delete 차단만 검증합니다.
+ * - 실제 Gemini API를 호출하지 않고 AiGeminiService를 mock 처리합니다.
+ * - API 비용/쿼터와 네트워크 상태에 영향받지 않고 AI 설명 생성 흐름을 검증합니다.
+ * - AI 성공/실패 이력 저장, 상품 description 반영, 권한 검증, soft delete 차단을 검증합니다.
+ * - MASTER의 AI 이력 상세 조회/검색 권한과 페이지 요청 보정도 검증합니다.
+ * - 공통 예외 처리 적용에 따라 BusinessException과 GlobalErrorCode 기준으로 검증합니다.
  *
- * TODO Gemini 모델명 변경 시 MODEL_NAME 기대값 또는 응답 검증을 함께 수정해야 합니다.
+ * TODO Gemini 모델명 또는 응답 파싱 정책이 변경되면 AiGeminiServiceImpl 테스트를 함께 보완해야 합니다.
  */
 @ExtendWith(MockitoExtension.class)
 class AiServiceTest {
@@ -141,12 +143,12 @@ class AiServiceTest {
                 DomainTestFixture.aiDescriptionRequest("상품 설명을 작성해줘");
 
         given(userFinder.getOwnerUserByLoginId(CUSTOMER_LOGIN_ID))
-                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
+                .willThrow(new BusinessException(GlobalErrorCode.FORBIDDEN));
 
         // when & then: OWNER 권한 검증에서 실패하므로 상품 조회, Gemini 호출, AI 이력 저장까지 진행되지 않는다.
         assertThatThrownBy(() -> aiService.createAiDescription(PRODUCT_ID, CUSTOMER_LOGIN_ID, request))
-                .isInstanceOf(UserDomainException.class)
-                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 
         verifyNoInteractions(productRepository, aiGeminiService, aiHistoryRepository);
     }
@@ -164,8 +166,8 @@ class AiServiceTest {
 
         // when & then: 삭제된 상품은 없는 상품처럼 처리한다.
         assertThatThrownBy(() -> aiService.createAiDescription(PRODUCT_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("상품을 찾을 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.NOT_FOUND_PRODUCT.getMessage());
 
         verifyNoInteractions(aiGeminiService, aiHistoryRepository);
     }
@@ -187,8 +189,8 @@ class AiServiceTest {
 
         // when & then: 부모 가게가 삭제되었으면 AI 설명 생성도 막는다.
         assertThatThrownBy(() -> aiService.createAiDescription(PRODUCT_ID, OWNER_LOGIN_ID, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("삭제된 가게의 상품은 AI 설명을 생성할 수 없습니다.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.ALREADY_DELETED_STORE.getMessage());
 
         verifyNoInteractions(aiGeminiService, aiHistoryRepository);
     }
@@ -250,11 +252,11 @@ class AiServiceTest {
     @DisplayName("MASTER가 아니면 AI 이력을 상세 조회할 수 없다")
     void getAiHistory_nonMaster_fail() {
         given(userFinder.getMasterUserByLoginId(OWNER_LOGIN_ID))
-                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
+                .willThrow(new BusinessException(GlobalErrorCode.FORBIDDEN));
 
         assertThatThrownBy(() -> aiService.getAiHistory(AI_HISTORY_ID, OWNER_LOGIN_ID))
-                .isInstanceOf(UserDomainException.class)
-                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 
         verifyNoInteractions(aiHistoryRepository);
     }
@@ -263,11 +265,11 @@ class AiServiceTest {
     @DisplayName("MASTER가 아니면 AI 이력을 검색할 수 없다")
     void searchAiHistories_nonMaster_fail() {
         given(userFinder.getMasterUserByLoginId(OWNER_LOGIN_ID))
-                .willThrow(new UserDomainException(UserErrorCode.NOT_AUTHORIZATION));
+                .willThrow(new BusinessException(GlobalErrorCode.FORBIDDEN));
 
         assertThatThrownBy(() -> aiService.searchAiHistories(null, null, null, 0, 10, "desc", OWNER_LOGIN_ID))
-                .isInstanceOf(UserDomainException.class)
-                .hasMessage(UserErrorCode.NOT_AUTHORIZATION.getMessage());
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(GlobalErrorCode.FORBIDDEN.getMessage());
 
         verifyNoInteractions(aiHistoryRepository);
     }

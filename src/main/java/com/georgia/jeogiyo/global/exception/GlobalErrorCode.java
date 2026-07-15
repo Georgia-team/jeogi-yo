@@ -30,6 +30,7 @@ public enum GlobalErrorCode implements ErrorCode {
     FORBIDDEN_ADDRESS(HttpStatus.FORBIDDEN, "본인의 배송지가 아닙니다."),
     OUT_OF_SERVICE_AREA(HttpStatus.BAD_REQUEST, "서비스 가능 지역이 아닙니다."),
     ALREADY_DELETED_ADDRESS(HttpStatus.CONFLICT, "이미 삭제된 배송지입니다."),
+    ALREADY_DELETED_LAST_ADDRESS(HttpStatus.CONFLICT, "기본 배송지 하나만 있는 경우 삭제 처리가 불가합니다."),
 
     // 카테고리
     NOT_FOUND_CATEGORY(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."),
@@ -57,6 +58,12 @@ public enum GlobalErrorCode implements ErrorCode {
     INSUFFICIENT_STOCK(HttpStatus.CONFLICT, "상품 재고가 부족합니다."),
     INVALID_ORDER_STATUS_TRANSITION(HttpStatus.CONFLICT, "허용되지 않은 주문 상태 변경입니다."),
     ORDER_CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "주문을 취소할 수 없는 상태입니다."),
+    PRODUCT_NOT_IN_STORE(HttpStatus.BAD_REQUEST, "요청한 가게에 속하지 않은 상품입니다."),
+    PRODUCT_NOT_ORDERABLE(HttpStatus.CONFLICT, "주문할 수 없는 상품입니다."),
+    ORDER_ALREADY_ACCEPTED(HttpStatus.CONFLICT, "이미 수락된 주문은 취소할 수 없습니다."),
+    ORDER_CANCEL_TIME_EXPIRED(HttpStatus.CONFLICT, "주문 후 5분이 지나 취소할 수 없습니다."),
+    NO_PAYMENT_FOUND_FOR_ORDER(HttpStatus.CONFLICT, "결제 이력이 없는 주문입니다."),
+    PAYMENT_NOT_SUCCESS(HttpStatus.CONFLICT, "결제가 완료된 주문만 수락할 수 있습니다."),
 
     // 결제
     NOT_FOUND_PAYMENT(HttpStatus.NOT_FOUND, "존재하지 않는 결제입니다."),
@@ -71,9 +78,14 @@ public enum GlobalErrorCode implements ErrorCode {
     FORBIDDEN_REVIEW(HttpStatus.FORBIDDEN, "작성자 본인만 가능합니다."),
     DUPLICATE_REVIEW(HttpStatus.CONFLICT, "이미 해당 주문에 대한 리뷰가 존재합니다."),
     REVIEW_NOT_ALLOWED(HttpStatus.CONFLICT, "배송 완료된 주문만 리뷰를 작성할 수 있습니다."),
+    INVALID_REVIEW_RATING(HttpStatus.BAD_REQUEST, "평점은 1점부터 5점 사이여야 합니다."),
+    EMPTY_REVIEW_UPDATE(HttpStatus.BAD_REQUEST, "수정할 평점 또는 내용을 입력해 주세요."),
+    ALREADY_DELETED_REVIEW(HttpStatus.CONFLICT, "이미 삭제된 리뷰입니다."),
 
     // AI 이력
     NOT_FOUND_AI_HISTORY(HttpStatus.NOT_FOUND, "존재하지 않는 AI 응답 이력입니다."),
+    AI_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI 상품 설명 생성에 실패했습니다."),
+    EMPTY_AI_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR, "Gemini 응답이 비어 있습니다.")
     ;
 
     private final HttpStatus httpStatus;

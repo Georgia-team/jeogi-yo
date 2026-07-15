@@ -2,7 +2,6 @@ package com.georgia.jeogiyo.user.controller;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,14 +18,17 @@ import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinderService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @Tag(name = "User", description = "회원 Query API")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserQueryController {
@@ -41,14 +43,14 @@ public class UserQueryController {
 	})
 	@GetMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
-	public CommonResponse<UserInfoResponse> getMe(@AuthenticationPrincipal UserDetails userDetails) {
+	public ResponseEntity<CommonResponse<UserInfoResponse>> getMe(@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
 		
 		User user = userFinderService.getUserByLoginId(userDetails.getUsername());
 		
 		UserInfoResponse response = UserInfoResponse.of(user);
 		
-		return CommonResponse.success("내 정보 조회 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("내 정보 조회 성공", response));
 	}
 	
 	@Operation(summary = "유저 목록 조회", description = "마스터 권한용 유저 목록 조회")
@@ -59,8 +61,8 @@ public class UserQueryController {
 	})
 	@GetMapping("")
 	@PreAuthorize("hasAnyRole('MASTER') and #userDetails.username == principal.username")
-	public CommonResponse<PageResponse<UserInfoResponse>> masterGetUserList(
-			@AuthenticationPrincipal UserDetails userDetails,
+	public ResponseEntity<CommonResponse<PageResponse<UserInfoResponse>>> masterGetUserList(
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@Valid @ModelAttribute UserSearchRequest userSearchRequest
 	) {
 		// TODO: 공통 응답 객체 완료되면 반환 타입 바꿀 예정
@@ -70,7 +72,7 @@ public class UserQueryController {
 		
 		PageResponse<UserInfoResponse> response = PageResponse.from(userPagenation, x -> x);
 		
-		return CommonResponse.success("유저 목록 조회 성공", response);
+		return ResponseEntity.ok(CommonResponse.success("유저 목록 조회 성공", response));
 	}
 	
 }
