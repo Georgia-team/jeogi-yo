@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.List;
 
@@ -28,29 +30,38 @@ public class AiGeminiServiceImpl implements AiGeminiService {
         log.info("Gemini request started. model={}, requestLength={}",
                 MODEL_NAME, requestText == null ? 0 : requestText.length());
 
-        RestClient restClient = restClientBuilder.build();
+        try {
+            RestClient restClient = restClientBuilder.build();
 
-        GeminiRequest request = new GeminiRequest(
-                List.of(new Content(
-                        List.of(new Part(requestText))
-                ))
-        );
+            GeminiRequest request = new GeminiRequest(
+                    List.of(new Content(
+                            List.of(new Part(requestText))
+                    ))
+            );
 
-        GeminiResponse response = restClient.post()
-                .uri(GEMINI_API_URL + "?key={key}", apiKey)
-                .body(request)
-                .retrieve()
-                .body(GeminiResponse.class);
+            GeminiResponse response = restClient.post()
+                    .uri(GEMINI_API_URL + "?key={key}", apiKey)
+                    .body(request)
+                    .retrieve()
+                    .body(GeminiResponse.class);
 
-        String text = extractText(response);
+            String text = extractText(response);
 
-        if (text == null || text.isBlank()) {
-            throw new IllegalStateException("Gemini 응답이 비어 있습니다.");
+            if (text == null || text.isBlank()) {
+                throw new BusinessException(GlobalErrorCode.EMPTY_AI_RESPONSE);
+            }
+
+            log.info("Gemini request succeeded. model={}, responseLength={}", MODEL_NAME, text.length());
+
+            return text;
+
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Gemini request failed. model={}", MODEL_NAME, e);
+            throw new BusinessException(GlobalErrorCode.AI_GENERATION_FAILED);
         }
 
-        log.info("Gemini request succeeded. model={}, responseLength={}", MODEL_NAME, text.length());
-
-        return text;
     }
 
     private String extractText(GeminiResponse response) {
