@@ -30,6 +30,7 @@ public enum GlobalErrorCode implements ErrorCode {
     FORBIDDEN_ADDRESS(HttpStatus.FORBIDDEN, "본인의 배송지가 아닙니다."),
     OUT_OF_SERVICE_AREA(HttpStatus.BAD_REQUEST, "서비스 가능 지역이 아닙니다."),
     ALREADY_DELETED_ADDRESS(HttpStatus.CONFLICT, "이미 삭제된 배송지입니다."),
+    ALREADY_DELETED_LAST_ADDRESS(HttpStatus.CONFLICT, "기본 배송지 하나만 있는 경우 삭제 처리가 불가합니다."),
 
     // 카테고리
     NOT_FOUND_CATEGORY(HttpStatus.NOT_FOUND, "존재하지 않는 카테고리입니다."),
