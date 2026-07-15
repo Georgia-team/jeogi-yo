@@ -657,10 +657,11 @@ sequenceDiagram
 
 ## 팀 문서
 
-| 문서      | 비고                                                                                         |
-|---------|--------------------------------------------------------------------------------------------|
+| 문서      | 비고                                                                                                               |
+|---------|------------------------------------------------------------------------------------------------------------------|
 | 팀 노션    | [Project / 음식 주문 관리 시스템](https://app.notion.com/p/team-georgia-pjt-dtl/Project-f75a26d65cda8273b49781ec80167a20) |
-| Swagger | `http://localhost:8080/swagger-ui/index.html`                                              |
+| 팀 회고    | [프로젝트 회고 (Q&A 정리)](https://app.notion.com/p/team-georgia-pjt-dtl/Q-A-391a26d65cda80ec8b36ddc14711c1f2)       |
+| Swagger | `http://localhost:8080/swagger-ui/index.html`                                                                    |
 
 ---
 
