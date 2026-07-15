@@ -99,7 +99,6 @@ public class UserApiTest {
 		.andExpect(jsonPath("$.data.loginId").value(userSignupRequest.getLoginId()))
 		.andExpect(jsonPath("$.data.nickname").value(userSignupRequest.getNickname()))
 		.andExpect(jsonPath("$.data.role").value(Role.CUSTOMER.name()))
-		.andExpect(jsonPath("$.data.deleted").value(false))
 		;
 	}
 	
@@ -131,7 +130,6 @@ public class UserApiTest {
 		.andExpect(jsonPath("$.data.loginId").value(userSignupRequest.getLoginId()))
 		.andExpect(jsonPath("$.data.nickname").value(userSignupRequest.getNickname()))
 		.andExpect(jsonPath("$.data.role").value(Role.OWNER.name()))
-		.andExpect(jsonPath("$.data.deleted").value(false))
 		;
 	}
 	

@@ -23,16 +23,13 @@ public class UserSignupResponse {
 	
 	private final Role role;
 	
-	private final boolean isDeleted;
-	
 	public static UserSignupResponse of(User user) {
 		return new UserSignupResponse(
 				user.getUserId(),
 				user.getEmail(),
 				user.getLoginId(),
 				user.getNickname(),
-				user.getRole(),
-				user.isDeleted()
+				user.getRole()
 		);
 	}
 	
