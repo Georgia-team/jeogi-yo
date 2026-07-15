@@ -66,35 +66,23 @@
 
 ## 서비스 구성 및 실행 방법
 
-### 시스템 아키텍처
-
-```mermaid
-graph TD
-    subgraph Client["클라이언트"]
-        WEB["웹 브라우저\n(Swagger / Postman)"]
-    end
-
-    subgraph AWS["AWS EC2 (Ubuntu)"]
-        subgraph Compose["Docker Compose"]
-            APP["Spring Boot\n(REST API + Security/JWT + Swagger)"]
-            DB["PostgreSQL 17\n(p_user / p_store / p_order 등)"]
-        end
-    end
-
-    subgraph AI["Google AI Studio"]
-        GEMINI["Gemini API\n(2.5 Flash-Lite)"]
-    end
-
-    WEB -->|HTTPS 443| APP
-    APP -->|JDBC / TCP 5432| DB
-    APP -->|HTTPS 443| GEMINI
-```
-
-### 배포 흐름 (CI/CD)
+### 배포 흐름 (CI/CD → AWS EC2)
 
 ```
 1. git push → 2. Docker build → 3. Docker push(Docker Hub) → 4. Docker pull(EC2) → 5. docker compose up
 ```
+
+```bash
+# 1. 로컬/CI에서 이미지 빌드 및 푸시
+docker build -t <dockerhub-id>/jeogi-yo:latest .
+docker push <dockerhub-id>/jeogi-yo:latest
+
+# 2. EC2(Ubuntu)에서 이미지 pull 후 기동
+docker pull <dockerhub-id>/jeogi-yo:latest
+docker compose up -d
+```
+
+EC2 위에서 Docker Compose가 Spring Boot 컨테이너와 PostgreSQL 컨테이너를 함께 기동하며, 애플리케이션 로그(Spring Boot Log)와 서버 상태(CPU/메모리/디스크)를 통해 운영 상태를 모니터링합니다.
 
 | 구분 | 프로토콜 | 포트 | 설명 |
 |---|:---:|:---:|---|
@@ -183,20 +171,6 @@ GEMINI_API_KEY=your_gemini_api_key
 서버 기동 후 Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
 > `src/main/resources/application.yml`은 기본적으로 `jdbc:postgresql://localhost:5432/delivery_db`를 바라보도록 설정되어 있으며, `spring.jpa.hibernate.ddl-auto=create`로 기동 시 테이블이 자동 생성됩니다.
-
-### Docker 기반 운영 배포 (AWS EC2)
-
-```bash
-# 1. 로컬/CI에서 이미지 빌드 및 푸시
-docker build -t <dockerhub-id>/jeogi-yo:latest .
-docker push <dockerhub-id>/jeogi-yo:latest
-
-# 2. EC2(Ubuntu)에서 이미지 pull 후 기동
-docker pull <dockerhub-id>/jeogi-yo:latest
-docker compose up -d
-```
-
-EC2 위에서 Docker Compose가 Spring Boot 컨테이너와 PostgreSQL 컨테이너를 함께 기동하며, 애플리케이션 로그(Spring Boot Log)와 서버 상태(CPU/메모리/디스크)를 통해 운영 상태를 모니터링합니다.
 
 ---
 
