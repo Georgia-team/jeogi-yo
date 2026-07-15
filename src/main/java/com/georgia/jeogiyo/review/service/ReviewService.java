@@ -18,14 +18,12 @@ import com.georgia.jeogiyo.review.repository.ReviewRepository;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,7 +31,6 @@ import java.util.UUID;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
-    private final UserRepository userRepository;
     private final StoreRepository storeRepository;
     private final OrderRepository orderRepository;
 
