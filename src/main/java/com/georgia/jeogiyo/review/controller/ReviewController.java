@@ -36,15 +36,15 @@ public class ReviewController {
     // 리뷰 작성
     @Operation(
             summary = "리뷰 작성",
-            description = "CUSTOMER 권한 사용자가 완료된 주문에 대한 리뷰를 작성합니다."
+            description = "CUSTOMER 권한 사용자가 배송 완료된 주문에 대한 리뷰를 작성합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "리뷰 작성 성공"),
-            @ApiResponse(responseCode = "400", description = "요청값 검증 실패 또는 리뷰 작성이 불가능한 주문"),
+            @ApiResponse(responseCode = "400", description = "요청값 검증 실패"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "권한 없음"),
-            @ApiResponse(responseCode = "404", description = "주문 또는 사용자 없음"),
-            @ApiResponse(responseCode = "409", description = "이미 리뷰가 작성된 주문")
+            @ApiResponse(responseCode = "403", description = "본인의 주문이 아니거나 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "주문 또는 가게 없음"),
+            @ApiResponse(responseCode = "409", description = "배송이 완료되지 않았거나 이미 리뷰가 작성된 주문")
     })
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     @PostMapping("/orders/{orderId}/reviews")
@@ -151,10 +151,10 @@ public class ReviewController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "리뷰 수정 성공"),
-            @ApiResponse(responseCode = "400", description = "요청값 검증 실패 또는 삭제된 리뷰"),
+            @ApiResponse(responseCode = "400", description = "요청값 검증 실패 또는 수정할 값 없음"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "리뷰 수정 권한 없음"),
-            @ApiResponse(responseCode = "404", description = "리뷰 또는 사용자 없음")
+            @ApiResponse(responseCode = "403", description = "리뷰 작성자 본인이 아님"),
+            @ApiResponse(responseCode = "404", description = "리뷰 없음")
     })
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     @PatchMapping("/reviews/{reviewId}")
@@ -184,10 +184,10 @@ public class ReviewController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "리뷰 삭제 성공"),
-            @ApiResponse(responseCode = "400", description = "이미 삭제된 리뷰"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
-            @ApiResponse(responseCode = "403", description = "리뷰 삭제 권한 없음"),
-            @ApiResponse(responseCode = "404", description = "리뷰 또는 사용자 없음")
+            @ApiResponse(responseCode = "403", description = "리뷰 작성자 또는 MASTER가 아님"),
+            @ApiResponse(responseCode = "404", description = "리뷰 없음"),
+            @ApiResponse(responseCode = "409", description = "이미 삭제된 리뷰")
     })
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_MASTER')")
     @DeleteMapping("/reviews/{reviewId}")
@@ -201,6 +201,9 @@ public class ReviewController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return reviewService.deleteReview(reviewId, userDetails);
+        return reviewService.deleteReview(
+                reviewId,
+                userDetails
+        );
     }
 }
