@@ -17,6 +17,8 @@ import com.georgia.jeogiyo.category.repository.CategoryRepository;
 
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.util.PageUtil;
+import com.georgia.jeogiyo.product.repository.ProductRepository;
+import com.georgia.jeogiyo.store.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,10 +32,13 @@ import java.util.UUID;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
+    private final StoreRepository storeRepository;
+    private final ProductRepository productRepository;
+
     // 카테고리 생성 Service
     @Transactional // Service 단계에서 트랙잭션이 이루어져야함. 비즈니스 측면에서 재고(DB)와 이력(log)와의 차이가 없어야 함.
     public CategoryCreateResponse createCategory(CategoryCreateRequest requestDto) {
-        String categoryName = requestDto.getCategoryName().trim(); // didWhr rhdqor wprj
+        String categoryName = requestDto.getCategoryName().trim();
 
         if (categoryRepository.existsByCategoryName(categoryName)) {
             // TODO: 이미 사용중인 닉네임입니다. 409
@@ -147,6 +152,21 @@ public class CategoryService {
             // TODO: 409 Conflict
             throw new IllegalArgumentException(
                     "이미 삭제된 카테고리입니다."
+            );
+        }
+
+        // TODO: store, product 에서 사용하는 카테고리는 삭제하지 못하도록
+        boolean usedByStore =
+                storeRepository
+                        .existsByCategory_CategoryIdAndIsDeletedFalse(categoryId);
+
+        boolean usedByProduct =
+                productRepository
+                        .existsByCategory_CategoryIdAndIsDeletedFalse(categoryId);
+
+        if (usedByStore || usedByProduct) {
+            throw new IllegalArgumentException(
+                    "해당 카테고리를 사용하는 가게 또는 상품이 존재하여 삭제할 수 없습니다."
             );
         }
 

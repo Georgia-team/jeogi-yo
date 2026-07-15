@@ -57,6 +57,12 @@ public enum GlobalErrorCode implements ErrorCode {
     INSUFFICIENT_STOCK(HttpStatus.CONFLICT, "상품 재고가 부족합니다."),
     INVALID_ORDER_STATUS_TRANSITION(HttpStatus.CONFLICT, "허용되지 않은 주문 상태 변경입니다."),
     ORDER_CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "주문을 취소할 수 없는 상태입니다."),
+    PRODUCT_NOT_IN_STORE(HttpStatus.BAD_REQUEST, "요청한 가게에 속하지 않은 상품입니다."),
+    PRODUCT_NOT_ORDERABLE(HttpStatus.CONFLICT, "주문할 수 없는 상품입니다."),
+    ORDER_ALREADY_ACCEPTED(HttpStatus.CONFLICT, "이미 수락된 주문은 취소할 수 없습니다."),
+    ORDER_CANCEL_TIME_EXPIRED(HttpStatus.CONFLICT, "주문 후 5분이 지나 취소할 수 없습니다."),
+    NO_PAYMENT_FOUND_FOR_ORDER(HttpStatus.CONFLICT, "결제 이력이 없는 주문입니다."),
+    PAYMENT_NOT_SUCCESS(HttpStatus.CONFLICT, "결제가 완료된 주문만 수락할 수 있습니다."),
 
     // 결제
     NOT_FOUND_PAYMENT(HttpStatus.NOT_FOUND, "존재하지 않는 결제입니다."),
@@ -74,6 +80,8 @@ public enum GlobalErrorCode implements ErrorCode {
 
     // AI 이력
     NOT_FOUND_AI_HISTORY(HttpStatus.NOT_FOUND, "존재하지 않는 AI 응답 이력입니다."),
+    AI_GENERATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI 상품 설명 생성에 실패했습니다."),
+    EMPTY_AI_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR, "Gemini 응답이 비어 있습니다.")
     ;
 
     private final HttpStatus httpStatus;
