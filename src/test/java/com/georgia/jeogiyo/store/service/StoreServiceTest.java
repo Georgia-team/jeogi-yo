@@ -13,6 +13,7 @@ import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 import com.georgia.jeogiyo.store.entity.Store;
 import com.georgia.jeogiyo.store.entity.StoreStatus;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
+import com.georgia.jeogiyo.review.repository.ReviewRepository;
 import com.georgia.jeogiyo.support.DomainTestFixture;
 import com.georgia.jeogiyo.user.entity.User;
 import com.georgia.jeogiyo.user.service.UserFinder;
@@ -64,6 +65,9 @@ class StoreServiceTest {
     private CategoryRepository categoryRepository;
 
     @Mock
+    private ReviewRepository reviewRepository;
+
+    @Mock
     private EntityManager entityManager;
 
     private StoreServiceImpl storeService;
@@ -74,6 +78,7 @@ class StoreServiceTest {
                 storeRepository,
                 userFinder,
                 categoryRepository,
+                reviewRepository,
                 entityManager
         );
     }
@@ -305,5 +310,22 @@ class StoreServiceTest {
         boolean result = storeService.existsActiveStoreByOwnerId(OWNER_ID);
 
         assertThat(result).isFalse();
+    }
+
+    @Test
+    @DisplayName("가게 상세 조회는 리뷰 수와 평균 평점을 함께 반환한다")
+    void getStore_reviewSummary_success() {
+        User owner = DomainTestFixture.owner();
+        Category category = DomainTestFixture.category();
+        Store store = DomainTestFixture.store(owner, category);
+
+        given(storeRepository.findByStoreIdAndIsDeletedFalse(STORE_ID)).willReturn(Optional.of(store));
+        given(reviewRepository.countByStore_StoreIdAndIsDeletedFalse(STORE_ID)).willReturn(3L);
+        given(reviewRepository.findAverageRatingByStoreId(STORE_ID)).willReturn(4.333333);
+
+        StoreResponse response = storeService.getStore(STORE_ID);
+
+        assertThat(response.getReviewCount()).isEqualTo(3);
+        assertThat(response.getAverageRating()).isEqualTo(4.3);
     }
 }

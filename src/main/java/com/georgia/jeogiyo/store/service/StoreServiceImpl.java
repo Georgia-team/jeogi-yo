@@ -4,6 +4,7 @@ import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.util.PageUtil;
+import com.georgia.jeogiyo.review.repository.ReviewRepository;
 import com.georgia.jeogiyo.store.dto.request.StoreCreateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreStatusUpdateRequest;
 import com.georgia.jeogiyo.store.dto.request.StoreUpdateRequest;
@@ -38,6 +39,7 @@ public class StoreServiceImpl implements StoreService {
     private final StoreRepository storeRepository;
     private final UserFinder userFinder;
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
     private final EntityManager entityManager;
 
     @Override
@@ -177,6 +179,8 @@ public class StoreServiceImpl implements StoreService {
     }
 
     private StoreResponse toResponse(Store store) {
+        StoreReviewSummary reviewSummary = getReviewSummary(store.getStoreId());
+
         return StoreResponse.builder()
                 .storeId(store.getStoreId())
                 .ownerId(store.getOwner().getUserId())
@@ -186,10 +190,14 @@ public class StoreServiceImpl implements StoreService {
                 .address(store.getAddress())
                 .phone(store.getPhone())
                 .storeStatus(store.getStoreStatus())
+                .reviewCount(reviewSummary.reviewCount())
+                .averageRating(reviewSummary.averageRating())
                 .build();
     }
 
     private StoreSearchResponse toSearchResponse(Store store) {
+        StoreReviewSummary reviewSummary = getReviewSummary(store.getStoreId());
+
         return StoreSearchResponse.builder()
                 .storeId(store.getStoreId())
                 .categoryId(store.getCategory().getCategoryId())
@@ -197,7 +205,30 @@ public class StoreServiceImpl implements StoreService {
                 .storeName(store.getStoreName())
                 .address(store.getAddress())
                 .storeStatus(store.getStoreStatus())
-                .averageRating(null)
+                .averageRating(reviewSummary.averageRating())
                 .build();
+    }
+
+    private StoreReviewSummary getReviewSummary(UUID storeId) {
+        if (storeId == null) {
+            return new StoreReviewSummary(0, 0.0);
+        }
+
+        int reviewCount = Math.toIntExact(
+                reviewRepository.countByStore_StoreIdAndIsDeletedFalse(storeId)
+        );
+
+        Double averageRating = reviewRepository.findAverageRatingByStoreId(storeId);
+
+        return new StoreReviewSummary(
+                reviewCount,
+                averageRating == null ? 0.0 : Math.round(averageRating * 10.0) / 10.0
+        );
+    }
+
+    private record StoreReviewSummary(
+            Integer reviewCount,
+            Double averageRating
+    ) {
     }
 }

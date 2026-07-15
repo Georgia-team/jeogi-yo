@@ -80,6 +80,17 @@ public class ProductServiceImpl implements ProductService {
 
             try {
                 description = aiGeminiService.generateDescription(requestText);
+            } catch (BusinessException e) {
+                aiHistoryRecorder.recordFail(
+                        user,
+                        null,
+                        requestText,
+                        "gemini-2.5-flash-lite",
+                        e.getMessage()
+                );
+
+                log.error("AI product description generation failed. loginId={}, storeId={}", loginId, storeId, e);
+                throw e;
             } catch (Exception e) {
                 aiHistoryRecorder.recordFail(
                         user,
@@ -90,7 +101,7 @@ public class ProductServiceImpl implements ProductService {
                 );
 
                 log.error("AI product description generation failed. loginId={}, storeId={}", loginId, storeId, e);
-                throw new BusinessException(GlobalErrorCode.INTERNAL_SERVER_ERROR);
+                throw new BusinessException(GlobalErrorCode.AI_GENERATION_FAILED);
             }
         }
 
