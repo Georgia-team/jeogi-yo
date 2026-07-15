@@ -2,6 +2,8 @@ package com.georgia.jeogiyo.store.service;
 
 import com.georgia.jeogiyo.category.entity.Category;
 import com.georgia.jeogiyo.category.repository.CategoryRepository;
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.util.PageUtil;
 import com.georgia.jeogiyo.review.repository.ReviewRepository;
@@ -23,8 +25,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.georgia.jeogiyo.global.exception.BusinessException;
-import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 
 import java.util.List;
 import java.util.UUID;
@@ -88,9 +88,9 @@ public class StoreServiceImpl implements StoreService {
         }
 
         Pageable pageable = PageUtil.toPageable(page, size, sort);
-        Page<Store> storePage = storeRepository.searchStores(categoryId, keyword, pageable);
+        Page<StoreSearchResponse> storePage = storeRepository.searchStores(categoryId, keyword, pageable);
 
-        return PageResponse.from(storePage, this::toSearchResponse);
+        return PageResponse.from(storePage, this::normalizeSearchResponse);
     }
 
     @Override
@@ -113,9 +113,9 @@ public class StoreServiceImpl implements StoreService {
         );
 
         /*
-        * updatedAt은 JPA Auditing의 @LastModifiedDate로 들어가는데, 이 값은 보통 트랜잭션이 flush 될 때 채워집니다.
-        * DTO 필드에만 updatedAt을 추가하면 수정 직후 응답에서 updatedAt이 null이거나 이전 값일 수 있으므로 flush 합니다.
-        * */
+         * updatedAt은 JPA Auditing의 @LastModifiedDate로 들어가는데, 이 값은 보통 트랜잭션이 flush 될 때 채워집니다.
+         * DTO 필드에만 updatedAt을 추가하면 수정 직후 응답에서 updatedAt이 null이거나 이전 값일 수 있으므로 flush 합니다.
+         * */
         // 변경 감지 flush 확인
         entityManager.flush();
 
@@ -195,18 +195,34 @@ public class StoreServiceImpl implements StoreService {
                 .build();
     }
 
-    private StoreSearchResponse toSearchResponse(Store store) {
-        StoreReviewSummary reviewSummary = getReviewSummary(store.getStoreId());
-
+    //    private StoreSearchResponse toSearchResponse(Store store) {
+//        StoreReviewSummary reviewSummary = getReviewSummary(store.getStoreId());
+//
+//        return StoreSearchResponse.builder()
+//                .storeId(store.getStoreId())
+//                .categoryId(store.getCategory().getCategoryId())
+//                .categoryName(store.getCategory().getCategoryName())
+//                .storeName(store.getStoreName())
+//                .address(store.getAddress())
+//                .storeStatus(store.getStoreStatus())
+//                .averageRating(reviewSummary.averageRating())
+//                .build();
+//    }
+    private StoreSearchResponse normalizeSearchResponse(StoreSearchResponse response) {
         return StoreSearchResponse.builder()
-                .storeId(store.getStoreId())
-                .categoryId(store.getCategory().getCategoryId())
-                .categoryName(store.getCategory().getCategoryName())
-                .storeName(store.getStoreName())
-                .address(store.getAddress())
-                .storeStatus(store.getStoreStatus())
-                .averageRating(reviewSummary.averageRating())
+                .storeId(response.getStoreId())
+                .categoryId(response.getCategoryId())
+                .categoryName(response.getCategoryName())
+                .storeName(response.getStoreName())
+                .address(response.getAddress())
+                .storeStatus(response.getStoreStatus())
+                .reviewCount(response.getReviewCount() == null ? 0L : response.getReviewCount())
+                .averageRating(response.getAverageRating() == null ? 0.0 : response.getAverageRating())
                 .build();
+    }
+
+    private Double roundAverage(Double averageRating) {
+        return averageRating == null ? 0.0 : Math.round(averageRating * 10.0) / 10.0;
     }
 
     private StoreReviewSummary getReviewSummary(UUID storeId) {
@@ -222,7 +238,7 @@ public class StoreServiceImpl implements StoreService {
 
         return new StoreReviewSummary(
                 reviewCount,
-                averageRating == null ? 0.0 : Math.round(averageRating * 10.0) / 10.0
+                roundAverage(averageRating)
         );
     }
 

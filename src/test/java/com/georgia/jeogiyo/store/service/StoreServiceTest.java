@@ -27,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import static org.assertj.core.api.Assertions.within;
 
 import java.util.List;
 import java.util.Optional;
@@ -261,11 +262,25 @@ class StoreServiceTest {
     @Test
     @DisplayName("가게 검색은 page 음수와 허용되지 않는 size를 보정한다")
     void searchStores_pageAndSize_normalized() {
-        // given: 카테고리 조건이 존재하고, 검색 repository가 빈 페이지를 반환한다.
+        // given: 카테고리 조건이 존재하고, 검색 repository가 리뷰 집계가 포함된 목록 응답을 반환한다.
         Category category = DomainTestFixture.category();
-        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID)).willReturn(Optional.of(category));
+
+        StoreSearchResponse storeSearchResponse = StoreSearchResponse.builder()
+                .storeId(STORE_ID)
+                .categoryId(CATEGORY_ID)
+                .categoryName("한식")
+                .storeName("테스트 가게")
+                .address("서울시 테스트구")
+                .storeStatus(StoreStatus.OPEN)
+                .reviewCount(2L)
+                .averageRating(4.333333)
+                .build();
+
+        given(categoryRepository.findByCategoryIdAndIsDeletedFalse(CATEGORY_ID))
+                .willReturn(Optional.of(category));
+
         given(storeRepository.searchStores(eq(CATEGORY_ID), eq("테스트"), any(Pageable.class)))
-                .willReturn(new PageImpl<>(List.of()));
+                .willReturn(new PageImpl<>(List.of(storeSearchResponse)));
 
         // when: page=-1, size=20처럼 정책 밖의 요청이 들어온다.
         PageResponse<StoreSearchResponse> response =
@@ -278,6 +293,11 @@ class StoreServiceTest {
         assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
         assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
         assertThat(response.getPage()).isZero();
+
+        assertThat(response.getContent()).hasSize(1);
+        assertThat(response.getContent().get(0).getReviewCount()).isEqualTo(2L);
+        assertThat(response.getContent().get(0).getAverageRating())
+                .isCloseTo(4.333333, within(0.000001));
     }
 
     @Test

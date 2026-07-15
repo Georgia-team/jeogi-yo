@@ -1,10 +1,13 @@
 package com.georgia.jeogiyo.store.repository;
 
+import com.georgia.jeogiyo.review.entity.QReview;
+import com.georgia.jeogiyo.store.dto.response.StoreSearchResponse;
 import com.georgia.jeogiyo.store.entity.QStore;
-import com.georgia.jeogiyo.store.entity.Store;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -22,12 +25,13 @@ public class StoreRepositoryImpl implements StoreRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<Store> searchStores(
+    public Page<StoreSearchResponse> searchStores(
             UUID categoryId,
             String keyword,
             Pageable pageable
     ) {
         QStore store = QStore.store;
+        QReview review = QReview.review;
 
         BooleanBuilder condition = new BooleanBuilder();
         condition.and(store.isDeleted.isFalse());
@@ -40,11 +44,38 @@ public class StoreRepositoryImpl implements StoreRepositoryCustom {
             condition.and(store.storeName.containsIgnoreCase(keyword.trim()));
         }
 
-        List<Store> content = queryFactory
-                .selectFrom(store)
-                .leftJoin(store.owner).fetchJoin()
-                .leftJoin(store.category).fetchJoin()
+        List<StoreSearchResponse> content = queryFactory
+                .select(Projections.constructor(
+                        StoreSearchResponse.class,
+                        store.storeId,
+                        store.category.categoryId,
+                        store.category.categoryName,
+                        store.storeName,
+                        store.address,
+                        store.storeStatus,
+                        review.reviewId.count(),
+                        Expressions.numberTemplate(
+                                Double.class,
+                                "coalesce({0}, 0.0)",
+                                review.rating.avg()
+                        )
+                ))
+                .from(store)
+                .leftJoin(store.category)
+                .leftJoin(review).on(
+                        review.store.storeId.eq(store.storeId)
+                                .and(review.isDeleted.isFalse())
+                )
                 .where(condition)
+                .groupBy(
+                        store.storeId,
+                        store.category.categoryId,
+                        store.category.categoryName,
+                        store.storeName,
+                        store.address,
+                        store.storeStatus,
+                        store.createdAt
+                )
                 .orderBy(createdAtOrder(pageable, store))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
