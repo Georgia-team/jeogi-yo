@@ -1,7 +1,6 @@
 package com.georgia.jeogiyo.address.controller;
 
 import org.springframework.data.domain.Page;
-import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,13 +18,16 @@ import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.util.PageUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @Tag(name = "Address", description = "주소 Query API")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/address")
 public class AddressSearchController {
@@ -42,7 +44,7 @@ public class AddressSearchController {
 	@GetMapping("/{addressId}")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<AddressInfoResponse> addressInfoOne(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@PathVariable String addressId) {
 		
 		String loginId = userDetails.getUsername();
@@ -61,7 +63,7 @@ public class AddressSearchController {
 	@GetMapping("")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<PageResponse<AddressInfoResponse>> addressInfoAll(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@ModelAttribute AddressSearchRequest addressSearch) {
 		
 		String loginId = userDetails.getUsername();

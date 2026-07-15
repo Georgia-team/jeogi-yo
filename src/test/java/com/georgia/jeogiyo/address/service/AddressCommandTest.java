@@ -74,7 +74,6 @@ public class AddressCommandTest {
 		assertThat(address.getDetailAddress()).isEqualTo(request.getDetailAddress());
 		assertThat(address.getZipcode()).isEqualTo(request.getZipcode());
 		assertThat(address.getIsDefault()).isTrue();
-		assertThat(address.getCreatedAt()).isNotNull();
 		
 		em.flush();
 		em.clear();

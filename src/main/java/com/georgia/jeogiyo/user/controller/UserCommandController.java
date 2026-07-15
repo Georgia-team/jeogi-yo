@@ -17,13 +17,16 @@ import com.georgia.jeogiyo.user.dto.response.UserInfoResponse;
 import com.georgia.jeogiyo.user.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @Tag(name = "User", description = "회원 Command API")
+@SecurityRequirement(name = "bearerAuth")
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
 public class UserCommandController {
@@ -41,7 +44,7 @@ public class UserCommandController {
 	@PatchMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<UserInfoResponse> updateMe(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserUpdateRequest userUpdateRequest
 	) {
 		String loginId = userDetails.getUsername();
@@ -60,7 +63,7 @@ public class UserCommandController {
 	@DeleteMapping("/me")
 	@PreAuthorize("hasAnyRole('CUSTOMER', 'MASTER', 'OWNER') and #userDetails.username == principal.username")
 	public CommonResponse<UserDeleteResponse> deleteMe(
-			@AuthenticationPrincipal UserDetails userDetails,
+			@Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
 			@RequestBody UserDeleteRequest userDelete
 	) {
 		String loginId = userDetails.getUsername();

@@ -10,6 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.georgia.jeogiyo.global.exception.BusinessException;
+import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.global.jwt.JwtUtil;
 import com.georgia.jeogiyo.store.repository.StoreRepository;
 import com.georgia.jeogiyo.user.dto.request.UserDeleteRequest;
@@ -22,8 +24,6 @@ import com.georgia.jeogiyo.user.dto.response.UserLoginResponse;
 import com.georgia.jeogiyo.user.dto.response.UserSignupResponse;
 import com.georgia.jeogiyo.user.entity.Role;
 import com.georgia.jeogiyo.user.entity.User;
-import com.georgia.jeogiyo.user.exception.UserDomainException;
-import com.georgia.jeogiyo.user.exception.UserErrorCode;
 import com.georgia.jeogiyo.user.fixture.UserFix;
 import com.georgia.jeogiyo.user.repository.UserRepository;
 
@@ -358,8 +358,8 @@ public class UserCommandTest {
 		UserDeleteRequest userDeleteRequest = new UserDeleteRequest(email, password);
 		
 		assertThatThrownBy(() -> userCommandService.delete(given.getLoginId(), userDeleteRequest))
-		.isInstanceOf(UserDomainException.class)
-		.hasMessage(UserErrorCode.DELETE_FAILURE_LAST_MASTER.getMessage());
+		.isInstanceOf(BusinessException.class)
+		.hasMessage(GlobalErrorCode.DELETE_FAILURE_LAST_MASTER.getMessage());
 	}
 	
 }
