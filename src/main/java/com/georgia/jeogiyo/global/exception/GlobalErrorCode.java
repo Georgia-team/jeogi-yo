@@ -78,6 +78,9 @@ public enum GlobalErrorCode implements ErrorCode {
     FORBIDDEN_REVIEW(HttpStatus.FORBIDDEN, "작성자 본인만 가능합니다."),
     DUPLICATE_REVIEW(HttpStatus.CONFLICT, "이미 해당 주문에 대한 리뷰가 존재합니다."),
     REVIEW_NOT_ALLOWED(HttpStatus.CONFLICT, "배송 완료된 주문만 리뷰를 작성할 수 있습니다."),
+    INVALID_REVIEW_RATING(HttpStatus.BAD_REQUEST, "평점은 1점부터 5점 사이여야 합니다."),
+    EMPTY_REVIEW_UPDATE(HttpStatus.BAD_REQUEST, "수정할 평점 또는 내용을 입력해 주세요."),
+    ALREADY_DELETED_REVIEW(HttpStatus.CONFLICT, "이미 삭제된 리뷰입니다."),
 
     // AI 이력
     NOT_FOUND_AI_HISTORY(HttpStatus.NOT_FOUND, "존재하지 않는 AI 응답 이력입니다."),
