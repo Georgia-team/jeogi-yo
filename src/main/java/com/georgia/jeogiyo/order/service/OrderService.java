@@ -305,9 +305,9 @@ public class OrderService {
 
         if (nextStatus == OrderStatus.ORDER_ACCEPTED) {
             Payment payment = paymentRepository.findByOrder_OrderIdAndIsDeletedFalse(orderId)
-                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.PAYMENT_NOT_SUCCESS));
+                    .orElseThrow(() -> new BusinessException(GlobalErrorCode.NOT_FOUND_PAYMENT));
             if (payment.getPaymentStatus() != PaymentStatus.SUCCESS) {
-                throw new BusinessException(GlobalErrorCode.PAYMENT_NOT_SUCCESS);
+                throw new BusinessException(GlobalErrorCode.NOT_FOUND_PAYMENT);
             }
         }
 
