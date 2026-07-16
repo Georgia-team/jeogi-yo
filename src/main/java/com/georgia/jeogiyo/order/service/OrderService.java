@@ -5,6 +5,7 @@ import com.georgia.jeogiyo.address.repository.AddressRepository;
 import com.georgia.jeogiyo.global.exception.BusinessException;
 import com.georgia.jeogiyo.global.exception.GlobalErrorCode;
 import com.georgia.jeogiyo.global.response.PageResponse;
+import com.georgia.jeogiyo.global.util.DeliveryAreaValidator;
 import com.georgia.jeogiyo.order.dto.request.OrderCancelRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderCreateRequest;
 import com.georgia.jeogiyo.order.dto.request.OrderStatusUpdateRequest;
@@ -104,9 +105,7 @@ public class OrderService {
         Address address = addressRepository.findByUserAndAddressIdAndIsDeletedFalse(user, orderCreateRequest.getAddressId())
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.FORBIDDEN_ADDRESS));
 
-        if (!isServiceableArea(address.getRoadAddress())) {
-            throw new BusinessException(GlobalErrorCode.OUT_OF_SERVICE_AREA);
-        }
+        DeliveryAreaValidator.validate(address.getRoadAddress());
 
         Integer totalPrice = 0;
         for (OrderCreateRequest.OrderItemRequest item : orderCreateRequest.getItems()) {
@@ -151,9 +150,6 @@ public class OrderService {
         return response;
     }
 
-    private boolean isServiceableArea(String roadAddress) {
-        return roadAddress != null && roadAddress.contains("광화문");
-    }
 
     public OrderDetailResponse getOrderDetail(String loginId, UUID orderId) {
 
