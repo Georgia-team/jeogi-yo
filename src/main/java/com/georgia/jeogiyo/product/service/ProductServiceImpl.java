@@ -252,7 +252,7 @@ public class ProductServiceImpl implements ProductService {
                 && product.getStore().getOwner().getUserId().equals(user.getUserId());
 
         if (!isMaster && !isOwnerOfStore) {
-            throw new BusinessException(GlobalErrorCode.FORBIDDEN_PRODUCT);
+            throw new BusinessException(GlobalErrorCode.HIDDEN_PRODUCT_NOT_READABLE);
         }
     }
 
