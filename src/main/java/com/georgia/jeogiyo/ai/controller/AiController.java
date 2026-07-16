@@ -48,7 +48,12 @@ public class AiController {
     ) {
         String loginId = userDetails.getUsername();
         AiDescriptionResponse response = aiService.createAiDescription(productId, loginId, request);
-        return ResponseEntity.ok(CommonResponse.success("AI 상품 설명 생성 성공", response));
+
+        String message = response.getAiStatus() == AiStatus.SUCCESS
+                ? "AI 상품 설명 생성 성공"
+                : "AI 상품 설명 생성 실패";
+
+        return ResponseEntity.ok(CommonResponse.success(message, response));
     }
 
     @Operation(summary = "AI 이력 상세 조회", description = "MASTER가 AI 응답 이력 상세 정보를 조회합니다.")

@@ -239,7 +239,7 @@ class ProductServiceTest {
         // when & then: CUSTOMER는 숨김 상품을 볼 수 없다.
         assertThatThrownBy(() -> productService.getProduct(PRODUCT_ID, CUSTOMER_LOGIN_ID))
                 .isInstanceOf(BusinessException.class)
-                .hasMessage(GlobalErrorCode.FORBIDDEN_PRODUCT.getMessage());
+                .hasMessage(GlobalErrorCode.HIDDEN_PRODUCT_NOT_READABLE.getMessage());
     }
 
     @Test

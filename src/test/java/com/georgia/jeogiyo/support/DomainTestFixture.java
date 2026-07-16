@@ -63,6 +63,8 @@ public final class DomainTestFixture {
     public static final UUID PAYMENT_ID = UUID.fromString("77777777-7777-7777-7777-777777777771");
     public static final UUID ADDRESS_ID = UUID.fromString("88888888-8888-8888-8888-888888888881");
 
+    public static final String SERVICEABLE_ROAD_ADDRESS = "서울특별시 종로구 새문안로 123";
+
     private static final LocalDateTime TEST_NOW = LocalDateTime.of(2026, 7, 9, 12, 0);
 
     private static final PasswordEncoder TEST_PASSWORD_ENCODER = new PasswordEncoder() {
@@ -139,7 +141,7 @@ public final class DomainTestFixture {
 
     public static Address address(User user) {
         AddressCreateRequest request = new AddressCreateRequest(
-                "서울특별시 종로구 세종대로 175",
+                SERVICEABLE_ROAD_ADDRESS,
                 "101호",
                 "03154",
                 true
