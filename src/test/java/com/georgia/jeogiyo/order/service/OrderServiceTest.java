@@ -99,7 +99,7 @@ class OrderServiceTest {
     }
 
     private Payment payment(PaymentStatus status) {
-        Order order = order(customer(), store(owner(), category()), address(customer(), ADDRESS_ID, "서울시 종로구 광화문로 1"),
+        Order order = order(customer(), store(owner(), category()), address(customer(), ADDRESS_ID, "서울특별시 종로구 세종대로 172"),
                 ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         return new Payment(order, customer(), PaymentMethod.CARD, 24000);
     }
@@ -148,7 +148,7 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner(), category);
         store.changeStatus(StoreStatus.OPEN);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Product product = product(store, category, 12000, 30, false);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
@@ -258,7 +258,7 @@ class OrderServiceTest {
         Store store = store(owner(), category);
         store.changeStatus(StoreStatus.OPEN);
         Store otherStore = otherOwnerStore(otherOwner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Product productFromOtherStore = product(otherStore, category, 12000, 30, false);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
@@ -279,7 +279,7 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner(), category);
         store.changeStatus(StoreStatus.OPEN);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Product hiddenProduct = product(store, category, 12000, 30, true);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 2);
 
@@ -300,7 +300,7 @@ class OrderServiceTest {
         Category category = category();
         Store store = store(owner(), category);
         store.changeStatus(StoreStatus.OPEN);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Product lowStockProduct = product(store, category, 12000, 3, false);
         OrderCreateRequest request = orderRequest(STORE_ID, ADDRESS_ID, PRODUCT_ID, 5);
 
@@ -322,7 +322,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
@@ -345,7 +345,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(otherOwner(), ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(otherOwner(), ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order othersOrder = order(otherOwner(), store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(CUSTOMER_LOGIN_ID)).willReturn(Optional.of(customer));
@@ -363,7 +363,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner, category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
@@ -387,7 +387,7 @@ class OrderServiceTest {
         User otherOwner = otherOwner();
         Category category = category();
         Store otherStore = otherOwnerStore(otherOwner, category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, otherStore, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         given(userRepository.findByLoginIdAndIsDeletedFalse(OWNER_LOGIN_ID)).willReturn(Optional.of(owner));
@@ -406,7 +406,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 30, false);
@@ -451,7 +451,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
@@ -473,7 +473,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
@@ -524,7 +524,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner, category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
@@ -576,7 +576,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         Pageable pageable = PageUtil.toPageable(0, 10, "desc");
 
@@ -600,7 +600,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner, category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
@@ -625,7 +625,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
@@ -646,7 +646,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
@@ -668,7 +668,7 @@ class OrderServiceTest {
         User otherOwner = otherOwner();
         Category category = category();
         Store otherStore = otherOwnerStore(otherOwner, category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, otherStore, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderStatusUpdateRequest request = new OrderStatusUpdateRequest();
@@ -705,7 +705,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 28, false);
@@ -734,7 +734,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
 
         OrderCancelRequest request = new OrderCancelRequest();
@@ -753,7 +753,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000,
                 LocalDateTime.now().minusMinutes(10));
 
@@ -773,7 +773,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(otherOwner(), ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(otherOwner(), ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order othersOrder = order(otherOwner(), store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
 
         OrderCancelRequest request = new OrderCancelRequest();
@@ -793,7 +793,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 28, false);
@@ -818,7 +818,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_REQUESTED, 24000);
         OrderItem orderItem = orderItem(ORDER_ID, PRODUCT_ID, 2, 12000, 24000);
         Product product = product(store, category, 12000, 28, false);
@@ -839,7 +839,7 @@ class OrderServiceTest {
         User customer = customer();
         Category category = category();
         Store store = store(owner(), category);
-        Address address = address(customer, ADDRESS_ID, "서울시 종로구 광화문로 1");
+        Address address = address(customer, ADDRESS_ID, "서울특별시 종로구 세종대로 172");
         Order order = order(customer, store, address, ORDER_ID, OrderStatus.ORDER_ACCEPTED, 24000);
 
         given(orderRepository.findByOrderIdAndIsDeletedFalse(ORDER_ID)).willReturn(Optional.of(order));
