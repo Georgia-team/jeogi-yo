@@ -1,5 +1,6 @@
 package com.georgia.jeogiyo.review.controller;
 
+import com.georgia.jeogiyo.global.response.CommonResponse;
 import com.georgia.jeogiyo.global.response.PageResponse;
 import com.georgia.jeogiyo.global.security.UserDetailsImpl;
 import com.georgia.jeogiyo.review.dto.request.ReviewCreateRequest;
@@ -18,6 +19,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -39,7 +42,7 @@ public class ReviewController {
             description = "CUSTOMER 권한 사용자가 배송 완료된 주문에 대한 리뷰를 작성합니다."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "리뷰 작성 성공"),
+            @ApiResponse(responseCode = "201", description = "리뷰 작성 성공"),
             @ApiResponse(responseCode = "400", description = "요청값 검증 실패"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "본인의 주문이 아니거나 권한 없음"),
@@ -48,7 +51,7 @@ public class ReviewController {
     })
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     @PostMapping("/orders/{orderId}/reviews")
-    public ReviewCreateResponse createReview(
+    public ResponseEntity<CommonResponse<ReviewCreateResponse>> createReview(
             @Parameter(
                     description = "주문 ID",
                     example = "44444444-4444-4444-4444-444444444441"
@@ -60,11 +63,12 @@ public class ReviewController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return reviewService.createReview(
-                orderId,
-                requestDto,
-                userDetails
-        );
+        ReviewCreateResponse response =
+                reviewService.createReview(orderId, requestDto, userDetails);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(CommonResponse.success("리뷰 작성 성공", response));
     }
 
     // 리뷰 상세 조회
@@ -80,14 +84,18 @@ public class ReviewController {
     })
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping("/reviews/{reviewId}")
-    public ReviewReadResponse readReview(
+    public ResponseEntity<CommonResponse<ReviewReadResponse>> readReview(
             @Parameter(
                     description = "리뷰 ID",
                     example = "55555555-5555-5555-5555-555555555551"
             )
             @PathVariable UUID reviewId
     ) {
-        return reviewService.readReview(reviewId);
+        ReviewReadResponse response = reviewService.readReview(reviewId);
+
+        return ResponseEntity.ok(
+                CommonResponse.success("리뷰 조회 성공", response)
+        );
     }
 
     // 가게별 리뷰 검색
@@ -104,7 +112,7 @@ public class ReviewController {
     })
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_OWNER', 'ROLE_MASTER')")
     @GetMapping("/stores/{storeId}/reviews")
-    public PageResponse<ReviewSearchItemResponse> searchReviews(
+    public ResponseEntity<CommonResponse<PageResponse<ReviewSearchItemResponse>>> searchReviews(
             @Parameter(
                     description = "가게 ID",
                     example = "33333333-3333-3333-3333-333333333331"
@@ -135,12 +143,17 @@ public class ReviewController {
             )
             @RequestParam(defaultValue = "desc") String sort
     ) {
-        return reviewService.searchReviews(
-                storeId,
-                rating,
-                page,
-                size,
-                sort
+        PageResponse<ReviewSearchItemResponse> response =
+                reviewService.searchReviews(
+                        storeId,
+                        rating,
+                        page,
+                        size,
+                        sort
+                );
+
+        return ResponseEntity.ok(
+                CommonResponse.success("리뷰 목록 조회 성공", response)
         );
     }
 
@@ -158,7 +171,7 @@ public class ReviewController {
     })
     @PreAuthorize("hasAuthority('ROLE_CUSTOMER')")
     @PatchMapping("/reviews/{reviewId}")
-    public ReviewUpdateResponse updateReview(
+    public ResponseEntity<CommonResponse<ReviewUpdateResponse>> updateReview(
             @Parameter(
                     description = "리뷰 ID",
                     example = "55555555-5555-5555-5555-555555555551"
@@ -170,10 +183,11 @@ public class ReviewController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return reviewService.updateReview(
-                reviewId,
-                requestDto,
-                userDetails
+        ReviewUpdateResponse response =
+                reviewService.updateReview(reviewId, requestDto, userDetails);
+
+        return ResponseEntity.ok(
+                CommonResponse.success("리뷰 수정 성공", response)
         );
     }
 
@@ -191,7 +205,7 @@ public class ReviewController {
     })
     @PreAuthorize("hasAnyAuthority('ROLE_CUSTOMER', 'ROLE_MASTER')")
     @DeleteMapping("/reviews/{reviewId}")
-    public ReviewDeleteResponse deleteReview(
+    public ResponseEntity<CommonResponse<ReviewDeleteResponse>> deleteReview(
             @Parameter(
                     description = "리뷰 ID",
                     example = "55555555-5555-5555-5555-555555555551"
@@ -201,9 +215,11 @@ public class ReviewController {
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        return reviewService.deleteReview(
-                reviewId,
-                userDetails
+        ReviewDeleteResponse response =
+                reviewService.deleteReview(reviewId, userDetails);
+
+        return ResponseEntity.ok(
+                CommonResponse.success("리뷰 삭제 성공", response)
         );
     }
 }
