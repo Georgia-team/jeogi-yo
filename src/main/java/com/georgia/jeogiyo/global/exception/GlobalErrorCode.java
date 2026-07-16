@@ -50,6 +50,7 @@ public enum GlobalErrorCode implements ErrorCode {
     INVALID_PRICE(HttpStatus.BAD_REQUEST, "상품 가격은 0보다 커야 합니다."),
     INVALID_STOCK(HttpStatus.BAD_REQUEST, "상품 재고는 0 이상이어야 합니다."),
     ALREADY_DELETED_PRODUCT(HttpStatus.CONFLICT, "이미 삭제된 상품입니다."),
+    HIDDEN_PRODUCT_NOT_READABLE(HttpStatus.FORBIDDEN, "숨김 처리된 상품은 조회할 수 없습니다."),
 
     // 주문
     NOT_FOUND_ORDER(HttpStatus.NOT_FOUND, "존재하지 않는 주문입니다."),
