@@ -35,7 +35,7 @@
 | 진혜림      | 공통 (Spring Security, JWT, BaseEntity, CommonResponse, 공통 예외 처리) |
 | 서주성      | 회원(User) + 배송지(Address)                           |
 | 권순혁      | 주문(Order) + 주문상품(OrderItem)                       |
-| 서준영      | 카테고리(Category) + 리뷰(Review)                       |
+| 장준영      | 카테고리(Category) + 리뷰(Review)                       |
 
 ---
 
